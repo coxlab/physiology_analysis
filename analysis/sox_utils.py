@@ -14,7 +14,7 @@ def to_hms(seconds):
     
 def sox_merge(stem, session_number, project_path, out_path, out_filename, **kwargs):
     
-    matchstring = r"%s\d+#%.2d.wav" % (stem, session_number)
+    matchstring = r"%s_?\d+#%.2d.wav" % (stem, session_number)
     
     fmt = kwargs.get("format", "wavpcm")
     
@@ -71,7 +71,7 @@ def sox_merge(stem, session_number, project_path, out_path, out_filename, **kwar
     
     def extract_channel_num(s):
         print s
-        m = re.match(r"%s(\d+)#.*"%stem, s)
+        m = re.match(r"%s_?(\d+)#.*"%stem, s)
         return int(m.group(1))
     
     filtered_files.sort(key=extract_channel_num)
