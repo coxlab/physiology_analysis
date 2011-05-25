@@ -15,6 +15,8 @@ def sox_process_pixel_clock(project_path, file_no,  out_path, out_filename, **kw
 
 def read_pixel_clock( project_path, cache_dir, file_no, **kwargs):
     
+    time_range = kwargs.get('time_range', None)
+    
     pc_filename = "pixel_clock_merged_%d.wav" % file_no
     pc_merged_file_path = os.path.join(cache_dir, pc_filename)
     
@@ -22,7 +24,8 @@ def read_pixel_clock( project_path, cache_dir, file_no, **kwargs):
     if not os.path.exists(pc_merged_file_path ):
         sox_process_pixel_clock( project_path, file_no, cache_dir, pc_filename,
                                  norm=True,
-                                 highpass=100)
+                                 highpass=100,
+                                 time_range=time_range)
     
     (pc_data, fs, fmt) = al.wavread(pc_merged_file_path)
     
@@ -220,7 +223,7 @@ def parse_pixel_clock(pc_data, start_time_sec, samples_per_sec, **kwargs):
             event_triggered = False
             
     out_codes = reconstruct_codes(out_codes, n_channels)
-    #(out_codes, mask) = reconstruct_codes_exhaustive_masks(out_codes, 
+    # (out_codes, mask) = reconstruct_codes_exhaustive_masks(out_codes, 
     #                                                       n_channels)
     
     return out_codes
@@ -268,7 +271,7 @@ if __name__ == "__main__":
     cache_dir = "/tmp/phys"
 
     print("Reading in data...")
-    (pc_data, fs) = read_pixel_clock( project_path, cache_dir, 1 )
+    (pc_data, fs) = read_pixel_clock( project_path, cache_dir, 1 , time_range=(0,1200))
     
     print("Parsing data...")
     events = parse_pixel_clock( pc_data, 0.0, fs)
