@@ -131,7 +131,7 @@ def parse_pixel_clock(pc_data, start_time_sec, samples_per_sec, **kwargs):
     
     arm_threshold = kwargs.get("arm_threshold", 0.1)
     arm_timeout = kwargs.get("arm_timeout", 0.005) * samples_per_sec
-    accept_threshold = kwargs.get("accept_threshold", 0.2)
+    accept_threshold = kwargs.get("accept_threshold", 0.3)
     time_stride = int(kwargs.get("time_stride", 0.0005) * samples_per_sec)
     refractory_period = int(kwargs.get("refractory_period", 0.010) * samples_per_sec)
     event_trigger_period = int(kwargs.get("event_trigger_period", 0.05) * samples_per_sec)
