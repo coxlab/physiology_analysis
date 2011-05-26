@@ -80,8 +80,8 @@ def reconstruct_codes( events, n_channels, raise_on_inconsistency=False,
                 current_state[c] = min( current_state[c], 1 )
                 current_state[c] = max( current_state[c], 0 )
                 
-        print "%s + %s = %s (%f)" % (previous_state, state_change, 
-                                     current_state, e[0])
+        #print "%s + %s = %s (%f)" % (previous_state, state_change, 
+        #                             current_state, e[0])
         
         previous_state = copy(current_state)
         
@@ -219,7 +219,7 @@ def parse_pixel_clock(pc_data, start_time_sec, samples_per_sec, **kwargs):
         if event_triggered and not (True in refractory):
             event_time = start_time_sec + (event_index / samples_per_sec )
             out_codes.append( [ event_time, state, None ])
-            print("%f (%d): %s" % (event_time, event_index, state))
+            #print("%f (%d): %s" % (event_time, event_index, state))
             event_triggered = False
             
     out_codes = reconstruct_codes(out_codes, n_channels)
@@ -229,14 +229,34 @@ def parse_pixel_clock(pc_data, start_time_sec, samples_per_sec, **kwargs):
     return out_codes
 
 
-def read_pixel_clock_from_mw(mw_filename):
+def read_pixel_clock_from_mw(mw_filename, use_display_update=False):
 
     f = mw.MWKFile(mw_filename)
     f.open()
     
-    pc_events = f.get_events(codes=["#pixelClockCode"])
-    times = [ e.time for e in pc_events ]
-    codes = [ e.value for e in pc_events ]
+    if use_display_update:
+        pc_events = f.get_events(codes=["#stimDisplayUpdate"])
+        
+        def get_pc_from_evt(e):
+            try:
+                stimuli = e.value
+                for s in stimuli:
+                    if s.has_key('bit_code'):
+                        return s['bit_code']
+            except:
+                return None
+            return None
+        
+        def is_pc_update_evt(e):
+            return ( get_pc_from_evt(e) is not None )
+        
+        pc_evts = filter(is_pc_update_evt, pc_events)
+        codes = [get_pc_from_evt(e) for e in pc_evts]
+        times = [ e.time for e in pc_evts ]
+    else:
+        pc_events = f.get_events(codes=["#pixelClockCode"])
+        times = [ e.time for e in pc_events ]
+        codes = [ e.value for e in pc_events ]
 
     f.close()
     
@@ -247,22 +267,48 @@ def read_pixel_clock_from_mw(mw_filename):
 # determine the offset between pixel clock and mw stream
 # the resulting number should be subtracted from mw times 
 # or added to the logic / caton times
-def start_time_match_mw_with_pc(pc_codes, mw_codes, mw_times,  **kwargs):
-
-    submatch_size = kwargs.get("submatch_size", 10)
+def time_match_mw_with_pc(pc_codes, pc_times, mw_codes, mw_times,
+                                submatch_size = 10, slack = 0, max_slack=10,
+                                pc_check_stride = 100):
     
-    match_sequence = pc_codes[0:submatch_size]
+    time_matches = []
     
-    for i in range(0, len(mw_codes) - submatch_size):
-        good_flag = True
-        for j in range(0, submatch_size):
-            if match_sequence[j] != mw_codes[i+j]:
-                good_flag = False
+    for pc_start_index in range(0, len(pc_codes)-submatch_size, pc_check_stride):
+        match_sequence = pc_codes[pc_start_index:pc_start_index+submatch_size]
+        pc_time = pc_times[pc_start_index]
+        
+        for i in range(0, len(mw_codes) - submatch_size - max_slack):
+            good_flag = True
+                
+            total_slack = 0
+            for j in range(0, submatch_size):
+                target = match_sequence[j]
+                if target != mw_codes[i+j+total_slack]:
+                    slack_match = False
+                    slack_count = 0
+                    while slack_count < slack and j != 0:
+                        slack_count += 1
+                        total_slack += 1
+                        if target == mw_codes[i+j+total_slack]:
+                            slack_match = True
+                            break
+                
+                    if total_slack > max_slack:
+                        good_flag = False
+                        break
+                    
+                    if not slack_match:
+                        # didn't find a match within slack
+                        good_flag = False
+                        break
+                    
+            if good_flag:
+                print "Total slack: %d" % total_slack
+                print "%s matched to %s" % (match_sequence, mw_codes[i:i+submatch_size+total_slack])
+                time_matches.append((pc_time, mw_times[i]))
                 break
-        if good_flag:
-            return mw_times[i]
     
-    return None
+    return time_matches
     
 if __name__ == "__main__":
     

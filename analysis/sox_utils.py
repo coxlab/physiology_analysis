@@ -76,6 +76,7 @@ def sox_merge(stem, session_number, project_path, out_path, out_filename, **kwar
     
     filtered_files.sort(key=extract_channel_num)
     
+    
     # generate a unique temp dir to store per-channel processed files
     per_channel_tmp_dir = tempfile.mkdtemp("", tmp_path)
     
