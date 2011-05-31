@@ -2,7 +2,7 @@ import scikits.audiolab as al
 import os
 import subprocess
 import shlex
-import matplotlib.pylab as plt
+#import matplotlib.pylab as plt
 from numpy import *
 import re
 from copy import copy
@@ -314,6 +314,7 @@ def time_match_mw_with_pc(pc_codes, pc_times, mw_codes, mw_times,
 if __name__ == "__main__":
     
     import sys
+    import matplotlib.pylab as plt
     project_path = sys.argv[1]
     cache_dir = "/tmp/phys"
 
