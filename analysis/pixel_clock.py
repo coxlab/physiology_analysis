@@ -260,7 +260,8 @@ def read_pixel_clock_from_mw(mw_filename, use_display_update=False):
 
     f.close()
     
-    float_times = [ (t - times[0]) / 1.e6 for t in times ]
+    # float_times = [ (t - times[0]) / 1.e6 for t in times ]
+    float_times = [ t / 1.e6 for t in times ]
     
     return (float_times, codes)
  
