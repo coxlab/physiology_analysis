@@ -13,8 +13,12 @@ def to_hms(seconds):
 
     
 def sox_merge(stem, session_number, project_path, out_path, out_filename, **kwargs):
+    """
+    Session number is NOT used
+    """
     
-    matchstring = r"%s_?\d+#%.2d.wav" % (stem, session_number)
+    # matchstring = r"%s_?\d+#%.2d.wav" % (stem, session_number)
+    matchstring = r"%s_?\d+#\d..wav" % stem
     
     fmt = kwargs.get("format", "wavpcm")
     
