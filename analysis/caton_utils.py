@@ -74,7 +74,7 @@ def caton_cluster_data( base_path, session_number, **kwargs ):
                                          "session_%d.xml" % session_number))
     
     # prepare the caton command
-    command = "/usr/local/bin/cluster_from_raw_data.py %s --probe=%s" % \
+    command = "/myPython/bin/cluster_from_raw_data.py %s --probe=%s" % \
                             (dat_path, os.path.join(processed_path,"a32.probe"))
     os.chdir(processed_path)
     print(command)

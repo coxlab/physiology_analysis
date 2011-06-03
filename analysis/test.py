@@ -2,9 +2,9 @@
 
 import sys
 
-import pixel_clock
+from caton_utils import caton_cluster_data
 
-baseDir =  '/Users/graham/Repositories/coxlab/physiology_analysis/data/K4_110523'
+baseDir =  '/Volumes/Scratch/K4_110523'
 mwTimeOffset = 1358.6488178654547 # mw time at audio time 0
 epochTime_mw = (2075.8280759999998, 5771.5493690000003) # mw time of starting and ending event for recording epoch
 
