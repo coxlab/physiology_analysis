@@ -77,13 +77,20 @@ def plot_rasters(event_locked, **kwargs):
     
     #plt.figure()
     plt.hold(True)
+    plt.axvline(0.0, alpha=0.5)
     
+    ts = []
     for i in range(0, n_events):
         y = (n_events - i)
         evt = event_locked[i]
         
         for t in evt:
             plt.plot( t, y, '|k')
+            ts.append(t)
     
+    if len(ts) != 0:
+        plt.hist(ts,bins=plt.linspace(time_range[0],time_range[1],25),alpha=0.5,color='k') # bin into 24 bins
+    
+    plt.xlim(time_range)
     #plt.show()
         
