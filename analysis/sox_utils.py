@@ -12,7 +12,9 @@ def to_hms(seconds):
     return "%02d:%02d:%.2f" % (hours, minutes, seconds)
 
     
-def sox_merge(stem, session_number, project_path, out_path, out_filename, **kwargs):
+def sox_merge(stem, session_number, project_path, out_path, out_filename,
+              time_range = None, sinc_bandpass = None, bandpass = None,
+              highpass = None, norm = False, format="wavpcm"):
     """
     Session number is NOT used
     """
@@ -20,7 +22,6 @@ def sox_merge(stem, session_number, project_path, out_path, out_filename, **kwar
     # matchstring = r"%s_?\d+#%.2d.wav" % (stem, session_number)
     matchstring = r"%s_?\d+#\d..wav" % stem
     
-    fmt = kwargs.get("format", "wavpcm")
     
     tmp_path = os.path.join(out_path, "tmp")
     out_file_path = os.path.join(out_path, out_filename)
@@ -31,22 +32,20 @@ def sox_merge(stem, session_number, project_path, out_path, out_filename, **kwar
     merge_command_template = "sox --temp %s -M %s -t %s %s"
     per_channel_command_template = "sox --temp %s %s -t wavpcm %s"
     
-    if "time_range" in kwargs:
-        tr = kwargs["time_range"]
+    if time_range is not None:
         
-        if tr is not None:
-            (begin_time, end_time) = kwargs["time_range"]
-                
-            time_length = end_time - begin_time
-            print("Time length = %f" % time_length)
-            per_channel_command_template += " trim %s %s" % (to_hms(begin_time), to_hms(time_length))
+        (begin_time, end_time) = time_range
+            
+        time_length = end_time - begin_time
+        print("Time length = %f" % time_length)
+        per_channel_command_template += " trim %s %s" % (to_hms(begin_time), to_hms(time_length))
     
-    if "sinc_bandpass" in kwargs:
-        (low, high) = kwargs["sinc_bandpass"]
+    if sinc_bandpass is not None:
+        (low, high) = sinc_bandpass
         per_channel_command_template += " sinc -M %dk-%dk" % (low, high)
     
-    if "bandpass" in kwargs:
-        (center, width) = kwargs["bandpass"]
+    if bandpass is not None:
+        (center, width) = bandpass
         if center > 1000.:
             center_string = "%fk" % (center / 1000.)
         else: 
@@ -59,13 +58,11 @@ def sox_merge(stem, session_number, project_path, out_path, out_filename, **kwar
             
         per_channel_command_template += " band %s %s" % (center_string, width_string)
     
-    if "highpass" in kwargs:
-        high_cut = kwargs["highpass"]
+    if highpass is not None:
         #command_template += " highpass %d" % high_cut
-        per_channel_command_template += " sinc -M %d-200" % high_cut
+        per_channel_command_template += " sinc -M %d-200" % highpass
     
-    if kwargs.get("norm", False):
-        
+    if norm:
         per_channel_command_template += " gain -e -n"
     
     audio_file_path = os.path.join(project_path, "Audio Files")
@@ -105,7 +102,7 @@ def sox_merge(stem, session_number, project_path, out_path, out_filename, **kwar
     
     full_merge_command = merge_command_template % (tmp_path, 
                                                    " ".join(full_paths), 
-                                                   fmt, 
+                                                   format, 
                                                    out_file_path)
     
     print("Running sox command: \n\t%s" % full_merge_command)
