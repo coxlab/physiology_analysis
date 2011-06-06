@@ -43,7 +43,7 @@ def sox_merge(stem, session_number, project_path, out_path, out_filename, **kwar
     
     if "sinc_bandpass" in kwargs:
         (low, high) = kwargs["sinc_bandpass"]
-        per_channel_command_template += " sinc -M %dk-%dk" % (low, high)
+        per_channel_command_template += " sinc -M %d-%d" % (low, high)
     
     if "bandpass" in kwargs:
         (center, width) = kwargs["bandpass"]

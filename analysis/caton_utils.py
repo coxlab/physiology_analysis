@@ -9,13 +9,13 @@ import numpy
 
 from caton.core import classify_from_raw_data
 
-TDT_PADS = [7,10,1,14,5,12,3,11,2,16,22,15,4,9,18,28,6,13,21,27,8,32,17,31,24,26,20,30,23,25,19,29]
+TDT_PADS = [6,9,0,13,4,11,2,10,1,15,21,14,3,8,17,27,5,12,20,26,7,31,16,30,23,25,19,29,22,24,18,28]
 
 def generate_probe_file( pad_sequence, out_filename ):
     
     out_string = ""
     
-    for (i, d) in zip(pad_sequence, len(pad_sequence)):
+    for (i, d) in zip(pad_sequence, xrange(len(pad_sequence))):
         out_string += "CH%d %d (%d)\n" % (i, i, d)
     # for i in range(0, len(pad_sequence)):
     #     out_string += "CH%d %d (%d)\n" % (i, i, pad_sequence[i])
@@ -58,7 +58,7 @@ def convert_audio_to_caton_format( base_path, session_number, **kwargs):
                                    output_path, out_filename,
                                    format="s16", norm=True,
                                    time_range=tr,
-                                   sinc_bandpass=(1, 6))
+                                   sinc_bandpass=(500, 3000))
 
 def caton_cluster_data( base_path, session_number, **kwargs ):
     
