@@ -41,7 +41,6 @@ for stim in range(0, len(stim_keys)):
     stim_key = stim_keys[stim]
     
     if stim_key in ['pixel clock', 'background', 'BlankScreenGray']:
-        print "I should be skipping this stimulus"
         continue
     
     for ch in range(1, len(spike_trains_by_channel)):
