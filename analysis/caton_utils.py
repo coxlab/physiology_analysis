@@ -78,15 +78,15 @@ def caton_cluster_data( base_path, session_number, **kwargs ):
     generate_probe_file(TDT_PADS, probe_path)
     
     # generate an XML file for caton
-    generate_shell_xml_file(os.path.join(processed_path, 
+    generate_shell_xml_file(os.path.join(processed_path, \
                                          "session_%d_%d_to_%d.xml" % \
-                                         (session_number, int(time_range[0]), int(time_range[1])))
+                                         (session_number, int(time_range[0]), int(time_range[1]))))
     
     
     classify_from_raw_data("batch", dat_path, probe_path,output_dir=processed_path)
     # prepare the caton command
     #command = "/myPython/bin/cluster_from_raw_data.py %s --probe=%s" % \
-                            (dat_path, os.path.join(processed_path,"a32.probe"))
+    #                        (dat_path, os.path.join(processed_path,"a32.probe"))
     #os.chdir(processed_path)
     #print(command)
     #subprocess.check_call(shlex.split(command))
