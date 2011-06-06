@@ -13,7 +13,8 @@ def extract_events(mw_filename, event_name, **kwargs):
     times = [ e.time for e in events ]
     values = [ e.value for e in events ]
     
-    corrected_times = [ ((t - times[0]) / 1.0e6) - offset for t in times]
+    # corrected_times = [ ((t - times[0]) / 1.0e6) - offset for t in times]
+    corrected_times = [ (t / 1.0e6) - offset for t in times]
     
     f.close()
     
