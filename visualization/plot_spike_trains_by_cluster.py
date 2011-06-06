@@ -3,9 +3,9 @@ import mw_utils
 import os
 import matplotlib.pylab as plt
 
-base_path = "/Volumes/Scratch/" 
+base_path = "../data" 
 h5_file = os.path.join(base_path, 
-                "K4_110523/processed/session_1_717_to_4412_a32_batch_3/session_1_717_to_4412_a32_batch.h5")
+                "K4_110523/processed/session_1_1317_to_4412_a32_batch/session_1_1317_to_4412_a32_batch.h5")
 mw_file = os.path.join(base_path, "K4_110523.mwk")
 
 print("Loading from h5")
