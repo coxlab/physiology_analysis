@@ -3,16 +3,16 @@ import mw_utils
 import os
 import matplotlib.pylab as plt
 
-base_path = "/Volumes/Data/physiology/" 
+base_path = "/Volumes/Scratch/" 
 h5_file = os.path.join(base_path, 
-                "H8_110425/processed.safe/session_1_3699_to_5410_a32_batch/session_1_3699_to_5410_a32_batch.h5")
-mw_file = os.path.join(base_path, "H8_110425.mwk")
+                "K4_110523/processed/session_1_717_to_4412_a32_batch_3/session_1_717_to_4412_a32_batch.h5")
+mw_file = os.path.join(base_path, "K4_110523.mwk")
 
 print("Loading from h5")
 (clusters, times, triggers, waveforms) = caton_utils.extract_info_from_h5(h5_file)
 
 print("Loading from MW")
-grouped_stim_times = mw_utils.extract_and_group_stimuli(mw_file, time_offset=3699+486.026384)
+grouped_stim_times = mw_utils.extract_and_group_stimuli(mw_file, time_offset=1358.6488)
 
 aggregated_stim_times = mw_utils.aggregate_stimuli(grouped_stim_times)
 
