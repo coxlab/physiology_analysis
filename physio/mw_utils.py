@@ -70,7 +70,7 @@ def event_lock_spikes( event_times, spike_times, pre_time, post_time ):
 def plot_rasters(event_locked, **kwargs):
     
     v_spacing = kwargs.get("vertical_spacing", 0.05)
-    time_range = kwargs.get("time_range", (-0.050, 0.500))
+    time_range = kwargs.get("time_range", (-0.100, 0.500))
     
     n_events = len(event_locked)
     print("Plotting %d events" % (n_events))

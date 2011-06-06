@@ -19,7 +19,7 @@ print("Loading from h5")
 
 print("Loading from MW")
 # this offset is the mw time at the start of the clustering analysis
-grouped_stim_times = mw_utils.extract_and_group_stimuli(mw_file, time_offset=2075.8280759999998)
+grouped_stim_times = mw_utils.extract_and_group_stimuli(mw_file, time_offset=2675.8280759999998)
 
 aggregated_stim_times = mw_utils.aggregate_stimuli(grouped_stim_times)
 
@@ -43,7 +43,7 @@ for stim in range(0, len(stim_keys)):
     if stim_key in ['pixel clock', 'background', 'BlankScreenGray']:
         continue
     
-    for ch in range(1, len(spike_trains_by_channel)):
+    for ch in range(0, len(spike_trains_by_channel)):
         
         print("Plotting ch %d, stim %s" % (ch, stim_key))
         
