@@ -7,6 +7,8 @@ import shlex
 import tables
 import numpy
 
+from caton.core import classify_from_raw_data
+
 def generate_probe_file( pad_sequence, out_filename ):
     
     out_string = ""
@@ -67,18 +69,22 @@ def caton_cluster_data( base_path, session_number, **kwargs ):
                                        **kwargs )
     
     # generate a probe file
-    generate_probe_file(range(0,32), os.path.join(processed_path, "a32.probe"))
+    probe_path = os.path.join(processed_path, "a32.probe")
+    generate_probe_file(range(0,32), probe_path)
     
     # generate an XML file for caton
     generate_shell_xml_file(os.path.join(processed_path, 
-                                         "session_%d.xml" % session_number))
+                                         "session_%d_%d_to_%d.xml" % \
+                                         (session_number, int(time_range[0]), int(time_range[1])))
     
+    
+    classify_from_raw_data("batch", dat_path, probe_path,output_dir=processed_path)
     # prepare the caton command
-    command = "/myPython/bin/cluster_from_raw_data.py %s --probe=%s" % \
+    #command = "/myPython/bin/cluster_from_raw_data.py %s --probe=%s" % \
                             (dat_path, os.path.join(processed_path,"a32.probe"))
-    os.chdir(processed_path)
-    print(command)
-    subprocess.check_call(shlex.split(command))
+    #os.chdir(processed_path)
+    #print(command)
+    #subprocess.check_call(shlex.split(command))
 
 def str_to_seconds(time_string):
     (hours, minutes, seconds) = time_string.split(":")
