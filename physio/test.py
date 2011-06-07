@@ -12,5 +12,8 @@ epochTime_mw = (2075.8280759999998, 5771.5493690000003) # mw time of starting an
 # convert epoch time to audio units
 epochTime_audio = (epochTime_mw[0] - mwTimeOffset, epochTime_mw[1] - mwTimeOffset)
 
+# add buffer 10 min on front side
+epochTime_audio = (epochTime_audio[0] + 10 * 60, epochTime_audio[1])
+
 # get spikes for epoch
 caton_cluster_data(baseDir, 1, time_range=epochTime_audio)

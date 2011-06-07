@@ -3,9 +3,9 @@ import mw_utils
 import os
 import matplotlib.pylab as plt
 
-base_path = "../data" 
+base_path = "/Volumes/Scratch/K4_110523/"
 h5_file = os.path.join(base_path, 
-                "K4_110523/processed/session_1_1317_to_4412_a32_batch/session_1_1317_to_4412_a32_batch.h5")
+                "processed/session_1_1317_to_4412_a32_batch_1/session_1_1317_to_4412_a32_batch.h5")
 mw_file = os.path.join(base_path, "K4_110523.mwk")
 
 print("Loading from h5")
@@ -16,7 +16,7 @@ grouped_stim_times = mw_utils.extract_and_group_stimuli(mw_file, time_offset=135
 
 aggregated_stim_times = mw_utils.aggregate_stimuli(grouped_stim_times)
 
-spike_trains_by_channel = caton_utils.spikes_by_cluster(times, clusters)
+spike_trains_by_channel = caton_utils.spikes_by_channel(times, triggers)
 
 plt.ioff()
 plt.figure()
@@ -40,14 +40,14 @@ for stim in range(0, len(stim_keys)):
 
     for ch in range(1, len(spike_trains_by_channel)):
         
-        print("Plotting cl %d, stim %s" % (ch, stim_key))
+        print("Plotting ch %d, stim %s" % (ch, stim_key))
         
         # plt.subplot( nchannels, nstim, ch *nstim + stim)
         
         ev_locked = mw_utils.event_lock_spikes( grouped_stim_times[stim_key], 
                                                 spike_trains_by_channel[ch], 0.1, 0.5 )
         mw_utils.plot_rasters(ev_locked)
-        plt.title("clu %d, stim %s" % (ch, stim_key))
-        plt.savefig("figures/clusters/clu%d_stim%s.pdf" % (ch, stim_key))
+        plt.title("ch %d, stim %s" % (ch, stim_key))
+        plt.savefig("figures/ch%d_stim%s.pdf" % (ch, stim_key))
         plt.hold(False)
         plt.clf()
