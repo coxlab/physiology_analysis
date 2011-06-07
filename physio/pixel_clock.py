@@ -3,13 +3,79 @@ import os
 import subprocess
 import shlex
 #import matplotlib.pylab as plt
-from numpy import *
+import numpy as np
 import re
-from copy import copy
+from copy import copy, deepcopy
 from sox_utils import sox_merge
 import mworks.data as mw
 import logging
 
+
+class PixelClockEvt:
+    """ 
+    A simple container for storing pixel clock events 
+    """
+    
+    def __init__(self, evt_time, trigger_channel=None, state=None, code=None):
+        self.time = evt_time
+        self.trigger_channel = trigger_channel
+        self.state = state
+        self.code = code
+
+    def __lt__(self, evt):
+        return self.time < evt.time
+        
+    def __repr__(self):
+        t = self.time
+        c = self.trigger_channel
+        s = self.state
+        code = self.code
+        
+        if code is None:
+            code = -1
+            
+        return "{ %f: ch%d %s: %d }  " % (t,c,s,code) 
+
+
+class TimeBase:
+    
+    def __init__(self, evt_zipper, audio_offset = 0):
+        
+        # evt_zipper is a list of tuples containing pc_time -> mw_time
+        self.evt_zipper = deepcopy(evt_zipper)
+        self.evt_zipper.sort()
+        
+        # offset: pc_time - mw_t
+        # to convert:
+        #   pc_time -> mw_time:  pc_time - offset
+        #   mw_time -> pc_time:  mw_time + offset
+        self.mw_offsets = np.array([ e[0] - e[1] for e in evt_zipper ]) - \
+                          audio_offset
+        
+        # this is the offset of the file used to make the zipper, if any
+        self.audio_offset = audio_offset
+    
+    
+    def mw_time_to_audio(self, mw_time, mw_offset = 0):
+        
+        mw_t = mw_time + mw_offset
+        
+        for (i, evt_match) in enumerate(self.evt_zipper):
+            if mw_t > evt_match[1]:
+                # simple "one point" matching for now
+                return mw_t + self.mw_offsets[i]
+                
+        return mw_t + self.mw_offset[-1]
+
+    def audio_time_to_mw(self, audio_time, audio_offset = 0):
+        
+        a_t = audio_time + audio_offset
+        
+        for (i, evt_match) in enumerate(self.evt_zipper):
+            if a_t > evt_match[0]:
+                return a_t - self.mw_offsets[i]
+                
+        return a_t - self.mw_offsets[-1]
 
 def sox_process_pixel_clock(project_path, file_no,  out_path, out_filename, 
                             **kwargs):
@@ -108,27 +174,6 @@ def code_to_mask( num, n_channels ):
     return mask
 
 
-class PixelClockEvt:
-
-    def __init__(self, evt_time, trigger_channel=None, state=None, code=None):
-        self.time = evt_time
-        self.trigger_channel = trigger_channel
-        self.state = state
-        self.code = code
-
-    def __lt__(self, evt):
-        return self.time < evt.time
-        
-    def __repr__(self):
-        t = self.time
-        c = self.trigger_channel
-        s = self.state
-        code = self.code
-        
-        if code is None:
-            code = -1
-            
-        return "{ %f: ch%d %s: %d }  " % (t,c,s,code) 
         
 
 # def parse_pixel_clock(pc_data, start_time_sec, samples_per_sec,
@@ -244,7 +289,7 @@ class PixelClockEvt:
 
 
 
-def parse_pixel_clock_with_latencies(pc_data, start_time_sec, samples_per_sec,
+def parse_pixel_clock(pc_data, start_time_sec, samples_per_sec,
                       arm_threshold = 0.1, arm_timeout = 0.005, 
                       accept_threshold = 0.3, derivative_threshold = 0.0,
                       time_stride=0.0005, refractory_period = 0.010,
@@ -305,7 +350,7 @@ def parse_pixel_clock_with_latencies(pc_data, start_time_sec, samples_per_sec,
 
                     # check to see if we've crossed the "accept" threshold
                     elif abs(datum) > accept_threshold and \
-                             sign(delta) == sign(datum) and \
+                             np.sign(delta) == np.sign(datum) and \
                              abs(delta) > min_delta:
                         # "trigger" event
                         if datum > 0:
@@ -345,7 +390,7 @@ def parse_pixel_clock_with_latencies(pc_data, start_time_sec, samples_per_sec,
                     # check if we've returned to the arm threshold (indicating
                     # an end of this event)
                     #if (t - event_index) > refractory_samples and \
-                    if sign(delta) == -1 * sign(last_datum) and \
+                    if np.sign(delta) == -1 * np.sign(last_datum) and \
                                     abs(datum) <= accept_threshold:
                        refractory = False
                     else:
@@ -376,7 +421,7 @@ def parse_pixel_clock_with_latencies(pc_data, start_time_sec, samples_per_sec,
     
     # TODO: reconstruct unified events from the stream of per channel events
     consolidated_events = []
-    last_time = -Inf
+    last_time = -np.Inf
     current_event = None
     last_channel = None
     start_of_evt_channel = None
@@ -416,17 +461,17 @@ def parse_pixel_clock_with_latencies(pc_data, start_time_sec, samples_per_sec,
             latencies[current_channel][start_of_evt_channel].append(-time_diff) 
     
     
-    avg_latencies = zeros((n_channels, n_channels))
+    avg_latencies = np.zeros((n_channels, n_channels))
     for c1 in range(0, n_channels):
         for c2 in range(0, n_channels):
-            avg_latencies[c1,c2] = mean(latencies[c1][c2])
+            avg_latencies[c1,c2] = np.mean(latencies[c1][c2])
     
-    offset_latencies = zeros((n_channels,))
+    offset_latencies = np.zeros((n_channels,))
     for c in range(1, n_channels):
         offset_latencies[c] = avg_latencies[0, c]
     
     # set latencies relative to center
-    offset_latencies -= mean(offset_latencies)
+    offset_latencies -= np.mean(offset_latencies)
     
     if pc_y_pos_deg is not None and pc_height_deg is not None and \
        screen_height_deg is not None:
@@ -453,7 +498,7 @@ def parse_pixel_clock_with_latencies(pc_data, start_time_sec, samples_per_sec,
     return reconstructed_events, offset_latencies
 
 
-def read_pixel_clock_from_mw(mw_filename, use_display_update=False):
+def read_pixel_clock_from_mw(mw_filename, use_display_update=True):
 
     f = mw.MWKFile(mw_filename)
     f.open()
@@ -494,9 +539,10 @@ def read_pixel_clock_from_mw(mw_filename, use_display_update=False):
 # the resulting number should be subtracted from mw times 
 # or added to the logic / caton times
 # the return value is a list of time match tuples (audio_time, mw_time)
+
 def time_match_mw_with_pc(pc_codes, pc_times, mw_codes, mw_times,
                                 submatch_size = 10, slack = 0, max_slack=10,
-                                pc_check_stride = 100):
+                                pc_check_stride = 100, pc_file_offset= 0):
     
     time_matches = []
     
@@ -535,8 +581,9 @@ def time_match_mw_with_pc(pc_codes, pc_times, mw_codes, mw_times,
                       (match_sequence, mw_codes[i:i+submatch_size+total_slack]))
                 time_matches.append((pc_time, mw_times[i]))
                 break
-    
-    return time_matches  # [(pc_time, mw_time), ... ]
+                
+    print time_matches
+    return TimeBase(time_matches, pc_file_offset)
     
 
     
@@ -552,7 +599,7 @@ if __name__ == "__main__":
                                       time_range=(0,1200))
     
     logging.info("Parsing data...")
-    events, latencies = parse_pixel_clock_with_latencies( pc_data, 0.0, fs)
+    events, latencies = parse_pixel_clock( pc_data, 0.0, fs)
     
     print latencies
     
