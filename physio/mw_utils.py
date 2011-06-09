@@ -52,13 +52,14 @@ def aggregate_stimuli( grouped_stimuli ):
     
     return agglom
 
-def event_lock_spikes( event_times, spike_times, pre_time, post_time ):
+def event_lock_spikes( event_times, spike_times, pre_time, post_time, time_base=None, mw_offset=0 ):
     
     event_locked = []
     
     
     for e in event_times:
-        
+        # convert mworks time to audio time if time_base is defined
+        if not (time_base is None): e = time_base.mw_time_to_audio(e, mw_offset)
         # this is inefficient for now
         relevant_spikes = filter( lambda x: x > e-pre_time and \
                                             x < e+post_time, spike_times)
