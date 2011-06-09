@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import sys
+import os, sys
 
 import pylab as plt
 
@@ -17,6 +17,8 @@ base_dir = '/'.join((data_repo, session))
 # base_dir =  '/Volumes/Scratch/K4_110523'
 cache_dir = "/Volumes/Scratch/tmp/"
 mw_filename = '/'.join((base_dir, session)) + '.mwk'
+
+if not (os.path.exists(cache_dir)): os.makedirs(cache_dir)
 
 # ==================== match pixel clock (on whole dataset) =====================
 
@@ -39,8 +41,8 @@ screen_height_deg = 137.214 # TODO can I read this from mworks?
                                                             pc_y_pos_deg = pc_y_pos_deg,\
                                                             pc_height_deg = pc_height_deg,\
                                                             screen_height_deg = screen_height_deg)
-pc_codes = [e[2] for e in reconstructed_events]
-pc_times = [e[0] for e in reconstructed_events]
+pc_codes = [e.code for e in reconstructed_events]
+pc_times = [e.time for e in reconstructed_events]
 
 # read_pixel_clock_from_mw(mw_filename, use_display_update=True): return (float_times, codes)
 (mw_times, mw_codes) = pixel_clock.read_pixel_clock_from_mw(mw_filename)
