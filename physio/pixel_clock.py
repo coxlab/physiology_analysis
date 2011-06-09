@@ -582,7 +582,7 @@ def time_match_mw_with_pc(pc_codes, pc_times, mw_codes, mw_times,
                 time_matches.append((pc_time, mw_times[i]))
                 break
                 
-    print time_matches
+    # print time_matches
     return TimeBase(time_matches, pc_file_offset)
     
 
