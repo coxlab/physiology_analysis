@@ -12,7 +12,7 @@ import cnc_utils
 # from cnc_utils import read_cnc_from_mw, find_stable_epochs_in_events
 
 data_repo = '/Volumes/Scratch'
-session = 'K4_11053'
+session = 'K4_110523'
 base_dir = '/'.join((data_repo, session))
 # base_dir =  '/Volumes/Scratch/K4_110523'
 cache_dir = "/Volumes/Scratch/tmp/"
@@ -37,7 +37,7 @@ pc_height_deg = 2.5 # TODO check this
 screen_height_deg = 137.214 # TODO can I read this from mworks?
 (reconstructed_events, offset_latencies) = pixel_clock.parse_pixel_clock(pc_data, 0., 44100, \
                                                             pc_y_pos_deg = pc_y_pos_deg,\
-                                                            pc_height_deg = ,\
+                                                            pc_height_deg = pc_height_deg,\
                                                             screen_height_deg = screen_height_deg)
 pc_codes = [e[2] for e in reconstructed_events]
 pc_times = [e[0] for e in reconstructed_events]

@@ -25,8 +25,10 @@ def sox_merge(stem, session_number, project_path, out_path, out_filename,
     
     tmp_path = os.path.join(out_path, "tmp")
     out_file_path = os.path.join(out_path, out_filename)
-    subprocess.check_call(["mkdir", "-p", tmp_path])
-    subprocess.check_call(["mkdir", "-p", out_path])
+    if not (os.path.exists(tmp_path)): os.makedirs(tmp_path)
+    if not (os.path.exists(tmp_path)): os.makedirs(out_path)
+    #subprocess.check_call(["mkdir", "-p", tmp_path])
+    #subprocess.check_call(["mkdir", "-p", out_path])
     
     
     merge_command_template = "sox --temp %s -M %s -t %s %s"
