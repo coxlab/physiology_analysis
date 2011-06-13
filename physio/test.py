@@ -7,6 +7,7 @@ import pylab as plt
 import caton_utils
 import pixel_clock
 import cnc_utils
+import mw_utils
 # from caton_utils import caton_cluster_data, extract_info_from_h5
 # from pixel_clock import read_pixel_clock, parse_pixel_clock, read_pixel_clock_from_mw, time_match_mw_with_pc
 # from cnc_utils import read_cnc_from_mw, find_stable_epochs_in_events
@@ -76,7 +77,7 @@ for epoch in epochs:
     
     (clusters, times, triggers, waveforms) = caton_utils.extract_info_from_h5(h5_file)
     
-    grouped_stim_times = mw_utils.extract_and_group_stimuli(mw_file)
+    grouped_stim_times = mw_utils.extract_and_group_stimuli(mw_filename)
     
     # aggregated_stim_times = mw_utils.aggregate_stimuli(grouped_stim_times)
     
