@@ -62,11 +62,13 @@ epochs = cnc_utils.find_stable_epochs_in_events(cnc_dict) # in mw_time
 for epoch in epochs:
     start_mw, end_mw = epoch
     start_mw += 60 * 5 # give time for electrode to settle
+    time_base.audio_offset = 0.
     start_audio = time_base.mw_time_to_audio(start_mw)
     end_audio = time_base.mw_time_to_audio(end_mw)
+    time_base.audio_offset = -start_audio
     
     # cluster epoch
-    caton_utils.caton_cluster_data(base_dir, 1, time_range=(start_audio, end_audio))
+    #caton_utils.caton_cluster_data(base_dir, 1, time_range=(start_audio, end_audio))
     
     # TODO save time_base and start/end times
     
@@ -98,7 +100,8 @@ for epoch in epochs:
         
         if stim_key in ['pixel clock', 'background', 'BlankScreenGray']:
             continue
-        
+        if not (stim_key == 'BlueSquare'):
+            continue
         for ch in range(0, len(spike_trains_by_cluster)):
             print("Plotting cl %d, stim %s" % (ch, stim_key))
             
@@ -106,7 +109,7 @@ for epoch in epochs:
             
             ev_locked = mw_utils.event_lock_spikes( grouped_stim_times[stim_key], 
                                                     spike_trains_by_cluster[ch], 0.1, 0.5,
-                                                    time_base, start_mw )
+                                                    time_base )
             mw_utils.plot_rasters(ev_locked)
             plt.title("clu %d, stim %s" % (ch, stim_key))
             plt.savefig("%s/clu%d_stim%s.pdf" % (figure_dir, ch, stim_key))
