@@ -54,9 +54,8 @@ class TimeBase:
         
         # this is the offset of the file used to make the zipper, if any
         self.audio_offset = audio_offset
-        if self.audio_offset != 0:
-            logging.error("setting audio_offset which is Not implemented")
-    
+        # if self.audio_offset != 0:
+            # logging.error("setting audio_offset which is Not implemented")
     
     def mw_time_to_audio(self, mw_time, mw_offset = 0):
         
@@ -67,14 +66,14 @@ class TimeBase:
             # if mw_t > evt_match[1]:
             if evt_match[1] >= mw_t:
                 # simple "one point" matching for now
-                return mw_t + self.mw_offsets[i]
+                return mw_t + self.mw_offsets[i] + self.audio_offset
         
         logging.warning("mw_time_to_audio matched to last offset")
-        return mw_t + self.mw_offsets[-1]
+        return mw_t + self.mw_offsets[-1] + self.audio_offset
 
     def audio_time_to_mw(self, audio_time, audio_offset = 0):
         
-        a_t = audio_time + audio_offset
+        a_t = audio_time + audio_offset - self.audio_offset
         
         for (i, evt_match) in enumerate(self.evt_zipper):
             # if a_t > evt_match[0]:

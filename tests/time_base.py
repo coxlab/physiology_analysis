@@ -10,10 +10,11 @@ from physio.pixel_clock import TimeBase
 # construct fake data for a TimeBase object
 mwStart = 1303
 audioStart = 0
+audioOffset = 10.
 drift = 100./ (1E6) # 100 part per million drift
 interval = 0.1 # events occur ever 0.1 seconds
 matches = []
-for i in xrange(10):
+for i in xrange(1000):
     t = i * interval
     mwT = t + mwStart
     auT = t + audioStart + t * drift
