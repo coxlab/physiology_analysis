@@ -9,7 +9,7 @@ import numpy
 
 from caton.core import classify_from_raw_data
 
-TDT_PADS = [6,9,0,13,4,11,2,10,1,15,21,14,3,8,17,27,5,12,20,26,7,31,16,30,23,25,19,29,22,24,18,28]
+# TDT_PADS = [6,9,0,13,4,11,2,10,1,15,21,14,3,8,17,27,5,12,20,26,7,31,16,30,23,25,19,29,22,24,18,28]
 
 def generate_probe_file( pad_sequence, out_filename ):
     
@@ -74,8 +74,8 @@ def caton_cluster_data( base_path, session_number, **kwargs ):
     
     # generate a probe file
     probe_path = os.path.join(processed_path, "a32.probe")
-    # generate_probe_file(range(0,32), probe_path)
-    generate_probe_file(TDT_PADS, probe_path)
+    generate_probe_file(range(0,32), probe_path)
+    # generate_probe_file(TDT_PADS, probe_path)
     
     # generate an XML file for caton
     generate_shell_xml_file(os.path.join(processed_path, \
