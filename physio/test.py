@@ -87,7 +87,7 @@ for epoch in epochs:
     spike_trains_by_channel = caton_utils.spikes_by_channel(times, triggers)
     
     nclusters = len(spike_trains_by_cluster)
-    nchannels = len(spike_trans_by_channel)
+    nchannels = len(spike_trains_by_channel)
     nstim = len(grouped_stim_times.keys())
     stim_keys = grouped_stim_times.keys()
     
