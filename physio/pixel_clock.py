@@ -54,27 +54,34 @@ class TimeBase:
         
         # this is the offset of the file used to make the zipper, if any
         self.audio_offset = audio_offset
+        if self.audio_offset != 0:
+            logging.error("setting audio_offset which is Not implemented")
     
     
     def mw_time_to_audio(self, mw_time, mw_offset = 0):
         
         mw_t = mw_time + mw_offset
-        
+        # print mw_t
         for (i, evt_match) in enumerate(self.evt_zipper):
-            if mw_t > evt_match[1]:
+            # print evt_match
+            # if mw_t > evt_match[1]:
+            if evt_match[1] >= mw_t:
                 # simple "one point" matching for now
                 return mw_t + self.mw_offsets[i]
-                
-        return mw_t + self.mw_offset[-1]
+        
+        logging.warning("mw_time_to_audio matched to last offset")
+        return mw_t + self.mw_offsets[-1]
 
     def audio_time_to_mw(self, audio_time, audio_offset = 0):
         
         a_t = audio_time + audio_offset
         
         for (i, evt_match) in enumerate(self.evt_zipper):
-            if a_t > evt_match[0]:
+            # if a_t > evt_match[0]:
+            if evt_match[0] >= a_t:
                 return a_t - self.mw_offsets[i]
-                
+        
+        logging.warning("audio_time_to_mw matched to last offset")
         return a_t - self.mw_offsets[-1]
 
 def sox_process_pixel_clock(project_path, file_no,  out_path, out_filename, 
