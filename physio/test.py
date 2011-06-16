@@ -84,13 +84,18 @@ for epoch in epochs:
     # aggregated_stim_times = mw_utils.aggregate_stimuli(grouped_stim_times)
     
     spike_trains_by_cluster = caton_utils.spikes_by_cluster(times, clusters)
+    spike_trains_by_channel = caton_utils.spikes_by_channel(times, triggers)
     
     nclusters = len(spike_trains_by_cluster)
+    nchannels = len(spike_trans_by_channel)
     nstim = len(grouped_stim_times.keys())
     stim_keys = grouped_stim_times.keys()
     
-    figure_dir = '/'.join((base_dir, "processed", session_name, "figures", "clusters"))
-    if not os.path.exists(figure_dir): os.makedirs(figure_dir)
+    clusters_figure_dir = '/'.join((base_dir, "processed", session_name, "figures", "clusters"))
+    if not os.path.exists(clusters_figure_dir): os.makedirs(clusters_figure_dir)
+    
+    channels_figure_dir = '/'.join((base_dir, "processed", session_name, "figures", "channels"))
+    if not os.path.exists(channels_figure_dir): os.makedirs(channels_figure_dir)
     
     plt.ioff()
     f = plt.figure()
@@ -102,6 +107,8 @@ for epoch in epochs:
             continue
         #if not (stim_key == 'BlueSquare'):
         #    continue
+        
+        # plot by cluster
         for ch in range(0, len(spike_trains_by_cluster)):
             print("Plotting cl %d, stim %s" % (ch, stim_key))
             
@@ -112,7 +119,20 @@ for epoch in epochs:
                                                     time_base )
             mw_utils.plot_rasters(ev_locked)
             plt.title("clu %d, stim %s" % (ch, stim_key))
-            plt.savefig("%s/clu%d_stim%s.pdf" % (figure_dir, ch, stim_key))
+            plt.savefig("%s/clu%d_stim%s.pdf" % (clusters_figure_dir, ch, stim_key))
+            plt.hold(False)
+            plt.clf()
+        
+        # plot by channel
+        for ch in range(0, len(spike_trains_by_channel)):
+            print("Plotting ch %d, stim %s" % (ch, stim_key))
+            
+            ev_locked = mw_utils.event_lock_spikes( grouped_stim_times[stim_key],
+                                                    spike_trains_by_cluster[ch], 0.1, 0.5,
+                                                    time_base )
+            mw_utils.plot_rasters(ev_locked)
+            plt.title("ch %d, stim %s" % (ch, stim_key))
+            plt.savefig("%s/ch%d_stim%s.pdf" % (channels_figure_dir, ch, stim_key))
             plt.hold(False)
             plt.clf()
 
