@@ -68,7 +68,7 @@ for epoch in epochs:
     time_base.audio_offset = -start_audio
     
     # cluster epoch
-    #caton_utils.caton_cluster_data(base_dir, 1, time_range=(start_audio, end_audio))
+    caton_utils.caton_cluster_data(base_dir, 1, time_range=(start_audio, end_audio))
     
     # TODO save time_base and start/end times
     
@@ -100,8 +100,8 @@ for epoch in epochs:
         
         if stim_key in ['pixel clock', 'background', 'BlankScreenGray']:
             continue
-        if not (stim_key == 'BlueSquare'):
-            continue
+        #if not (stim_key == 'BlueSquare'):
+        #    continue
         for ch in range(0, len(spike_trains_by_cluster)):
             print("Plotting cl %d, stim %s" % (ch, stim_key))
             
