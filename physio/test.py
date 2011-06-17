@@ -55,8 +55,11 @@ time_base = pixel_clock.time_match_mw_with_pc( pc_codes, pc_times, mw_codes, mw_
 
 
 # ================= find stable recording epoch (using mwks file) ===============
-cnc_dict = cnc_utils.read_cnc_from_mw(mw_filename)
-epochs = cnc_utils.find_stable_epochs_in_events(cnc_dict) # in mw_time
+epochs = utils.read_epochs_mw(base_dir, time_base):
+if len(epochs) == 0:
+    logging.info("Attempting to determine epochs from mworks file: %s" % mw_filename)
+    cnc_dict = cnc_utils.read_cnc_from_mw(mw_filename)
+    epochs = cnc_utils.find_stable_epochs_in_events(cnc_dict) # in mw_time
 
 # ================================ cluster epoch ================================
 for epoch in epochs:
