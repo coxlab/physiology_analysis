@@ -68,14 +68,14 @@ for epoch in epochs:
     time_base.audio_offset = -start_audio
     
     # cluster epoch
-    caton_utils.caton_cluster_data(base_dir, 1, time_range=(start_audio, end_audio))
+    epoch_dir = caton_utils.caton_cluster_data(base_dir, 1, time_range=(start_audio, end_audio))
     
     # TODO save time_base and start/end times
     
     # ======================= generate plots for epoch ==========================
     # TODO this data<->filename association is too opaque
     session_name = 'session_1_%d_to_%d_a32_batch' % (start_audio, end_audio)
-    h5_file = '/'.join((base_dir,"processed",session_name,session_name)) + '.h5'
+    h5_file = '/'.join((base_dir,"processed",epoch_dir,session_name)) + '.h5'
     
     (clusters, times, triggers, waveforms) = caton_utils.extract_info_from_h5(h5_file)
     
@@ -91,10 +91,10 @@ for epoch in epochs:
     nstim = len(grouped_stim_times.keys())
     stim_keys = grouped_stim_times.keys()
     
-    clusters_figure_dir = '/'.join((base_dir, "processed", session_name, "figures", "clusters"))
+    clusters_figure_dir = '/'.join((base_dir, "processed", epoch_dir, "figures", "clusters"))
     if not os.path.exists(clusters_figure_dir): os.makedirs(clusters_figure_dir)
     
-    channels_figure_dir = '/'.join((base_dir, "processed", session_name, "figures", "channels"))
+    channels_figure_dir = '/'.join((base_dir, "processed", epoch_dir, "figures", "channels"))
     if not os.path.exists(channels_figure_dir): os.makedirs(channels_figure_dir)
     
     plt.ioff()
