@@ -83,7 +83,7 @@ def caton_cluster_data( base_path, session_number, **kwargs ):
                                          (session_number, int(time_range[0]), int(time_range[1]))))
     
     
-    classify_from_raw_data("batch", dat_path, probe_path, output_dir=processed_path)
+    return classify_from_raw_data("batch", dat_path, probe_path, output_dir=processed_path)
     # prepare the caton command
     #command = "/myPython/bin/cluster_from_raw_data.py %s --probe=%s" % \
     #                        (dat_path, os.path.join(processed_path,"a32.probe"))
