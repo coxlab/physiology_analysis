@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 
-import os, sys
+import logging, os, sys
+
+logging.basicConfig(level=logging.DEBUG)
 
 import pylab as plt
 
@@ -8,6 +10,7 @@ import caton_utils
 import pixel_clock
 import cnc_utils
 import mw_utils
+import utils
 # from caton_utils import caton_cluster_data, extract_info_from_h5
 # from pixel_clock import read_pixel_clock, parse_pixel_clock, read_pixel_clock_from_mw, time_match_mw_with_pc
 # from cnc_utils import read_cnc_from_mw, find_stable_epochs_in_events
@@ -55,7 +58,7 @@ time_base = pixel_clock.time_match_mw_with_pc( pc_codes, pc_times, mw_codes, mw_
 
 
 # ================= find stable recording epoch (using mwks file) ===============
-epochs = utils.read_epochs_mw(base_dir, time_base):
+epochs = utils.read_epochs_mw(base_dir, time_base)
 if len(epochs) == 0:
     logging.info("Attempting to determine epochs from mworks file: %s" % mw_filename)
     cnc_dict = cnc_utils.read_cnc_from_mw(mw_filename)
@@ -78,7 +81,8 @@ for epoch in epochs:
     # ======================= generate plots for epoch ==========================
     # TODO this data<->filename association is too opaque
     session_name = 'session_1_%d_to_%d_a32_batch' % (start_audio, end_audio)
-    h5_file = '/'.join((base_dir,"processed",epoch_dir,session_name)) + '.h5'
+    h5_file = '/'.join((epoch_dir,session_name)) + '.h5'
+    #h5_file = '/'.join((base_dir,"processed",epoch_dir,session_name)) + '.h5'
     
     (clusters, times, triggers, waveforms) = caton_utils.extract_info_from_h5(h5_file)
     
@@ -94,10 +98,10 @@ for epoch in epochs:
     nstim = len(grouped_stim_times.keys())
     stim_keys = grouped_stim_times.keys()
     
-    clusters_figure_dir = '/'.join((base_dir, "processed", epoch_dir, "figures", "clusters"))
+    clusters_figure_dir = '/'.join((epoch_dir, "figures", "clusters"))
     if not os.path.exists(clusters_figure_dir): os.makedirs(clusters_figure_dir)
     
-    channels_figure_dir = '/'.join((base_dir, "processed", epoch_dir, "figures", "channels"))
+    channels_figure_dir = '/'.join((epoch_dir, "figures", "channels"))
     if not os.path.exists(channels_figure_dir): os.makedirs(channels_figure_dir)
     
     plt.ioff()
