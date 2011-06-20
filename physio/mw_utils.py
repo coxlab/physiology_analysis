@@ -1,4 +1,4 @@
-import ast, os
+import ast, copy, logging, os
 
 import tables
 
@@ -18,7 +18,8 @@ class MWReader(object):
     def open(self):
         self.f.open()
     def get_events(self,codes=[]):
-        return self.f.get_events(codes=codes)
+        ecodes = copy.deepcopy(codes)
+        return self.f.get_events(codes=ecodes)
     def get_codec(self):
         return self.f.codec
     def get_reverse_codec(self):
@@ -64,11 +65,13 @@ class H5Reader(MWReader):
         """
         rcodec = self.get_reverse_codec()
         cs = [rcodec[c] for c in codes]
+        matchString = ' | '.join(['code == %i' % c for c in cs])
+        logging.debug("using matchString: %s" % matchString)
         eventTable = self.t.listNodes('/')[0].events
-        events = []
-        for code, valueIndex, time in eventTable.cols:
-            if code in cs:
-                events.append(Event(time, code, self._get_value(valueIndex)))
+        events = [Event(e['time'],e['code'],self._get_value(e['index'])) for e in eventTable.where(matchString)]
+        # for code, valueIndex, time in eventTable.cols:
+        #     if code in cs:
+        #         events.append(Event(time, code, self._get_value(valueIndex)))
         return events
     def get_codec(self):
         codec = self.t.listNodes('/')[0].codec
