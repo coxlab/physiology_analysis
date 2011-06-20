@@ -7,8 +7,10 @@ import numpy as np
 import re
 from copy import copy, deepcopy
 from sox_utils import sox_merge
-import mworks.data as mw
+# import mworks.data as mw
 import logging
+
+import mw_utils
 
 
 class PixelClockEvt:
@@ -506,7 +508,8 @@ def parse_pixel_clock(pc_data, start_time_sec, samples_per_sec,
 
 def read_pixel_clock_from_mw(mw_filename, use_display_update=True):
 
-    f = mw.MWKFile(mw_filename)
+    # f = mw.MWKFile(mw_filename)
+    f = mw_utils.make_reader(mw_filename)
     f.open()
     
     if use_display_update:

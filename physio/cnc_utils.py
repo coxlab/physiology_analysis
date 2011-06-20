@@ -1,4 +1,5 @@
-import mworks.data as mw
+#import mworks.data as mw
+import mw_utils
 
 def read_cnc_from_mw(mw_filename, eventNames=[ \
                                 'path_origin_x', 'path_origin_y', 'path_origin_z',\
@@ -9,7 +10,8 @@ def read_cnc_from_mw(mw_filename, eventNames=[ \
         keys = eventNames
         values = (eventTimes, eventValues)
     """
-    f = mw.MWKFile(mw_filename)
+    # f = mw.MWKFile(mw_filename)
+    f = mw_utils.make_reader(mw_filename)
     f.open()
     
     resultDict = {}
