@@ -1,11 +1,108 @@
-import mworks.data as mw
+import ast, os
+
+import tables
+
+global MWEnabled
+try:
+    import mworks.data as mw
+    MWEnabled = True
+except ImportError:
+    MWEnabled = False
+
 import matplotlib.pylab as plt
+
+class MWReader(object):
+    def __init__(self, filename):
+        self.fn = filename
+        self.f = mw.MWKFile(self.fn)
+    def open(self):
+        self.f.open()
+    def get_events(self,codes=[]):
+        return self.f.get_events(codes=codes)
+    def get_codec(self):
+        return self.f.codec
+    def get_reverse_codec(self):
+        return self.f.reverse_codec
+    # --- common --
+    def get_parsed_events(codes=[]):
+        """
+        Returns t [times], c [codes], and v [values] for events in codes
+        """
+        evs = self.get_events(cdoes)
+        t = []
+        c = []
+        v = []
+        for e in evs:
+            t.append(e.time)
+            c.append(e.code)
+            v.append(e.value)
+        return t, c, v
+    def close(self):
+        self.f.close()
+
+class Event(object):
+    def __init__(self, time, code, value):
+        self.time = time
+        self.code = code
+        self.value = value
+
+class H5Reader(MWReader):
+    def __init__(self, filename):
+        self.fn = filename
+        self.t = None
+    def open(self):
+        self.t = tables.openFile(self.fn)
+    def _get_value(self,atIndex):
+        v = self.t.listNodes('/')[0].values[atIndex]
+        try:
+            return ast.literal_eval(v)
+        except:
+            return v
+    def get_events(self,codes=[]):
+        """
+        This is terribly inefficient at the moment
+        """
+        rcodec = self.get_reverse_codec()
+        cs = [rcodec[c] for c in codes]
+        eventTable = self.t.listNodes('/')[0].events
+        events = []
+        for code, valueIndex, time in eventTable.cols:
+            if code in cs:
+                events.append(Event(time, code, self._get_value(valueIndex)))
+        return events
+    def get_codec(self):
+        codec = self.t.listNodes('/')[0].codec
+        r = {}
+        for c in codec.cols:
+            r[c[0]] = c[1]
+        return r
+    def get_reverse_codec(self):
+        codec = self.get_codec()
+        r = {}
+        for k in codec:
+            r[codec[k]] = k
+        return r
+    def close(self):
+        if not (self.t is None):
+            self.t.close()
+
+def make_reader(filename):
+    global MWEnabled
+    if not MWEnabled:
+        return H5Reader(filename)
+    # check extension
+    ext = os.path.splitext(filename)[1].lower()
+    if ext == '.mwk':
+        return MWReader(filename)
+    else:
+        return H5Reader(filename)
 
 def extract_events(mw_filename, event_name, **kwargs):
     
     offset = kwargs.get("time_offset", 0.0)
     
-    f = mw.MWKFile(mw_filename)
+    f = make_reader(mw_filename)
+    # f = mw.MWKFile(mw_filename)
     f.open()
     
     events = f.get_events(codes=[event_name])
