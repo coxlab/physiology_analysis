@@ -37,40 +37,27 @@ def generate_shell_xml_file( out_filename ):
           <offset>0</offset>
          </acquisitionSystem>
         </root>
+        </xml>
     """ 
     f = open(out_filename, 'w')
     f.writelines(content)
     f.close()
    
-def convert_audio_to_caton_format( base_path, session_number, **kwargs):
-    
-    tr = kwargs.get("time_range", None)
-    
-    output_path = os.path.join(base_path, "processed")
-    
-    try:
-        os.makedir(output_path)
-    except:
-        pass
-        
-    out_filename = "session_%d_%d_to_%d.dat" % (session_number, int(tr[0]), int(tr[1]))    
-    dat_file = sox_utils.sox_merge("input_", session_number, base_path, 
-                                   output_path, out_filename,
+def convert_audio_to_caton_format( base_path, dat_path, time_range):
+    return sox_utils.sox_merge("input_", base_path, dat_path,
                                    format="s16", norm=True,
-                                   time_range=tr,
+                                   time_range=time_range,
                                    sinc_bandpass=(500, 3000))
 
-def caton_cluster_data( base_path, session_number, **kwargs ):
-    
-    time_range = kwargs.get("time_range", None)
+def caton_cluster_data( base_path, clusterdir, time_range):
     
     # check if the data has been converted already, if not convert it
     processed_path = os.path.join(base_path, "processed")
-    dat_path = os.path.join(processed_path, "session_%d_%d_to_%d.dat" % \
-                                (session_number, int(time_range[0]), int(time_range[1])))
+    dat_path = '/'.join((base_path,'processed', 'session_%d_to_%d.dat' % (int(time_range[0]),int(time_range[1]))))
+    # dat_path = os.path.join(processed_path, "session_%d_%d_to_%d.dat" % \
+    #                             (int(time_range[0]), int(time_range[1])))
     if not os.path.exists(dat_path):
-        convert_audio_to_caton_format( base_path, session_number, 
-                                       **kwargs )
+        convert_audio_to_caton_format( base_path, dat_path, time_range)
     
     # generate a probe file
     probe_path = os.path.join(processed_path, "a32.probe")
@@ -78,12 +65,9 @@ def caton_cluster_data( base_path, session_number, **kwargs ):
     # generate_probe_file(TDT_PADS, probe_path)
     
     # generate an XML file for caton
-    generate_shell_xml_file(os.path.join(processed_path, \
-                                         "session_%d_%d_to_%d.xml" % \
-                                         (session_number, int(time_range[0]), int(time_range[1]))))
+    generate_shell_xml_file(os.path.join(processed_path, "session_%d_to_%d.xml" % (int(time_range[0]), int(time_range[1]))))
     
-    
-    return classify_from_raw_data("batch", dat_path, probe_path, output_dir=processed_path)
+    return classify_from_raw_data(clusterdir, "batch", dat_path, probe_path, output_dir=processed_path)
     # prepare the caton command
     #command = "/myPython/bin/cluster_from_raw_data.py %s --probe=%s" % \
     #                        (dat_path, os.path.join(processed_path,"a32.probe"))

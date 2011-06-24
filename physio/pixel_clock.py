@@ -85,16 +85,14 @@ class TimeBase:
         logging.warning("audio_time_to_mw matched to last offset")
         return a_t - self.mw_offsets[-1]
 
-def sox_process_pixel_clock(project_path, file_no,  out_path, out_filename, 
-                            **kwargs):
-    return sox_merge("pixel_clock", file_no, project_path, out_path, 
-                     out_filename, **kwargs)
+def sox_process_pixel_clock(project_path, out_filename, **kwargs):
+    return sox_merge("pixel_clock", project_path, out_filename, **kwargs)
 
 
-def read_pixel_clock( project_path, file_no, cache_dir="/tmp", time_range=None):
+def read_pixel_clock( project_path, cache_dir, tmp_dir, time_range=None):
     
     
-    pc_file_stem = "pixel_clock_merged_session_%d" % file_no
+    pc_file_stem = "pixel_clock_merged"
     if time_range is not None:
         pc_file_stem += "_%d_to_%d" % (time_range[0], time_range[1])
         
@@ -103,10 +101,12 @@ def read_pixel_clock( project_path, file_no, cache_dir="/tmp", time_range=None):
     
     # if the file doesn't exist in the cache, try to build it
     if not os.path.exists(pc_merged_file_path ):
-        sox_process_pixel_clock( project_path, file_no, cache_dir, pc_filename,
-                                 norm=True,
-                                 highpass=200,
-                                 time_range=time_range)
+        sox_process_pixel_clock( project_path, pc_filename, tmp_dir=tmp_dir, \
+                                    norm=True, highpass=200, time_range=time_range)
+        # sox_process_pixel_clock( project_path, cache_dir, pc_filename,
+        #                          norm=True,
+        #                          highpass=200,
+        #                          time_range=time_range)
     
     (pc_data, fs, fmt) = al.wavread(pc_merged_file_path)
     

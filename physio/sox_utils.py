@@ -12,9 +12,12 @@ def to_hms(seconds):
     return "%02d:%02d:%.2f" % (hours, minutes, seconds)
 
     
-def sox_merge(stem, session_number, project_path, out_path, out_filename,
+# def sox_merge(stem, session_number, project_path, out_path, out_filename,
+#               time_range = None, sinc_bandpass = None, bandpass = None,
+#               highpass = None, norm = False, format="wavpcm", tmp_path=None):
+def sox_merge(stem, project_path, out_filename,
               time_range = None, sinc_bandpass = None, bandpass = None,
-              highpass = None, norm = False, format="wavpcm"):
+              highpass = None, norm = False, format="wavpcm", tmp_dir=None):
     """
     Session number is NOT used
     """
@@ -22,11 +25,12 @@ def sox_merge(stem, session_number, project_path, out_path, out_filename,
     # matchstring = r"%s_?\d+#%.2d.wav" % (stem, session_number)
     matchstring = r"%s_?\d+#\d..wav" % stem
     
+    if tmp_dir == None:
+        tmp_dir = os.path.join(os.path.dirname(out_filename), "tmp")
     
-    tmp_path = os.path.join(out_path, "tmp")
-    out_file_path = os.path.join(out_path, out_filename)
-    if not (os.path.exists(tmp_path)): os.makedirs(tmp_path)
-    if not (os.path.exists(tmp_path)): os.makedirs(out_path)
+    # out_file_path = os.path.join(out_path, out_filename)
+    if not (os.path.exists(tmp_dir)): os.makedirs(tmp_dir)
+    # if not (os.path.exists(out_path)): os.makedirs(out_path)
     #subprocess.check_call(["mkdir", "-p", tmp_path])
     #subprocess.check_call(["mkdir", "-p", out_path])
     
@@ -81,7 +85,8 @@ def sox_merge(stem, session_number, project_path, out_path, out_filename,
     
     
     # generate a unique temp dir to store per-channel processed files
-    per_channel_tmp_dir = tempfile.mkdtemp("", tmp_path)
+    #per_channel_tmp_dir = tempfile.mkdtemp("", tmp_path)
+    per_channel_tmp_dir = tmp_dir
     
     qq = lambda x: '"' + x + '"'
     
@@ -89,7 +94,7 @@ def sox_merge(stem, session_number, project_path, out_path, out_filename,
     for ff in filtered_files:
         ff_input_path = os.path.join(audio_file_path, ff)
         ff_output_path = os.path.join(per_channel_tmp_dir, ff)
-        per_channel_cmd = per_channel_command_template % (tmp_path,
+        per_channel_cmd = per_channel_command_template % (tmp_dir,
                                                           qq(ff_input_path),
                                                           qq(ff_output_path))
         print("Processing individual channel file: %s" % ff)
@@ -102,10 +107,10 @@ def sox_merge(stem, session_number, project_path, out_path, out_filename,
                                                     for x in filtered_files]
     
     
-    full_merge_command = merge_command_template % (tmp_path, 
+    full_merge_command = merge_command_template % (tmp_dir, 
                                                    " ".join(full_paths), 
                                                    format, 
-                                                   out_file_path)
+                                                   out_filename)
     
     print("Running sox command: \n\t%s" % full_merge_command)
     
@@ -113,4 +118,4 @@ def sox_merge(stem, session_number, project_path, out_path, out_filename,
     subprocess.check_call(shlex.split(full_merge_command))
     
         
-    return out_file_path
+    return out_filename
