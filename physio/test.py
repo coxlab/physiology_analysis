@@ -176,7 +176,7 @@ for epoch in epochs:
             print("Plotting ch %d, stim %s" % (ch, stim_key))
             
             ev_locked = mw_utils.event_lock_spikes( grouped_stim_times[stim_key],
-                                                    spike_trains_by_cluster[ch], 0.1, 0.5,
+                                                    spike_trains_by_channel[ch], 0.1, 0.5,
                                                     time_base )
             mw_utils.plot_rasters(ev_locked)
             plt.title("ch %d, stim %s" % (ch, stim_key))
