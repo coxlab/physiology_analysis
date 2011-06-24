@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import logging, os, sys
+import pickle
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -41,49 +42,67 @@ utils.make_output_dirs(config)
 # if not (os.path.exists(cache_dir)): os.makedirs(cache_dir)
 
 # ==================== match pixel clock (on whole dataset) =====================
+def load_time_base(time_base_file):
+    f = open(time_base_file,'rb')
+    evt_zipper, audio_offset = pickle.load(f)
+    f.close()
+    return pixel_clock.TimeBase(evt_zipper, audio_offset)
 
-# read_pixel_clock( project_path, file_no, cache_dir="/tmp", time_range=None): return (pc_data, fs)
-# (pc_data, fs) = pixel_clock.read_pixel_clock( base_dir, 1 , cache_dir )
-logging.debug("Reading pixel clock (from audio files)")
-(pc_data, fs) = pixel_clock.read_pixel_clock(session_dir, config.get('pixel clock','output'), config.get('filesystem','tmp'))
+def save_time_base(time_base, time_base_file):
+    f = open(time_base_file,'wb')
+    pickle.dump((time_base.evt_zipper, time_base.audio_offset), f, 2)
+    f.close()
 
-# parse_pixel_clock(pc_data, start_time_sec, samples_per_sec,
-#                       arm_threshold = 0.1, arm_timeout = 0.005, 
-#                       accept_threshold = 0.3, derivative_threshold = 0.0,
-#                       time_stride=0.0005, refractory_period = 0.010,
-#                       event_trigger_period = 0.05,
-#                       pc_y_pos_deg = None,
-#                       pc_height_deg = None,
-#                       screen_height_deg = None): return reconstructed_events, offset_latencies
-# TODO : read pc_y_pos_deg and pc_height_deg from mworks file
-logging.debug("Parsing pixel clock")
-(reconstructed_events, offset_latencies) = pixel_clock.parse_pixel_clock(pc_data, 0., config.getint('audio','samprate'), \
-                                                pc_y_pos_deg = config.getfloat('pixel clock','y'), \
-                                                pc_height_deg = config.getfloat('pixel clock','h'), \
-                                                screen_height_deg = config.getfloat('pixel clock','screenh'))
-# pc_y_pos_deg = -28
-# pc_height_deg = 2.5 # TODO check this
-# screen_height_deg = 137.214 # TODO can I read this from mworks?
-# (reconstructed_events, offset_latencies) = pixel_clock.parse_pixel_clock(pc_data, 0., 44100, \
-#                                                             pc_y_pos_deg = pc_y_pos_deg,\
-#                                                             pc_height_deg = pc_height_deg,\
-#                                                             screen_height_deg = screen_height_deg)
-pc_codes = [e.code for e in reconstructed_events]
-pc_times = [e.time for e in reconstructed_events]
+time_base_file = '/'.join((config.get('session','output'),'time_base'))
+if os.path.exists(time_base_file):
+    logging.debug("Found existing time_base: %s" % time_base_file)
+    time_base = load_time_base(time_base_file)
+else:
+    # read_pixel_clock( project_path, file_no, cache_dir="/tmp", time_range=None): return (pc_data, fs)
+    # (pc_data, fs) = pixel_clock.read_pixel_clock( base_dir, 1 , cache_dir )
+    logging.debug("Reading pixel clock (from audio files)")
+    (pc_data, fs) = pixel_clock.read_pixel_clock(session_dir, config.get('pixel clock','output'), config.get('filesystem','tmp'))
 
-# read_pixel_clock_from_mw(mw_filename, use_display_update=True): return (float_times, codes)
-# (mw_times, mw_codes) = pixel_clock.read_pixel_clock_from_mw(mw_filename)
-logging.debug("Reading pixel clock (from mworks file)")
-(mw_times, mw_codes) = pixel_clock.read_pixel_clock_from_mw(config.get('mworks','file'))
+    # parse_pixel_clock(pc_data, start_time_sec, samples_per_sec,
+    #                       arm_threshold = 0.1, arm_timeout = 0.005, 
+    #                       accept_threshold = 0.3, derivative_threshold = 0.0,
+    #                       time_stride=0.0005, refractory_period = 0.010,
+    #                       event_trigger_period = 0.05,
+    #                       pc_y_pos_deg = None,
+    #                       pc_height_deg = None,
+    #                       screen_height_deg = None): return reconstructed_events, offset_latencies
+    # TODO : read pc_y_pos_deg and pc_height_deg from mworks file
+    logging.debug("Parsing pixel clock")
+    (reconstructed_events, offset_latencies) = pixel_clock.parse_pixel_clock(pc_data, 0., config.getint('audio','samprate'), \
+                                                    pc_y_pos_deg = config.getfloat('pixel clock','y'), \
+                                                    pc_height_deg = config.getfloat('pixel clock','h'), \
+                                                    screen_height_deg = config.getfloat('pixel clock','screenh'))
+    # pc_y_pos_deg = -28
+    # pc_height_deg = 2.5 # TODO check this
+    # screen_height_deg = 137.214 # TODO can I read this from mworks?
+    # (reconstructed_events, offset_latencies) = pixel_clock.parse_pixel_clock(pc_data, 0., 44100, \
+    #                                                             pc_y_pos_deg = pc_y_pos_deg,\
+    #                                                             pc_height_deg = pc_height_deg,\
+    #                                                             screen_height_deg = screen_height_deg)
+    pc_codes = [e.code for e in reconstructed_events]
+    pc_times = [e.time for e in reconstructed_events]
 
-# time_match_mw_with_pc(pc_codes, pc_times, mw_codes, mw_times,
-#                                 submatch_size = 10, slack = 0, max_slack=10,
-#                                 pc_check_stride = 100, pc_file_offset= 0): return TimeBase(time_matches, pc_file_offset)
-logging.debug("Finding time matches")
-time_base = pixel_clock.time_match_mw_with_pc( pc_codes, pc_times, mw_codes, mw_times)
+    # read_pixel_clock_from_mw(mw_filename, use_display_update=True): return (float_times, codes)
+    # (mw_times, mw_codes) = pixel_clock.read_pixel_clock_from_mw(mw_filename)
+    logging.debug("Reading pixel clock (from mworks file)")
+    (mw_times, mw_codes) = pixel_clock.read_pixel_clock_from_mw(config.get('mworks','file'))
 
-# clean up after pixel clock
-del mw_times, mw_codes, reconstructed_events, pc_codes, pc_times, offset_latencies, pc_data, fs
+    # time_match_mw_with_pc(pc_codes, pc_times, mw_codes, mw_times,
+    #                                 submatch_size = 10, slack = 0, max_slack=10,
+    #                                 pc_check_stride = 100, pc_file_offset= 0): return TimeBase(time_matches, pc_file_offset)
+    logging.debug("Finding time matches")
+    time_base = pixel_clock.time_match_mw_with_pc( pc_codes, pc_times, mw_codes, mw_times)
+
+    # clean up after pixel clock
+    del mw_times, mw_codes, reconstructed_events, pc_codes, pc_times, offset_latencies, pc_data, fs
+    
+    logging.debug("Saving time_base: %s" % time_base_file)
+    save_time_base(time_base, time_base_file)
 
 
 # ================= find stable recording epoch (using mwks file) ===============
