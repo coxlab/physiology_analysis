@@ -90,8 +90,10 @@ del mw_times, mw_codes, reconstructed_events, pc_codes, pc_times, offset_latenci
 logging.debug("Loading epochs")
 if config.get('epochs','timeunit') == 'mworks':
     epochs = utils.read_epochs_mw(session_dir, time_base)
+    logging.debug("Loaded mworks epochs: %s" % str(epochs))
 elif config.get('epochs','timeunit') == 'audio':
     epochs = utils.read_epochs_audio(session_dir)
+    logging.debug("Loaded audio epochs: %s" % str(epochs))
 else:
     logging.error("epochs timeunit: %s not valid" % config.get('epochs','timeunit'))
 
