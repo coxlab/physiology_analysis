@@ -17,13 +17,13 @@ import cfg
 # from cnc_utils import read_cnc_from_mw, find_stable_epochs_in_events
 
 session = 'K4_110523'
-if len(sys.argv) > !:
+if len(sys.argv) > 1:
     session = sys.argv[1]
 
 # read in configuration file
 config = cfg.Config()
-config.read_user_cfg()
-config.read_session_cfg(session)
+config.read_user_config()
+config.read_session_config(session)
 config.set_session(session)
 
 session_dir = config.get('session','dir')
@@ -44,6 +44,7 @@ utils.make_output_dirs(config)
 
 # read_pixel_clock( project_path, file_no, cache_dir="/tmp", time_range=None): return (pc_data, fs)
 # (pc_data, fs) = pixel_clock.read_pixel_clock( base_dir, 1 , cache_dir )
+logging.debug("Reading pixel clock (from audio files)")
 (pc_data, fs) = pixel_clock.read_pixel_clock(session_dir, config.get('pixel clock','output'), config.get('filesystem','tmp'))
 
 # parse_pixel_clock(pc_data, start_time_sec, samples_per_sec,
@@ -55,9 +56,11 @@ utils.make_output_dirs(config)
 #                       pc_height_deg = None,
 #                       screen_height_deg = None): return reconstructed_events, offset_latencies
 # TODO : read pc_y_pos_deg and pc_height_deg from mworks file
-(reconstructed_event, offset_latencies) = pixel_clock.parse_pixel_clock(pc_data, 0., config.getfloat('audio','samprate'), \
-                                                config.getfloat('pixel clock','y'), config.getfloat('pixel clock','h'), \
-                                                config.getfloat('pixel clock','screenh'))
+logging.debug("Parsing pixel clock")
+(reconstructed_events, offset_latencies) = pixel_clock.parse_pixel_clock(pc_data, 0., config.getint('audio','samprate'), \
+                                                pc_y_pos_deg = config.getfloat('pixel clock','y'), \
+                                                pc_height_deg = config.getfloat('pixel clock','h'), \
+                                                screen_height_deg = config.getfloat('pixel clock','screenh'))
 # pc_y_pos_deg = -28
 # pc_height_deg = 2.5 # TODO check this
 # screen_height_deg = 137.214 # TODO can I read this from mworks?
@@ -70,15 +73,21 @@ pc_times = [e.time for e in reconstructed_events]
 
 # read_pixel_clock_from_mw(mw_filename, use_display_update=True): return (float_times, codes)
 # (mw_times, mw_codes) = pixel_clock.read_pixel_clock_from_mw(mw_filename)
+logging.debug("Reading pixel clock (from mworks file)")
 (mw_times, mw_codes) = pixel_clock.read_pixel_clock_from_mw(config.get('mworks','file'))
 
 # time_match_mw_with_pc(pc_codes, pc_times, mw_codes, mw_times,
 #                                 submatch_size = 10, slack = 0, max_slack=10,
 #                                 pc_check_stride = 100, pc_file_offset= 0): return TimeBase(time_matches, pc_file_offset)
+logging.debug("Finding time matches")
 time_base = pixel_clock.time_match_mw_with_pc( pc_codes, pc_times, mw_codes, mw_times)
+
+# clean up after pixel clock
+del mw_times, mw_codes, reconstructed_events, pc_codes, pc_times, offset_latencies, pc_data, fs
 
 
 # ================= find stable recording epoch (using mwks file) ===============
+logging.debug("Loading epochs")
 if config.get('epochs','timeunit') == 'mworks':
     epochs = utils.read_epochs_mw(session_dir, time_base)
 elif config.get('epochs','timeunit') == 'audio':
@@ -96,6 +105,7 @@ for epoch in epochs:
     start_mw, end_mw = epoch
     start_mw += config.getfloat('epochs','settletime')
     #start_mw += 60 * 5 # give time for electrode to settle
+    logging.debug("Processing epoch [mw time]: %.2f %.2f" % (start_mw, end_mw))
     time_base.audio_offset = 0.
     start_audio = time_base.mw_time_to_audio(start_mw)
     end_audio = time_base.mw_time_to_audio(end_mw)

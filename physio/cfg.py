@@ -40,6 +40,7 @@ class Config(ConfigParser.SafeConfigParser):
     def read_user_config(self, homeDir=os.getenv('HOME')):
         filename = '/'.join((homeDir,'.physio'))
         if os.path.exists(filename):
+            logging.debug("Found user cfg: %s" % filename)
             self.read(filename)
         else:
             logging.warning('No user cfg found: %s' % filename)
@@ -47,6 +48,7 @@ class Config(ConfigParser.SafeConfigParser):
     def read_session_config(self, session):
         filename = '/'.join((self.get('filesystem','datarepo'),session,'physio.ini'))
         if os.path.exists(filename):
+            logging.debug("Found session cfg: %s" % filename)
             self.read(filename)
         else:
             logging.warning('No session cfg found: %s' % filename)
@@ -61,7 +63,7 @@ class Config(ConfigParser.SafeConfigParser):
             self.set('session','output','/'.join((self.get('session','dir'),'processed')))
         
         if self.get('mworks','file').strip() == '':
-            self.set('mworks','file','/'.join((self.get('session','dir'),session,self.get('mworks','ext'))))
+            self.set('mworks','file','/'.join((self.get('session','dir'),session + self.get('mworks','ext'))))
         
         if self.get('pixel clock','output').strip() == '':
             self.set('pixel clock','output','/'.join((self.get('session','output'),'pixel_clock')))

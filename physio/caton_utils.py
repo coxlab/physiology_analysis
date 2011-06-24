@@ -37,7 +37,6 @@ def generate_shell_xml_file( out_filename ):
           <offset>0</offset>
          </acquisitionSystem>
         </root>
-        </xml>
     """ 
     f = open(out_filename, 'w')
     f.writelines(content)
