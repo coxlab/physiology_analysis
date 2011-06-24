@@ -1,4 +1,5 @@
 #import mworks.data as mw
+import sys
 import mw_utils
 
 def read_cnc_from_mw(mw_filename, eventNames=[ \
@@ -52,6 +53,8 @@ def find_stable_epochs_in_events(eventDict, minTime=600, minDepth=-30):
 if __name__ == '__main__':
     import pylab as pl
     mw_filename = '../data/K4_110523/K4_110523.mwk'
+    if len(sys.argv) > 1:
+        mw_filename = sys.argv[1]
     
     eventDict = read_cnc_from_mw(mw_filename)
     
