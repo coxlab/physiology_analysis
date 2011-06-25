@@ -39,6 +39,17 @@ class PixelClockEvt:
         return "{ %f: ch%d %s: %d }  " % (t,c,s,code) 
 
 
+def load_time_base(time_base_file):
+    f = open(time_base_file,'rb')
+    evt_zipper, audio_offset = pickle.load(f)
+    f.close()
+    return TimeBase(evt_zipper, audio_offset)
+
+def save_time_base(time_base, time_base_file):
+    f = open(time_base_file,'wb')
+    pickle.dump((time_base.evt_zipper, time_base.audio_offset), f, 2)
+    f.close()
+
 class TimeBase:
     
     def __init__(self, evt_zipper, audio_offset = 0):

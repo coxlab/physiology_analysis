@@ -42,21 +42,21 @@ utils.make_output_dirs(config)
 # if not (os.path.exists(cache_dir)): os.makedirs(cache_dir)
 
 # ==================== match pixel clock (on whole dataset) =====================
-def load_time_base(time_base_file):
-    f = open(time_base_file,'rb')
-    evt_zipper, audio_offset = pickle.load(f)
-    f.close()
-    return pixel_clock.TimeBase(evt_zipper, audio_offset)
-
-def save_time_base(time_base, time_base_file):
-    f = open(time_base_file,'wb')
-    pickle.dump((time_base.evt_zipper, time_base.audio_offset), f, 2)
-    f.close()
+# def load_time_base(time_base_file):
+#     f = open(time_base_file,'rb')
+#     evt_zipper, audio_offset = pickle.load(f)
+#     f.close()
+#     return pixel_clock.TimeBase(evt_zipper, audio_offset)
+# 
+# def save_time_base(time_base, time_base_file):
+#     f = open(time_base_file,'wb')
+#     pickle.dump((time_base.evt_zipper, time_base.audio_offset), f, 2)
+#     f.close()
 
 time_base_file = '/'.join((config.get('session','output'),'time_base'))
 if os.path.exists(time_base_file):
     logging.debug("Found existing time_base: %s" % time_base_file)
-    time_base = load_time_base(time_base_file)
+    time_base = pixel_clock.load_time_base(time_base_file)
 else:
     # read_pixel_clock( project_path, file_no, cache_dir="/tmp", time_range=None): return (pc_data, fs)
     # (pc_data, fs) = pixel_clock.read_pixel_clock( base_dir, 1 , cache_dir )
@@ -102,7 +102,7 @@ else:
     del mw_times, mw_codes, reconstructed_events, pc_codes, pc_times, offset_latencies, pc_data, fs
     
     logging.debug("Saving time_base: %s" % time_base_file)
-    save_time_base(time_base, time_base_file)
+    pixel_clock.save_time_base(time_base, time_base_file)
 
 
 # ================= find stable recording epoch (using mwks file) ===============
