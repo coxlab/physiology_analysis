@@ -120,14 +120,14 @@ if len(epochs) == 0:
     cnc_dict = cnc_utils.read_cnc_from_mw(config.get('mworks','file'))
     epochs = cnc_utils.find_stable_epochs_in_events(cnc_dict) # in mw_time
 
-def find_epoch_dir(output_dir, session_name, index = 0):
-    epoch_dir = '/'.join((output_dir, session_name))
-    if index == 0:
-        epoch_dir += '_%i' % index
-    if not (os.path.exists(epoch_dir)):
-        return epoch_dir
-    else:
-        return find_epoch_dir(output_dir, session_name, index+1)
+# def find_epoch_dir(output_dir, session_name, index = 0):
+#     epoch_dir = '/'.join((output_dir, session_name))
+#     if index == 0:
+#         epoch_dir += '_%i' % index
+#     if not (os.path.exists(epoch_dir)):
+#         return epoch_dir
+#     else:
+#         return find_epoch_dir(output_dir, session_name, index+1)
 
 # ================================ cluster epoch ================================
 for epoch in epochs:
@@ -143,9 +143,11 @@ for epoch in epochs:
     # cluster epoch
     session_name = 'session_%d_to_%d_a32_batch' % (start_audio, end_audio)
     
-    epoch_dir = find_epoch_dir(config.get('session','output'), session_name)
+    # epoch_dir = find_epoch_dir(config.get('session','output'), session_name)
+    epoch_dir = '/'.join((config.get('session','output'), session_name))
     
-    tmp_dir = '/'.join((config.get('session','output'),'tmp',session_name))
+    # tmp_dir = '/'.join((config.get('session','output'),'tmp',session_name))
+    tmp_dir = '/'.join(epoch_dir,'tmp')
     
     # epoch_dir = '/'.join((config.get('session','output'),session_name))
     clusterdir = '/'.join((epoch_dir,'clusters'))
