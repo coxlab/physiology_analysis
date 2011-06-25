@@ -120,6 +120,15 @@ if len(epochs) == 0:
     cnc_dict = cnc_utils.read_cnc_from_mw(config.get('mworks','file'))
     epochs = cnc_utils.find_stable_epochs_in_events(cnc_dict) # in mw_time
 
+def find_epoch_dir(output_dir, session_name, index = 0):
+    epoch_dir = '/'.join((output_dir, session_name))
+    if index == 0:
+        epoch_dir += '_%i' % index
+    if not (os.path.exists(epoch_dir)):
+        return epoch_dir
+    else:
+        return find_epoch_dir(output_dir, session_name, index+1)
+
 # ================================ cluster epoch ================================
 for epoch in epochs:
     start_mw, end_mw = epoch
@@ -132,12 +141,20 @@ for epoch in epochs:
     time_base.audio_offset = -start_audio
     
     # cluster epoch
-    clusterdir = '/'.join((config.get('session','output'),'clusters'))
     session_name = 'session_%d_to_%d_a32_batch' % (start_audio, end_audio)
-    epoch_dir = '/'.join((config.get('session','output'),session_name))
+    
+    epoch_dir = find_epoch_dir(config.get('session','output'), session_name)
+    
+    tmp_dir = '/'.join((config.get('session','output'),'tmp',session_name))
+    
+    # epoch_dir = '/'.join((config.get('session','output'),session_name))
+    clusterdir = '/'.join((epoch_dir,'clusters'))
+    # if not (os.path.exists(clusterdir)):
+    #     os.makedirs(clusterdir)
+    
     h5_file = '/'.join((epoch_dir,session_name)) + '.h5'
     if not (os.path.exists(h5_file)):
-        epoch_dir = caton_utils.caton_cluster_data(session_dir, clusterdir, time_range=(start_audio, end_audio))
+        epoch_dir = caton_utils.caton_cluster_data(session_dir, clusterdir, time_range=(start_audio, end_audio), tmp_dir)
     
     # ======================= generate plots for epoch ==========================
     # TODO this data<->filename association is too opaque

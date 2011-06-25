@@ -42,13 +42,14 @@ def generate_shell_xml_file( out_filename ):
     f.writelines(content)
     f.close()
    
-def convert_audio_to_caton_format( base_path, dat_path, time_range):
+def convert_audio_to_caton_format( base_path, dat_path, time_range, tmp_dir = None):
     return sox_utils.sox_merge("input_", base_path, dat_path,
                                    format="s16", norm=True,
                                    time_range=time_range,
-                                   sinc_bandpass=(500, 3000))
+                                   sinc_bandpass=(500, 3000),
+                                   tmp_dir = tmp_dir)
 
-def caton_cluster_data( base_path, clusterdir, time_range):
+def caton_cluster_data( base_path, clusterdir, time_range, tmp_dir = None):
     
     # check if the data has been converted already, if not convert it
     processed_path = os.path.join(base_path, "processed")
@@ -56,7 +57,7 @@ def caton_cluster_data( base_path, clusterdir, time_range):
     # dat_path = os.path.join(processed_path, "session_%d_%d_to_%d.dat" % \
     #                             (int(time_range[0]), int(time_range[1])))
     if not os.path.exists(dat_path):
-        convert_audio_to_caton_format( base_path, dat_path, time_range)
+        convert_audio_to_caton_format( base_path, dat_path, time_range, tmp_dir = tmp_dir)
     
     # generate a probe file
     probe_path = os.path.join(processed_path, "a32.probe")

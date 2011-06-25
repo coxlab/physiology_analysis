@@ -17,7 +17,7 @@ def to_hms(seconds):
 #               highpass = None, norm = False, format="wavpcm", tmp_path=None):
 def sox_merge(stem, project_path, out_filename,
               time_range = None, sinc_bandpass = None, bandpass = None,
-              highpass = None, norm = False, format="wavpcm", tmp_dir=None):
+              highpass = None, norm = False, format="wavpcm", tmp_dir = None):
     """
     Session number is NOT used
     """
