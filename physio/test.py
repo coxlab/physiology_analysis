@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 import logging, os, sys
-import pickle
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -134,13 +133,14 @@ for epoch in epochs:
     
     # cluster epoch
     clusterdir = '/'.join((config.get('session','output'),'clusters'))
-    epoch_dir = caton_utils.caton_cluster_data(session_dir, clusterdir, time_range=(start_audio, end_audio))
-    
-    # TODO save time_base and start/end times
+    session_name = 'session_%d_to_%d_a32_batch' % (start_audio, end_audio)
+    h5_file = '/'.join((session_name,session_name)) + '.h5'
+    if not (os.path.exists(h5_file)):
+        epoch_dir = caton_utils.caton_cluster_data(session_dir, clusterdir, time_range=(start_audio, end_audio))
     
     # ======================= generate plots for epoch ==========================
     # TODO this data<->filename association is too opaque
-    session_name = 'session_%d_to_%d_a32_batch' % (start_audio, end_audio)
+    
     h5_file = '/'.join((epoch_dir,session_name)) + '.h5'
     #h5_file = '/'.join((base_dir,"processed",epoch_dir,session_name)) + '.h5'
     

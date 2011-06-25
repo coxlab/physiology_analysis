@@ -1,15 +1,11 @@
-import scikits.audiolab as al
-import os
-import subprocess
-import shlex
-#import matplotlib.pylab as plt
-import numpy as np
-import re
+import pickle, logging, os, re, shlex, subprocess
 from copy import copy, deepcopy
-from sox_utils import sox_merge
-# import mworks.data as mw
-import logging
 
+#import matplotlib.pylab as plt
+import scikits.audiolab as al
+import numpy as np
+
+from sox_utils import sox_merge
 import mw_utils
 
 
