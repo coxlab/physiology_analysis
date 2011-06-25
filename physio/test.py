@@ -147,7 +147,7 @@ for epoch in epochs:
     epoch_dir = '/'.join((config.get('session','output'), session_name))
     
     # tmp_dir = '/'.join((config.get('session','output'),'tmp',session_name))
-    tmp_dir = '/'.join(epoch_dir,'tmp')
+    tmp_dir = '/'.join((epoch_dir,'tmp'))
     
     # epoch_dir = '/'.join((config.get('session','output'),session_name))
     clusterdir = '/'.join((epoch_dir,'clusters'))
@@ -156,7 +156,7 @@ for epoch in epochs:
     
     h5_file = '/'.join((epoch_dir,session_name)) + '.h5'
     if not (os.path.exists(h5_file)):
-        epoch_dir = caton_utils.caton_cluster_data(session_dir, clusterdir, time_range=(start_audio, end_audio), tmp_dir)
+        epoch_dir = caton_utils.caton_cluster_data(session_dir, clusterdir, time_range=(start_audio, end_audio), tmp_dir=tmp_dir)
     
     # ======================= generate plots for epoch ==========================
     # TODO this data<->filename association is too opaque
