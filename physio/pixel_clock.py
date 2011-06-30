@@ -109,7 +109,7 @@ def read_pixel_clock( project_path, cache_dir, tmp_dir, time_range=None):
     # if the file doesn't exist in the cache, try to build it
     if not os.path.exists(pc_merged_file_path ):
         sox_process_pixel_clock( project_path, pc_merged_file_path, tmp_dir=tmp_dir, \
-                                    norm=True, highpass=200, time_range=time_range)
+                                    norm=True, time_range=time_range)
         # sox_process_pixel_clock( project_path, cache_dir, pc_filename,
         #                          norm=True,
         #                          highpass=200,
