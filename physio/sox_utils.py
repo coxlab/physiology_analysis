@@ -66,7 +66,7 @@ def sox_merge(stem, project_path, out_filename,
     
     if highpass is not None:
         #command_template += " highpass %d" % high_cut
-        per_channel_command_template += " sinc -M %d-200" % highpass
+        per_channel_command_template += " sinc -M %d" % highpass
     
     if norm:
         per_channel_command_template += " gain -e -n"
