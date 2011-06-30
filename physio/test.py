@@ -31,6 +31,11 @@ session_dir = config.get('session','dir')
 # make necessary output directories
 utils.make_output_dirs(config)
 
+# setup logging
+dlf = logging.FileHandler('/'.join((config.get('session','output'),'debug.log')))
+dlf.setLevel(logging.DEBUG)
+logging.addHandler(dlf)
+
 # data_repo = '/Volumes/Scratch'
 # session = 'K4_110523'
 # base_dir = '/'.join((data_repo, session))
@@ -76,6 +81,7 @@ else:
                                                     pc_y_pos_deg = config.getfloat('pixel clock','y'), \
                                                     pc_height_deg = config.getfloat('pixel clock','h'), \
                                                     screen_height_deg = config.getfloat('pixel clock','screenh'))
+    logging.info("Pixel clock offset latencies: %s" % str(offset_latencies))
     # pc_y_pos_deg = -28
     # pc_height_deg = 2.5 # TODO check this
     # screen_height_deg = 137.214 # TODO can I read this from mworks?
