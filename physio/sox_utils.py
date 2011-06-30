@@ -48,7 +48,7 @@ def sox_merge(stem, project_path, out_filename,
     
     if sinc_bandpass is not None:
         (low, high) = sinc_bandpass
-        per_channel_command_template += " sinc -M %d-%d" % (low, high)
+        per_channel_command_template += " sinc -M -n 30000 %d-%d" % (low, high)
     
     if bandpass is not None:
         (center, width) = bandpass
@@ -66,7 +66,7 @@ def sox_merge(stem, project_path, out_filename,
     
     if highpass is not None:
         #command_template += " highpass %d" % high_cut
-        per_channel_command_template += " sinc -M %d" % highpass
+        per_channel_command_template += " sinc -M -n 30000 %d " % highpass
     
     if norm:
         per_channel_command_template += " gain -e -n"
