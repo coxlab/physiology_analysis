@@ -16,6 +16,8 @@ def read_epochs_audio(data_directory):
     else:
         # try to load the custom epoch file
         epochs = np.loadtxt(epochFilename)
+        if epochs.ndim == 1:
+            epochs = epochs.reshape((1,2))
         if epochs.shape[1] != 2:
             raise IOError("Epoch file shape incorrect: %s" % epochFilename) # epoch file was not shaped correctly
         return epochs
