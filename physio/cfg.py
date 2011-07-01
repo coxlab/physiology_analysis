@@ -29,6 +29,10 @@ settletime: 300
 name: 
 dir: 
 output: 
+
+[probe]
+id: 
+offset: 
 """
 
 class Config(ConfigParser.SafeConfigParser):

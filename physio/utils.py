@@ -30,6 +30,19 @@ def read_epochs_mw(data_directory, time_base):
     ufunc_audio_to_mw = np.frompyfunc(time_base.audio_time_to_mw, 1, 1)
     return ufunc_audio_to_mw(audio_epochs)
 
+def save_epochs(data_directory, epochs, time_base, time_unit):
+    """
+    Save epochs to a file. epochs should be in mworks time.
+    time_unit will determine the saved unit (either audio or mworks)
+    """
+    outFile = '/'.join((data_directory,'epochs'))
+    if time_unit == 'audio':
+        np.savetxt(outFile,np.frompyfunc(time_base.mw_time_to_audio, 1, 1)(epochs))
+    elif time_unit == 'mworks':
+        np.savetxt(outFile,epochs)
+    else:
+        logging.error("epochs timeunit: %s not valid" % time_unit)
+
 def make_output_dirs(config):
     tmp = config.get('filesystem','tmp')
     if not (os.path.exists(tmp)): os.makedirs(tmp)

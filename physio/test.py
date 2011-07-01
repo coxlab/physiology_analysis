@@ -4,6 +4,7 @@ import logging, os, sys
 
 logging.basicConfig(level=logging.DEBUG)
 
+import numpy as np
 import pylab as plt
 
 import caton_utils
@@ -125,6 +126,8 @@ if len(epochs) == 0:
     logging.info("Attempting to determine epochs from mworks file: %s" % config.get('session','output'))
     cnc_dict = cnc_utils.read_cnc_from_mw(config.get('mworks','file'))
     epochs = cnc_utils.find_stable_epochs_in_events(cnc_dict) # in mw_time
+    # save epochs file
+    utils.save_epochs(session_dir,epochs,time_base,config.get('epochs','timeunit'))
 
 # def find_epoch_dir(output_dir, session_name, index = 0):
 #     epoch_dir = '/'.join((output_dir, session_name))
@@ -163,6 +166,16 @@ for epoch in epochs:
     h5_file = '/'.join((epoch_dir,session_name)) + '.h5'
     if not (os.path.exists(h5_file)):
         epoch_dir = caton_utils.caton_cluster_data(session_dir, clusterdir, time_range=(start_audio, end_audio), tmp_dir=tmp_dir)
+    
+    # get electrode/pad positions
+    pad_positions_file = '/'.join((epoch_dir,'pad_positions'))
+    if os.path.exists(pad_positions_file):
+        pad_positions = np.loadtxt(pad_positions_file)
+    else:
+        cncDict = cnc_utils.read_cnc_from_mw(config.get('mworks','file'))
+        tipOffset = config.getfloat('probe','offset')
+        pad_positions = cnc_utils.find_channel_positions(cncDict, epoch, tipOffset)
+        np.savetxt(pad_positions_file,pad_positions)
     
     # ======================= generate plots for epoch ==========================
     # TODO this data<->filename association is too opaque
