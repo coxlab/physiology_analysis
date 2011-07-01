@@ -1,5 +1,8 @@
 #import mworks.data as mw
-import sys
+import logging, sys
+
+import numpy as np
+
 import mw_utils
 
 def read_cnc_from_mw(mw_filename, eventNames=[ \
@@ -50,7 +53,32 @@ def find_stable_epochs_in_events(eventDict, minTime=600, minDepth=-30):
             start_i = i
     return epochs
 
+def find_channel_positions(eventDict, epoch, tipOffset):
+    """
+    For a given epoch = (mw_start_time, mw_end_time), find the channel locations
+    """
+    t = np.array(eventDict['path_depth'][0])
+    epochStart, epochEnd = epoch
+    startIndex = abs(epochStart - t).argmin()
+    origin = np.array([eventDict['path_origin_%s' % s][1][startIndex] for s in ['x','y','z']])
+    logging.debug("Origin: %s" % str(origin))
+    slope = np.array([eventDict['path_slope_%s' % s][1][startIndex] for s in ['x','y','z']])
+    logging.debug("Slope: %s" % str(slope))
+    depth = eventDict['path_depth'][1][startIndex]
+    logging.debug("Depth: %s" % str(depth))
+    
+    tip_position = origin + slope * depth
+    #ML:6.413 AP:-7.912 DV:-4.846
+    tip_position = [6.413, -7.912, -4.846]
+    logging.debug("Tip: %s" % str(tip_position))
+    
+    pads = [tip_position + slope * (o * 0.1 + 0.5 + tipOffset) for o in xrange(32)]
+    
+    return pads
+
 if __name__ == '__main__':
+    logging.basicConfig(level=logging.DEBUG)
+    
     import pylab as pl
     mw_filename = '../data/K4_110523/K4_110523.mwk'
     if len(sys.argv) > 1:
@@ -66,10 +94,20 @@ if __name__ == '__main__':
     
     epochs = find_stable_epochs_in_events(eventDict)
     
-    # should be [(2075.8280759999998, 5771.5493690000003)]
-    print epochs
-    
     for epoch in epochs:
         pl.axvspan(epoch[0], epoch[1], facecolor='b', alpha=0.5)
+    
+    
+    tipOffset = 0.23
+    for epoch in epochs:
+        pl.figure()
+        positions = np.array(find_channel_positions(eventDict, epoch,tipOffset))
+        print "Epoch:", epoch
+        print "\tpads:", positions
+        pl.autoscale(True)
+        pl.scatter(positions[:,0],positions[:,2])
+        pl.gca().autoscale_view()
+        pl.xlim((-8,8))
+        pl.ylim((-11,0))
     
     pl.show()

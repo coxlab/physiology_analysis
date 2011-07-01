@@ -44,9 +44,8 @@ def generate_shell_xml_file( out_filename ):
    
 def convert_audio_to_caton_format( base_path, dat_path, time_range, tmp_dir = None):
     return sox_utils.sox_merge("input_", base_path, dat_path,
-                                   format="s16", norm=True,
+                                   format="s16",
                                    time_range=time_range,
-                                   sinc_bandpass=(500, 3000),
                                    tmp_dir = tmp_dir)
 
 def caton_cluster_data( base_path, clusterdir, time_range, tmp_dir = None):
