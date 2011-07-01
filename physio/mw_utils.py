@@ -25,11 +25,11 @@ class MWReader(object):
     def get_reverse_codec(self):
         return self.f.reverse_codec
     # --- common --
-    def get_parsed_events(codes=[]):
+    def get_parsed_events(self,codes=[]):
         """
         Returns t [times], c [codes], and v [values] for events in codes
         """
-        evs = self.get_events(cdoes)
+        evs = self.get_events(codes)
         t = []
         c = []
         v = []
@@ -194,4 +194,39 @@ def plot_rasters(event_locked, **kwargs):
     
     plt.xlim(time_range)
     #plt.show()
-        
+
+if __name__ == '__main__':
+    logging.basicConfig(level=logging.DEBUG)
+    mwkFile = '../data/K4_110523/K4_110523.mwk'
+    h5File = '../data/K4_110523/K4_110523.h5'
+    
+    h5 = make_reader(h5File)
+    h5.open()
+    mw = make_reader(mwkFile)
+    mw.open()
+    
+    mwc = mw.get_codec()
+    h5c = mw.get_codec()
+    
+    if mwc != h5c:
+        logging.error("Codecs did NOT match")
+    
+    blacklist = ['#announceCurrentState', '#announceMessage']
+    
+    for code in mwc.values():
+        if code in blacklist:
+            logging.debug("Not checking blacklisted code: %s" % code)
+            continue
+        mwes = mw.get_parsed_events([code,])
+        h5es = h5.get_parsed_events([code,])
+        logging.info("Code: %s" % code)
+        logging.info("  mw: %i" % len(mwes[0]))
+        logging.info("  h5: %i" % len(h5es[0]))
+        if len(mwes[0]) != len(h5es[0]):
+            logging.error("N of mw(%i) and h5(%i) events did not match for code %s" % (len(mwes[0]),len(h5es[0]),code))
+        for i in xrange(len(mwes[0])):
+            mwe = (mwes[0][i], mwes[1][i], mwes[2][i])
+            h5e = (h5es[0][i], h5es[1][i], h5es[2][i])
+            if mwe != h5e:
+                logging.error("mw event(%s) and h5 event(%s) do not match" % (str(mwe), str(h5e)))
+        logging.debug("Code %s passed" % code)
