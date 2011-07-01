@@ -34,7 +34,7 @@ utils.make_output_dirs(config)
 # setup logging
 dlf = logging.FileHandler('/'.join((config.get('session','output'),'debug.log')))
 dlf.setLevel(logging.DEBUG)
-logging.addHandler(dlf)
+logging.root.addHandler(dlf)
 
 # data_repo = '/Volumes/Scratch'
 # session = 'K4_110523'
