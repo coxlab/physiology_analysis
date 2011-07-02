@@ -104,7 +104,7 @@ if __name__ == '__main__':
         positions = np.array(find_channel_positions(eventDict, epoch,tipOffset))
         print "Epoch:", epoch
         print "\tpads:", positions
-        pl.autoscale(True)
+        #pl.autoscale(True)
         pl.scatter(positions[:,0],positions[:,2])
         pl.gca().autoscale_view()
         pl.xlim((-8,8))
