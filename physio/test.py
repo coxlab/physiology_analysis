@@ -165,7 +165,8 @@ for epoch in epochs:
     
     h5_file = '/'.join((epoch_dir,session_name)) + '.h5'
     if not (os.path.exists(h5_file)):
-        epoch_dir = caton_utils.caton_cluster_data(session_dir, clusterdir, time_range=(start_audio, end_audio), tmp_dir=tmp_dir)
+        epoch_dir = caton_utils.caton_cluster_data(session_dir, config.get('session','output'), \
+                                clusterdir, time_range=(start_audio, end_audio), tmp_dir=tmp_dir)
     
     # get electrode/pad positions
     pad_positions_file = '/'.join((epoch_dir,'pad_positions'))

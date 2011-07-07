@@ -48,11 +48,11 @@ def convert_audio_to_caton_format( base_path, dat_path, time_range, tmp_dir = No
                                    time_range=time_range,
                                    tmp_dir = tmp_dir)
 
-def caton_cluster_data( base_path, clusterdir, time_range, tmp_dir = None):
+def caton_cluster_data( base_path, processed_path, clusterdir, time_range, tmp_dir = None):
     
     # check if the data has been converted already, if not convert it
-    processed_path = os.path.join(base_path, "processed")
-    dat_path = '/'.join((base_path,'processed', 'session_%d_to_%d.dat' % (int(time_range[0]),int(time_range[1]))))
+    #processed_path = os.path.join(base_path, "processed")
+    dat_path = '/'.join((processed_path, 'session_%d_to_%d.dat' % (int(time_range[0]),int(time_range[1]))))
     # dat_path = os.path.join(processed_path, "session_%d_%d_to_%d.dat" % \
     #                             (int(time_range[0]), int(time_range[1])))
     if not os.path.exists(dat_path):
