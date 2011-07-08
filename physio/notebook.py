@@ -59,7 +59,7 @@ def lookup_offset(config):
     if offset != None:
         #print "Probe: %s Offset: %f" % (probeID, offset)
         logging.debug("Probe: %s Offset: %f" % (probeID, offset))
-        config.set('probe','offset',str(offset))
+        #config.set('probe','offset',str(offset))
         return offset
     else:
         logging.warning("Failed to find probe[%s] offset[%s]" % (probeID, offsetString))

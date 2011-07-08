@@ -10,6 +10,7 @@ import pylab as plt
 import caton_utils
 import pixel_clock
 import cnc_utils
+import notebook
 import mw_utils
 import utils
 import cfg
@@ -26,6 +27,25 @@ config = cfg.Config()
 config.read_user_config()
 config.read_session_config(session)
 config.set_session(session)
+
+session_dict = notebook.lookup_session(config)
+if not (session_dict is None):
+    if config.get('probe','id').strip() == '': # probe is not defined
+        logging.debug("Using probe from notebook: %s" % session_dict['electrode'])
+        if session_dict['electrode'].strip() == '':
+            logging.error("No probe found in notebook entry")
+            raise ValueError("No probe found in notebook entry")
+        config.set('probe','id',session_dict['electrode'].lower().strip())
+else:
+    logging.warning("Failed to fetch session information from notebook entry")
+
+if config.get('probe','offset').strip() == '': # offset is not defined
+    offset = notebook.lookup_offset(config)
+    logging.debug("Using probe offset from notebook: %s" % str(offset))
+    if offset is None:
+        logging.error("No probe offset in notebook entry")
+        raise ValueError("No probe offset in notebook entry")
+    config.set('probe','offset',str(offset))
 
 session_dir = config.get('session','dir')
 
