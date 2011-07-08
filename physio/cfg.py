@@ -7,6 +7,7 @@ CFGDEFAULTS = """
 [filesystem]
 datarepo: /data
 tmp: /data/tmp/
+resultsrepo: /scratch
 
 [pixel clock]
 y: -28
@@ -33,6 +34,14 @@ output:
 [probe]
 id: 
 offset: 
+
+[gdata]
+probeid: tFAlHPctqL5YNf1oocFPLgA
+probews: od6
+notebookid: tHR87keGRC4XIZlX6uWi-vA
+notebookws: od6
+email:
+password:
 """
 
 class Config(ConfigParser.SafeConfigParser):
@@ -64,7 +73,7 @@ class Config(ConfigParser.SafeConfigParser):
             self.set('session','dir','/'.join((self.get('filesystem','datarepo'),session)))
         
         if self.get('session','output').strip() == '':
-            self.set('session','output','/'.join((self.get('session','dir'),'processed')))
+            self.set('session','output','/'.join((self.get('filesystem','resultsrepo'),session)))
         
         if self.get('mworks','file').strip() == '':
             self.set('mworks','file','/'.join((self.get('session','dir'),session + self.get('mworks','ext'))))
