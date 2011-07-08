@@ -11,7 +11,7 @@ def read_mw_epochs(data_directory, time_base, time_unit):
     if time_unit == 'audio':
         epochs_audio = read_raw_epochs(data_directory)
         logging.debug("Loaded audio epochs: %s" % str(epochs_audio))
-        ufunc_audio_to_mw = np.frompyfunc(time_base.audio_time)
+        ufunc_audio_to_mw = np.frompyfunc(time_base.audio_time_to_mw, 1, 1)
         epochs_mw = ufunc_audio_to_mw(audio_epochs)
         logging.debug("Converted epochs to mw time: %s" % str(epochs_mw))
         return epoch_mw
