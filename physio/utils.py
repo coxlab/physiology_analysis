@@ -4,9 +4,27 @@ import logging, os
 
 import numpy as np
 
-def read_epochs_audio(data_directory):
+def read_mw_epochs(data_directory, time_base, time_unit):
     """
-    Read in manually defined epoch time-ranges [in audio time units]
+    Read in epochs and automatically convert them to mw times
+    """
+    if time_unit == 'audio':
+        epochs_audio = read_raw_epochs(data_directory)
+        logging.debug("Loaded audio epochs: %s" % str(epochs_audio))
+        ufunc_audio_to_mw = np.frompyfunc(time_base.audio_time)
+        epochs_mw = ufunc_audio_to_mw(audio_epochs)
+        logging.debug("Converted epochs to mw time: %s" % str(epochs_mw))
+        return epoch_mw
+    elif time_unit == 'mworks':
+        epochs = read_raw_epochs(data_directory)
+        logging.debug("Loaded mworks epochs: %s" % str(epochs))
+        return epochs
+    else:
+        logging.error("epochs timeunit: %s not valid" % time_unit)
+
+def read_raw_epochs(data_directory):
+    """
+    Read in epochs without any conversion
     """
     epochs = []
     epochFilename = '/'.join((data_directory,"epochs"))
@@ -22,15 +40,33 @@ def read_epochs_audio(data_directory):
             raise IOError("Epoch file shape incorrect: %s" % epochFilename) # epoch file was not shaped correctly
         return epochs
 
-def read_epochs_mw(data_directory, time_base):
-    """
-    Read in manually defined epoch time-ranges [in mw time units]
-    
-    this requires a time_base object that can map audio times to mworks times
-    """
-    audio_epochs = read_epochs_audio(data_directory)
-    ufunc_audio_to_mw = np.frompyfunc(time_base.audio_time_to_mw, 1, 1)
-    return ufunc_audio_to_mw(audio_epochs)
+# def read_epochs_audio(data_directory):
+#     """
+#     Read in manually defined epoch time-ranges [in audio time units]
+#     """
+#     epochs = []
+#     epochFilename = '/'.join((data_directory,"epochs"))
+#     if not (os.path.exists(epochFilename)):
+#         logging.info("No epoch file found: %s" % epochFilename)
+#         return epochs # epochFilename did not exist, so return the blank list
+#     else:
+#         # try to load the custom epoch file
+#         epochs = np.loadtxt(epochFilename)
+#         if epochs.ndim == 1:
+#             epochs = epochs.reshape((1,2))
+#         if epochs.shape[1] != 2:
+#             raise IOError("Epoch file shape incorrect: %s" % epochFilename) # epoch file was not shaped correctly
+#         return epochs
+# 
+# def read_epochs_mw(data_directory, time_base):
+#     """
+#     Read in manually defined epoch time-ranges [in mw time units]
+#     
+#     this requires a time_base object that can map audio times to mworks times
+#     """
+#     audio_epochs = read_epochs_audio(data_directory)
+#     ufunc_audio_to_mw = np.frompyfunc(time_base.audio_time_to_mw, 1, 1)
+#     return ufunc_audio_to_mw(audio_epochs)
 
 def save_epochs(data_directory, epochs, time_base, time_unit):
     """
