@@ -144,7 +144,18 @@ epochs = utils.read_mw_epochs(session_dir, time_base, config.get('epochs','timeu
 # else:
 #     logging.error("epochs timeunit: %s not valid" % config.get('epochs','timeunit'))
 
-if len(epochs) == 0:
+if len(epochs) == 0: # if epochs are undefined try to read from gdata
+    if not (session_dict is None):
+        logging.info("Attempting to read epochs from gdata session info")
+        try:
+            epochs = notebook.parse_epochs_string(session_dict['stableepochs'])
+        except Exception as e:
+            logging.warning("Failed to parse epoch string:%s [%s]" % (session_dict['stableepochs'], str(e)))
+            epochs = []
+        if len(epochs) != 0:
+            utils.save_epochs(session_dir,epochs,time_base,config.get('epochs','timeunit'))
+
+if len(epochs) == 0: # if epochs are still undefined, try to read from mworks file
     logging.info("Attempting to determine epochs from mworks file: %s" % config.get('session','output'))
     cnc_dict = cnc_utils.read_cnc_from_mw(config.get('mworks','file'))
     epochs = cnc_utils.find_stable_epochs_in_events(cnc_dict) # in mw_time

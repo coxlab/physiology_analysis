@@ -65,8 +65,25 @@ def lookup_offset(config):
         logging.warning("Failed to find probe[%s] offset[%s]" % (probeID, offsetString))
         return None
 
+def timestring_to_seconds(timeString):
+    """
+    Convert a time string of hh:mm:ss to seconds of type int
+    """
+    tokens = timeString.split(':')
+    if len(tokens) != 3:
+        logging.error("Time string was ambiguous: %s" % timeString)
+        raise ValueError("Time string was ambiguous: %s" % timeString)
+    h, m, s = tokens
+    return int(s) + int(m)*60 + int(h)*3600
+
 def parse_epochs_string(epochsString):
     epochs = []
+    for line in epochString.splitlines():
+        start, stop = line.split('-')
+        start = timestring_to_seconds(start)
+        stop = timestring_to_seconds(stop)
+        epochs.append((start,stop))
+    return epochs
 
 def lookup_session(config):
     """
