@@ -132,8 +132,8 @@ else:
 
 
 # ================= find stable recording epoch (using mwks file) ===============
-logging.debug("Loading epochs")
-epochs = utils.read_mw_epochs(session_dir, time_base, config.get('epochs','timeunit'))
+logging.debug("Loading epochs [mwtime]")
+epochs_mw = utils.read_mw_epochs(session_dir, time_base, config.get('epochs','timeunit'))
 
 # if config.get('epochs','timeunit') == 'mworks':
 #     epochs = utils.read_epochs_mw(session_dir, time_base)
@@ -144,23 +144,29 @@ epochs = utils.read_mw_epochs(session_dir, time_base, config.get('epochs','timeu
 # else:
 #     logging.error("epochs timeunit: %s not valid" % config.get('epochs','timeunit'))
 
-if len(epochs) == 0: # if epochs are undefined try to read from gdata
+if len(epochs_mw) == 0: # if epochs are undefined try to read from gdata
     if not (session_dict is None):
         logging.info("Attempting to read epochs from gdata session info")
         try:
-            epochs = notebook.parse_epochs_string(session_dict['stableepochs'])
+            epochs_audio = np.array(notebook.parse_epochs_string(session_dict['stableepochs']))
+            # convert to mworks times
+            ufunc_audio_to_mw = np.frompyfunc(time_base.audio_time_to_mw, 1, 1)
+            epochs_mw = ufunc_audio_to_mw(epochs_audio)
         except Exception as e:
             logging.warning("Failed to parse epoch string:%s [%s]" % (session_dict['stableepochs'], str(e)))
-            epochs = []
-        if len(epochs) != 0:
-            utils.save_epochs(session_dir,epochs,time_base,config.get('epochs','timeunit'))
+            epochs_mw = []
+        if len(epochs_mw) != 0:
+            logging.info("Epochs parsed from notebook session info")
+            logging.info("Epochs mworks: %s" % str(epochs_mw))
+            logging.info("Epochs audio : %s" % str(epochs_audio))
+            utils.save_mw_epochs(session_dir,epochs_mw,time_base,'mworks')
 
-if len(epochs) == 0: # if epochs are still undefined, try to read from mworks file
+if len(epochs_mw) == 0: # if epochs are still undefined, try to read from mworks file
     logging.info("Attempting to determine epochs from mworks file: %s" % config.get('session','output'))
     cnc_dict = cnc_utils.read_cnc_from_mw(config.get('mworks','file'))
-    epochs = cnc_utils.find_stable_epochs_in_events(cnc_dict) # in mw_time
+    epochs_mw = cnc_utils.find_stable_epochs_in_events(cnc_dict) # in mw_time
     # save epochs file
-    utils.save_epochs(session_dir,epochs,time_base,config.get('epochs','timeunit'))
+    utils.save_mw_epochs(session_dir,epochs_mw,time_base,'mworks')
 
 # def find_epoch_dir(output_dir, session_name, index = 0):
 #     epoch_dir = '/'.join((output_dir, session_name))
@@ -172,7 +178,7 @@ if len(epochs) == 0: # if epochs are still undefined, try to read from mworks fi
 #         return find_epoch_dir(output_dir, session_name, index+1)
 
 # ================================ cluster epoch ================================
-for epoch in epochs:
+for epoch in epochs_mw:
     start_mw, end_mw = epoch
     start_mw += config.getfloat('epochs','settletime')
     #start_mw += 60 * 5 # give time for electrode to settle

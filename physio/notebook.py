@@ -78,7 +78,7 @@ def timestring_to_seconds(timeString):
 
 def parse_epochs_string(epochsString):
     epochs = []
-    for line in epochString.splitlines():
+    for line in epochsString.splitlines():
         start, stop = line.split('-')
         start = timestring_to_seconds(start)
         stop = timestring_to_seconds(stop)
