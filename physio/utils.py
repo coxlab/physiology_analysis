@@ -68,7 +68,7 @@ def read_raw_epochs(data_directory):
 #     ufunc_audio_to_mw = np.frompyfunc(time_base.audio_time_to_mw, 1, 1)
 #     return ufunc_audio_to_mw(audio_epochs)
 
-def save_epochs(data_directory, epochs, time_base, time_unit):
+def save_mw_epochs(data_directory, epochs, time_base, time_unit):
     """
     Save epochs to a file. epochs should be in mworks time.
     time_unit will determine the saved unit (either audio or mworks)

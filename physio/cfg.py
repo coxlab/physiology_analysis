@@ -23,7 +23,7 @@ ext: .mwk
 file: 
 
 [epochs]
-timeunit: audio
+timeunit: mworks
 settletime: 300
 
 [session]
