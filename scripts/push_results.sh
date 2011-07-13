@@ -6,4 +6,4 @@ REMOTE_RESULTS_DIR='/media/raid/results'
 LOCAL_RESULTS_DIR='/data/results'
 
 #rsync data from server to local dir
-rsync -rtuv $LOCAL_RESULTS_DIR $REMOTE_RESULTS_DIR:$RESULTS_SERVER
+rsync -rtuv $LOCAL_RESULTS_DIR $RESULTS_SERVER:$REMOTE_RESULTS_DIR
