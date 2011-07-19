@@ -48,9 +48,11 @@ for epoch_mw, session in zip(epochs_mw, sessions):
     # fixing ugly time_base
     start_mw, end_mw = epoch_mw
     start_mw += config.getfloat('epochs','settletime')
+    # I think was done to calulate the audio start time with no offset (considering the whole recording session)
     time_base.audio_offset = 0.
     start_audio = time_base.mw_time_to_audio(start_mw)
     end_audio = time_base.mw_time_to_audio(end_mw)
+    # now setup the time_base to give times relative to the stable epoch (not the start of the session)
     time_base.audio_offset = -start_audio
     
     session_name = os.path.basename(session)#'session_%d_to_%d_a32_batch' % (start_audio, end_audio)
