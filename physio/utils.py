@@ -1,8 +1,12 @@
 #!/usr/bin/env python
 
-import logging, os
+import glob, logging, os
 
 import numpy as np
+
+def get_sessions(results_directory):
+    matchstring = "session_*_to_*_a32_batch"
+    return glob.glob('/'.join((results_directory, matchstring)))
 
 def read_mw_epochs(data_directory, time_base, time_unit):
     """
