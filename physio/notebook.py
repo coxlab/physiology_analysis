@@ -65,6 +65,32 @@ def lookup_offset(config):
         logging.warning("Failed to find probe[%s] offset[%s]" % (probeID, offsetString))
         return None
 
+def lookup_probe(config):
+    gdc = get_client(config)
+    
+    logging.debug("gdata getting electrode list feed")
+    listFeed = gdc.GetListFeed(config.get('gdata','probeid'),config.get('gdata','probews'))
+    
+    probeID = config.get('probe','id').lower()
+    
+    probeEntry = None
+    for e in listFeed.entry:
+        if e.title.text.lower() == probeID:
+            probeEntry = e
+            break
+    
+    if probeEntry is None:
+        logging.warning("Probe was not found: %s" % probeID)
+        return None
+    
+    returnDict = {}
+    # for k in ['probe_id', 'datereceived', 'ordernumber', 'design', 'thicknessreinforced', 'initialfunctionality',
+    #         'boximpedance', 'offset', 'status', 'badsites']:
+    for k in probeEntry.custom.keys():
+        returnDict[k] = probeEntry.custom[k].text
+    
+    return returnDict
+
 def timestring_to_seconds(timeString):
     """
     Convert a time string of hh:mm:ss to seconds of type int
@@ -130,8 +156,8 @@ def lookup_session(config):
     # logging.debug("Found epochs: %s" % epochsString)
     
     returnDict = {}
-    for k in ['timestamp','username','animal','electrode','descriptionofintent','notes','checklist','stableepochs']:
-        returnDict[k] = e.custom[k].text
+    for k in sessionEntry.custom.keys():#['timestamp','username','animal','electrode','descriptionofintent','notes','checklist','stableepochs']:
+        returnDict[k] = sessionEntry.custom[k].text
     
     return returnDict
     

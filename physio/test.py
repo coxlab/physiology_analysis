@@ -8,12 +8,13 @@ import numpy as np
 import pylab as plt
 
 import caton_utils
-import pixel_clock
-import cnc_utils
-import notebook
-import mw_utils
-import utils
 import cfg
+import cnc_utils
+import h5_utils
+import mw_utils
+import notebook
+import pixel_clock
+import utils
 # from caton_utils import caton_cluster_data, extract_info_from_h5
 # from pixel_clock import read_pixel_clock, parse_pixel_clock, read_pixel_clock_from_mw, time_match_mw_with_pc
 # from cnc_utils import read_cnc_from_mw, find_stable_epochs_in_events
@@ -39,13 +40,21 @@ if not (session_dict is None):
 else:
     logging.warning("Failed to fetch session information from notebook entry")
 
+probe_dict = notebook.lookup_probe(config)
 if config.get('probe','offset').strip() == '': # offset is not defined
-    offset = notebook.lookup_offset(config)
-    logging.debug("Using probe offset from notebook: %s" % str(offset))
-    if offset is None:
-        logging.error("No probe offset in notebook entry")
-        raise ValueError("No probe offset in notebook entry")
-    config.set('probe','offset',str(offset))
+    if not (probe_dict is None):
+        offset = notebook.offset_to_float(probe_dict['offset'])
+        logging.debug("Using probe offset from notebook: %s" % str(offset))
+        if offset is None
+            logging.error("No probe offset in notebook entry")
+            raise ValueError("No probe offset in notebook entry")
+        config.set('probe','offset',str(offset))
+    else:
+        logging.error("Failed to fetch probe information from electrode inventory")
+        raise ValueError("Failed to fetch probe information from electrode inventory")
+if probe_dict is None:
+    logging.error("Failed to fetch probe information from electrode inventory")
+    raise ValueError("Failed to fetch probe information from electrode inventory")
 
 session_dir = config.get('session','dir')
 
@@ -205,9 +214,9 @@ for epoch in epochs_mw:
     #     os.makedirs(clusterdir)
     
     h5_file = '/'.join((epoch_dir,session_name)) + '.h5'
-    if not (os.path.exists(h5_file)):
-        epoch_dir = caton_utils.caton_cluster_data(session_dir, config.get('session','output'), \
-                                clusterdir, time_range=(start_audio, end_audio), tmp_dir=tmp_dir)
+    # if not (os.path.exists(h5_file)):
+    epoch_dir = caton_utils.caton_cluster_data(session_dir, config.get('session','output'), \
+                            clusterdir, time_range=(start_audio, end_audio), tmp_dir=tmp_dir)
     
     # get electrode/pad positions
     pad_positions_file = '/'.join((epoch_dir,'pad_positions'))
@@ -219,70 +228,81 @@ for epoch in epochs_mw:
         pad_positions = cnc_utils.find_channel_positions(cncDict, epoch, tipOffset)
         np.savetxt(pad_positions_file,pad_positions)
     
-    # ======================= generate plots for epoch ==========================
-    # TODO this data<->filename association is too opaque
+    # combine results into single (spike) file
+    results_file = h5_utils.H5ResultsFileSaver(h5_file)
+    results_file.add_session_h5_file(config.get('mworks','file')):
+    results_file.add_mw_epoch_times(start_mw, end_mw):
+    results_file.add_timebase(time_base_file):
+    results_file.add_session_gdata(session_dict):
+    results_file.add_probe_gdata(probe_dict):
+    results_file.add_pad_positions(pad_positions):
+    results_file.add_git_commit_id(utils.get_git_commit_id()):
+    results_file.close():
     
-    h5_file = '/'.join((epoch_dir,session_name)) + '.h5'
-    #h5_file = '/'.join((base_dir,"processed",epoch_dir,session_name)) + '.h5'
-    
-    (clusters, times, triggers, waveforms) = caton_utils.extract_info_from_h5(h5_file)
-    
-    grouped_stim_times = mw_utils.extract_and_group_stimuli(config.get('mworks','file'))
-    
-    # aggregated_stim_times = mw_utils.aggregate_stimuli(grouped_stim_times)
-    
-    spike_trains_by_cluster = caton_utils.spikes_by_cluster(times, clusters)
-    spike_trains_by_channel = caton_utils.spikes_by_channel(times, triggers)
-    
-    nclusters = len(spike_trains_by_cluster)
-    nchannels = len(spike_trains_by_channel)
-    nstim = len(grouped_stim_times.keys())
-    stim_keys = grouped_stim_times.keys()
-    
-    clusters_figure_dir = '/'.join((epoch_dir, "figures", "clusters"))
-    if not os.path.exists(clusters_figure_dir): os.makedirs(clusters_figure_dir)
-    
-    channels_figure_dir = '/'.join((epoch_dir, "figures", "channels"))
-    if not os.path.exists(channels_figure_dir): os.makedirs(channels_figure_dir)
-    
-    plt.ioff()
-    f = plt.figure()
-    
-    for stim in range(0, len(stim_keys)):
-        stim_key = stim_keys[stim]
-        
-        if stim_key in ['pixel clock', 'background', 'BlankScreenGray']:
-            continue
-        #if not (stim_key == 'BlueSquare'):
-        #    continue
-        
-        # plot by cluster
-        for ch in range(0, len(spike_trains_by_cluster)):
-            print("Plotting cl %d, stim %s" % (ch, stim_key))
-            
-            # plt.subplot( nclusters, nstim, ch *nstim + stim)
-            
-            ev_locked = mw_utils.event_lock_spikes( grouped_stim_times[stim_key], 
-                                                    spike_trains_by_cluster[ch], 0.1, 0.5,
-                                                    time_base )
-            mw_utils.plot_rasters(ev_locked)
-            plt.title("clu %d, stim %s" % (ch, stim_key))
-            plt.savefig("%s/clu%d_stim%s.pdf" % (clusters_figure_dir, ch, stim_key))
-            plt.hold(False)
-            plt.clf()
-        
-        # plot by channel
-        for ch in range(0, len(spike_trains_by_channel)):
-            print("Plotting ch %d, stim %s" % (ch, stim_key))
-            
-            ev_locked = mw_utils.event_lock_spikes( grouped_stim_times[stim_key],
-                                                    spike_trains_by_channel[ch], 0.1, 0.5,
-                                                    time_base )
-            mw_utils.plot_rasters(ev_locked)
-            plt.title("ch %d, stim %s" % (ch, stim_key))
-            plt.savefig("%s/ch%d_stim%s.pdf" % (channels_figure_dir, ch, stim_key))
-            plt.hold(False)
-            plt.clf()
+    # # ======================= generate plots for epoch ==========================
+    #     # TODO this data<->filename association is too opaque
+    #     
+    #     h5_file = '/'.join((epoch_dir,session_name)) + '.h5'
+    #     #h5_file = '/'.join((base_dir,"processed",epoch_dir,session_name)) + '.h5'
+    #     
+    #     (clusters, times, triggers, waveforms) = caton_utils.extract_info_from_h5(h5_file)
+    #     
+    #     grouped_stim_times = mw_utils.extract_and_group_stimuli(config.get('mworks','file'))
+    #     
+    #     # aggregated_stim_times = mw_utils.aggregate_stimuli(grouped_stim_times)
+    #     
+    #     spike_trains_by_cluster = caton_utils.spikes_by_cluster(times, clusters)
+    #     spike_trains_by_channel = caton_utils.spikes_by_channel(times, triggers)
+    #     
+    #     nclusters = len(spike_trains_by_cluster)
+    #     nchannels = len(spike_trains_by_channel)
+    #     nstim = len(grouped_stim_times.keys())
+    #     stim_keys = grouped_stim_times.keys()
+    #     
+    #     clusters_figure_dir = '/'.join((epoch_dir, "figures", "clusters"))
+    #     if not os.path.exists(clusters_figure_dir): os.makedirs(clusters_figure_dir)
+    #     
+    #     channels_figure_dir = '/'.join((epoch_dir, "figures", "channels"))
+    #     if not os.path.exists(channels_figure_dir): os.makedirs(channels_figure_dir)
+    #     
+    #     plt.ioff()
+    #     f = plt.figure()
+    #     
+    #     for stim in range(0, len(stim_keys)):
+    #         stim_key = stim_keys[stim]
+    #         
+    #         if stim_key in ['pixel clock', 'background', 'BlankScreenGray']:
+    #             continue
+    #         #if not (stim_key == 'BlueSquare'):
+    #         #    continue
+    #         
+    #         # plot by cluster
+    #         for ch in range(0, len(spike_trains_by_cluster)):
+    #             print("Plotting cl %d, stim %s" % (ch, stim_key))
+    #             
+    #             # plt.subplot( nclusters, nstim, ch *nstim + stim)
+    #             
+    #             ev_locked = mw_utils.event_lock_spikes( grouped_stim_times[stim_key], 
+    #                                                     spike_trains_by_cluster[ch], 0.1, 0.5,
+    #                                                     time_base )
+    #             mw_utils.plot_rasters(ev_locked)
+    #             plt.title("clu %d, stim %s" % (ch, stim_key))
+    #             plt.savefig("%s/clu%d_stim%s.pdf" % (clusters_figure_dir, ch, stim_key))
+    #             plt.hold(False)
+    #             plt.clf()
+    #         
+    #         # plot by channel
+    #         for ch in range(0, len(spike_trains_by_channel)):
+    #             print("Plotting ch %d, stim %s" % (ch, stim_key))
+    #             
+    #             ev_locked = mw_utils.event_lock_spikes( grouped_stim_times[stim_key],
+    #                                                     spike_trains_by_channel[ch], 0.1, 0.5,
+    #                                                     time_base )
+    #             mw_utils.plot_rasters(ev_locked)
+    #             plt.title("ch %d, stim %s" % (ch, stim_key))
+    #             plt.savefig("%s/ch%d_stim%s.pdf" % (channels_figure_dir, ch, stim_key))
+    #             plt.hold(False)
+    #             plt.clf()
 
 
 logging.debug("FINISHED")

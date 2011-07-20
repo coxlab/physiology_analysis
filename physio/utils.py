@@ -1,8 +1,13 @@
 #!/usr/bin/env python
 
-import glob, logging, os
+import glob, logging, os, sys
 
 import numpy as np
+
+def get_git_commit_id():
+    path = os.path.abspath(sys.argv[0]) # path of script
+    cmd = "git log -n 1 --pretty=format:%%H %s" % path
+    return os.popen(cmd).read()
 
 def get_sessions(results_directory):
     matchstring = "session_*_to_*_a32_batch"
