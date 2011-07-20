@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import logging, os, sys
+import logging, os, shutil, sys, tempfile
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -86,8 +86,10 @@ else:
     # read_pixel_clock( project_path, file_no, cache_dir="/tmp", time_range=None): return (pc_data, fs)
     # (pc_data, fs) = pixel_clock.read_pixel_clock( base_dir, 1 , cache_dir )
     logging.debug("Reading pixel clock (from audio files)")
-    (pc_data, fs) = pixel_clock.read_pixel_clock(session_dir, config.get('pixel clock','output'), config.get('filesystem','tmp'))
-
+    tmp_dir = tempfile.mkdtemp(dir=config.get('filesystem','tmp'))
+    (pc_data, fs) = pixel_clock.read_pixel_clock(session_dir, config.get('pixel clock','output'), tmp_dir)
+    shutil.rmtree(tmp_dir) # clean up temporary directory
+    
     # parse_pixel_clock(pc_data, start_time_sec, samples_per_sec,
     #                       arm_threshold = 0.1, arm_timeout = 0.005, 
     #                       accept_threshold = 0.3, derivative_threshold = 0.0,
