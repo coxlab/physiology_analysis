@@ -176,7 +176,7 @@ def plot_rasters(event_locked, **kwargs):
     bin_color = kwargs.get("bin_color", '0.5')
     
     n_events = len(event_locked)
-    print("Plotting %d events" % (n_events))
+    #print("Plotting %d events" % (n_events))
     
     #plt.figure()
     plt.hold(True)

@@ -4,7 +4,7 @@ import copy, logging, os
 logging.basicConfig(level=logging.DEBUG)
 
 import matplotlib
-matplotlib.use('qt4Agg') # doesn't like QT?
+#matplotlib.use('qt4Agg') # doesn't like QT?
 
 import numpy as np
 import pylab as plt
@@ -23,6 +23,7 @@ if len(sys.argv) > 1:
 config = physio.cfg.Config()
 config.read_user_config()
 config.read_session_config(session)
+config.set('filesystem','resultsrepo','/data/results')
 config.set_session(session)
 
 # load time_base
@@ -123,11 +124,13 @@ for epoch_mw, session in zip(epochs_mw, sessions):
             for (subplots_x, vs) in enumerate(valid_stims):
                 stim = copy.deepcopy(vs)
                 stim.name = sn
+                stim.intName = int(sn)
                 
                 stimI = stimtimer.find_stim(stim)
                 if stimI == -1:
                     raise ValueError("stimulus: %s was not found when plotting" % stim)
                 stim_times = stimtimer.times[stimI]
+                n_stim = len([s for s in stim_times if s <= end_mw and s > start_mw])
                 
                 ev_locked = physio.mw_utils.event_lock_spikes( stim_times,
                                                     spike_trains_by_channel[ch], 0.1, 0.5,
@@ -140,7 +143,7 @@ for epoch_mw, session in zip(epochs_mw, sessions):
                 a.set_yticklabels([])
                 xm = a.get_xlim()[0] + (a.get_xlim()[1] - a.get_xlim()[0]) / 2.
                 ym = a.get_ylim()[0] + (a.get_ylim()[1] - a.get_ylim()[0]) / 2.
-                a.text(xm,ym,'%i' % int(a.get_ylim()[1]), color='r', zorder=-1000,
+                a.text(xm,ym,'%i' % n_stim, color='r', zorder=-1000,
                     horizontalalignment='center', verticalalignment='center')
                 # a.set_yticks([a.get_ylim()[1]])
                 # a.set_yticklabels([str(a.get_ylim()[1])],
