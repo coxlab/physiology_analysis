@@ -1,4 +1,4 @@
-import ast, copy, logging, os
+import ast, copy, logging, os, re
 
 import tables
 
@@ -50,15 +50,36 @@ class Event(object):
 class H5Reader(MWReader):
     def __init__(self, filename):
         self.fn = filename
-        self.t = None
+        self.h5file = None
+        self.sessionNode = None
+    
     def open(self):
-        self.t = tables.openFile(self.fn)
+        self.h5file = tables.openFile(self.fn)
+        self.sessionNode = None
+        
+        # try to set session node by filenmae
+        sessionName = os.path.splitext(os.path.basename(self.fn))[0]
+        if sessionName in self.h5file:
+            self.sessionNode = self.h5file.getNode('/%s' % sessionName)
+        else:
+            # if not search for session node
+            self.find_session_node()
+    
+    def find_session_node(self, regex=r'^[A-Z]+[0-9]+_[0-9]*'):
+        logging.debug("Searching for session node in: %s" % str(self.h5file))
+        for nodeName in self.h5file.root._v_children.keys():
+            if bool(re.match(regex, nodeName)):
+                self.sessionNode = self.h5file.getNode('/%s' % nodeName)
+                return
+        raise ValueError('Could not find session node')
+    
     def _get_value(self,atIndex):
-        v = self.t.listNodes('/')[0].values[atIndex]
+        v = self.sessionNode.values[atIndex]
         try:
             return ast.literal_eval(v)
         except:
             return v
+    
     def get_events(self,codes=[]):
         """
         This is terribly inefficient at the moment
@@ -67,14 +88,14 @@ class H5Reader(MWReader):
         cs = [rcodec[c] for c in codes]
         matchString = ' | '.join(['code == %i' % c for c in cs])
         logging.debug("using matchString: %s" % matchString)
-        eventTable = self.t.listNodes('/')[0].events
+        eventTable = self.sessionNode.events
         events = [Event(e['time'],e['code'],self._get_value(e['index'])) for e in eventTable.where(matchString)]
         # for code, valueIndex, time in eventTable.cols:
         #     if code in cs:
         #         events.append(Event(time, code, self._get_value(valueIndex)))
         return events
     def get_codec(self):
-        codec = self.t.listNodes('/')[0].codec
+        codec = self.sessionNode.codec
         r = {}
         for c in codec.cols:
             r[c[0]] = c[1]
@@ -86,8 +107,8 @@ class H5Reader(MWReader):
             r[codec[k]] = k
         return r
     def close(self):
-        if not (self.t is None):
-            self.t.close()
+        if not (self.h5file is None):
+            self.h5file.close()
 
 def make_reader(filename):
     global MWEnabled
