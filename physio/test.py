@@ -45,7 +45,7 @@ if config.get('probe','offset').strip() == '': # offset is not defined
     if not (probe_dict is None):
         offset = notebook.offset_to_float(probe_dict['offset'])
         logging.debug("Using probe offset from notebook: %s" % str(offset))
-        if offset is None
+        if offset is None:
             logging.error("No probe offset in notebook entry")
             raise ValueError("No probe offset in notebook entry")
         config.set('probe','offset',str(offset))
@@ -214,8 +214,8 @@ for epoch in epochs_mw:
     #     os.makedirs(clusterdir)
     
     h5_file = '/'.join((epoch_dir,session_name)) + '.h5'
-    # if not (os.path.exists(h5_file)):
-    epoch_dir = caton_utils.caton_cluster_data(session_dir, config.get('session','output'), \
+    if not (os.path.exists(h5_file)):
+        epoch_dir = caton_utils.caton_cluster_data(session_dir, config.get('session','output'), \
                             clusterdir, time_range=(start_audio, end_audio), tmp_dir=tmp_dir)
     
     # get electrode/pad positions
@@ -230,14 +230,14 @@ for epoch in epochs_mw:
     
     # combine results into single (spike) file
     results_file = h5_utils.H5ResultsFileSaver(h5_file)
-    results_file.add_session_h5_file(config.get('mworks','file')):
-    results_file.add_mw_epoch_times(start_mw, end_mw):
-    results_file.add_timebase(time_base_file):
-    results_file.add_session_gdata(session_dict):
-    results_file.add_probe_gdata(probe_dict):
-    results_file.add_pad_positions(pad_positions):
-    results_file.add_git_commit_id(utils.get_git_commit_id()):
-    results_file.close():
+    results_file.add_session_h5_file(config.get('mworks','file'))
+    results_file.add_mw_epoch_times(start_mw, end_mw)
+    results_file.add_timebase(time_base_file)
+    results_file.add_session_gdata(session_dict)
+    results_file.add_probe_gdata(probe_dict)
+    results_file.add_pad_positions(pad_positions)
+    results_file.add_git_commit_id(utils.get_git_commit_id())
+    results_file.close()
     
     # # ======================= generate plots for epoch ==========================
     #     # TODO this data<->filename association is too opaque
