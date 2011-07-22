@@ -3,55 +3,51 @@
 import copy, logging, os
 logging.basicConfig(level=logging.DEBUG)
 
+import tables
 import matplotlib
 #matplotlib.use('qt4Agg') # doesn't like QT?
-
 import numpy as np
 import pylab as plt
 
 # add path of physio module
 import sys
 sys.path.append('../')
-
 import physio
 
-session = 'K4_110715'
+resultsFile = '../results/session_597_to_5873_a32_batch.h5'
 if len(sys.argv) > 1:
-    session = sys.argv[1]
+    resultsFile = sys.argv[1]
 
-# read in configuration file
-config = physio.cfg.Config()
-config.read_user_config()
-config.read_session_config(session)
-config.set('filesystem','resultsrepo','/data/results')
-config.set_session(session)
+outDir = './psths'
+if len(sys.argv) > 2:
+    outDir = sys.argv[2]
 
-# load time_base
-time_base_file = '/'.join((config.get('session','output'),'time_base'))
-if os.path.exists(time_base_file):
-    logging.debug("Found existing time_base: %s" % time_base_file)
-    time_base = physio.pixel_clock.load_time_base(time_base_file)
-else:
-    raise IOError("Time base does not exist: %s" % time_base_file)
+groupBy = 'clusters'
+if len(sys.argv) > 3:
+    groupBy = sys.argv[3]
 
-# get sessions
-sessions = physio.utils.get_sessions(config.get('session','output'))
-logging.debug("Found sessions: %s" % str(sessions))
+if not (groupBy in ['clusters', 'channels']):
+    raise ValueError("GroupBy[arg3] must be either clusters or channels NOT %s" % groupBy)
 
-# load epochs
-epochs_mw = physio.utils.read_mw_epochs(config.get('session','dir'), time_base, config.get('epochs','timeunit'))
-if len(epochs_mw) != len(sessions):
-    raise ValueError("len(epochs)[%i] != len(sessions)[%i]" % (len(epochs_mw), len(sessions)))
+plotWindow = [0.1, 0.5]
+
+logging.debug("Opening results file: %s" % str(resultsFile))
+resultsFile = tables.openFile(resultsFile)
+
+# load time base
+timebase = physio.pixel_clock.TimeBase(*physio.h5_utils.get_time_matches(resultsFile))
+
+# load epoch
+epoch_mw = physio.h5_utils.get_mw_epoch(resultsFile)
+start_mw, end_mw = epoch_mw
+logging.debug("Loaded epoch: %s" % str(epoch_mw))
 
 # get stimulus times
-logging.debug("Reading stimulus information")
+logging.debug("Get stimulus times")
 stimtimer = physio.stimsorter.StimTimer()
 stimtimer.blacklist += ['BlueSquare',]
-mwkf = physio.mw_utils.make_reader(config.get('mworks','file'))
-mwkf.open()
-events = mwkf.get_events(codes=['#announceStimulus'])
-[stimtimer.process_mw_event(e) for e in events]
-mwkf.close()
+mwkf = physio.h5_utils.get_mw_event_reader(resultsFile)
+[stimtimer.process_mw_event(e) for e in mwkf.get_events(codes=['#announceStimulus',])]
 
 def unique(inList):
     d = {}
@@ -70,7 +66,6 @@ for (l,s) in zip([stim_names,pos_xs,pos_ys,size_xs],['names','pos_x','pos_y','si
 #subplots_width = len(pos_xs) + len(pos_ys) - 1 + len(size_xs)
 subplots_height = len(stim_names)
 
-
 valid_stims = []
 for s in size_xs:
     for y in pos_ys:
@@ -88,79 +83,72 @@ for s in size_xs:
 subplots_width = len(valid_stims)
 logging.debug("subplots w:%i, h:%i" % (subplots_width, subplots_height))
 
-#grouped_stim_times = physio.mw_utils.extract_and_group_stimuli(config.get('mworks','file'))
+# fix timebase audio offset
+timebase.audio_offset = -timebase.mw_time_to_audio(start_mw)
 
-# plot each session
-for epoch_mw, session in zip(epochs_mw, sessions):
+times = [ x["time"] for x in resultsFile.root.SpikeTable.iterrows()]
+
+if groupBy == 'clusters':
+    clusters = [ x["clu"] for x in resultsFile.root.SpikeTable.iterrows()]
+    groupedSpikes = physio.caton_utils.spikes_by_cluster(times, clusters)
+elif groupBy == 'channels':
+    triggers = [ x["st"] for x in resultsFile.root.SpikeTable.iterrows()]
+    groupedSpikes = physio.caton_utils.spikes_by_channel(times, triggers)
+
+if not os.path.exists(outDir): os.makedirs(outDir)
+
+for group in xrange(len(groupedSpikes)):
+    logging.info("Plotting %s %d" % (groupBy, group))
     
-    # fixing ugly time_base
-    start_mw, end_mw = epoch_mw
-    start_mw += config.getfloat('epochs','settletime')
-    # I think was done to calulate the audio start time with no offset (considering the whole recording session)
-    time_base.audio_offset = 0.
-    start_audio = time_base.mw_time_to_audio(start_mw)
-    end_audio = time_base.mw_time_to_audio(end_mw)
-    # now setup the time_base to give times relative to the stable epoch (not the start of the session)
-    time_base.audio_offset = -start_audio
+    plt.figure(figsize=(subplots_width, subplots_height))
+    plt.gcf().suptitle('%s %d' % (groupBy, group))
+    plt.subplot(subplots_height, subplots_width,1)
     
-    session_name = os.path.basename(session)#'session_%d_to_%d_a32_batch' % (start_audio, end_audio)
-    epoch_dir = '/'.join((config.get('session','output'), session_name))
-    h5_file = '/'.join((epoch_dir,session_name)) + '.h5'
-    (clusters, times, triggers, waveforms) = physio.caton_utils.extract_info_from_h5(h5_file)
-    
-    spike_trains_by_channel = physio.caton_utils.spikes_by_channel(times, triggers)
-    
-    psths_figure_dir = '/'.join((epoch_dir, "figures", "psths"))
-    if not os.path.exists(psths_figure_dir): os.makedirs(psths_figure_dir)
-    
-    for ch in range(0, len(spike_trains_by_channel)):
-        logging.info("Plotting ch %d" % ch)
-        # setup figure
-        plt.figure(figsize=(subplots_width, subplots_height))
-        plt.gcf().suptitle('Channel %d' % ch)
-        plt.subplot(subplots_height, subplots_width,1)
-        
-        for (subplots_y, sn) in enumerate(stim_names):
-            for (subplots_x, vs) in enumerate(valid_stims):
-                stim = copy.deepcopy(vs)
-                stim.name = sn
-                stim.intName = int(sn)
-                
-                stimI = stimtimer.find_stim(stim)
-                if stimI == -1:
-                    raise ValueError("stimulus: %s was not found when plotting" % stim)
-                stim_times = stimtimer.times[stimI]
-                n_stim = len([s for s in stim_times if s <= end_mw and s > start_mw])
-                
-                ev_locked = physio.mw_utils.event_lock_spikes( stim_times,
-                                                    spike_trains_by_channel[ch], 0.1, 0.5,
-                                                    time_base )
-                subplots_i = subplots_x + subplots_y * subplots_width + 1
-                plt.subplot(subplots_height, subplots_width, subplots_i)
-                physio.mw_utils.plot_rasters(ev_locked)
-                a = plt.gca()
-                a.set_yticks([])
-                a.set_yticklabels([])
-                xm = a.get_xlim()[0] + (a.get_xlim()[1] - a.get_xlim()[0]) / 2.
-                ym = a.get_ylim()[0] + (a.get_ylim()[1] - a.get_ylim()[0]) / 2.
-                a.text(xm,ym,'%i' % n_stim, color='r', zorder=-1000,
-                    horizontalalignment='center', verticalalignment='center')
-                # a.set_yticks([a.get_ylim()[1]])
-                # a.set_yticklabels([str(a.get_ylim()[1])],
-                #     horizontalalignment='left', color='r', alpha=0.8)
-                if subplots_x == 0:
-                    a.set_ylabel(stim.name, rotation='horizontal',
-                        horizontalalignment='right', verticalalignment='center')
-                if subplots_y != (len(stim_names) - 1):
-                    a.set_xticks([])
-                    a.set_xticklabels([])
-                else:
-                    a.set_xticks([0.,0.5])
-                    a.set_xticklabels(['0','0.5'])
-                if subplots_y == 0:
-                    a.set_title('%i,%i[%i]' % (stim.pos_x, stim.pos_y, stim.size_x),
-                        rotation=45, horizontalalignment='left', verticalalignment='bottom')
-        # plt.show()
-        plt.savefig("%s/ch%d_psth.pdf" % (psths_figure_dir, ch))
-        plt.hold(False)
-        plt.clf()
+    for (subplots_y, sn) in enumerate(stim_names):
+        for (subplots_x, vs) in enumerate(valid_stims):
+            stim = copy.deepcopy(vs)
+            stim.name = sn
+            stim.intName = int(sn)
+            
+            stimI = stimtimer.find_stim(stim)
+            if stimI == -1:
+                raise ValueError("stimulus: %s was not found when plotting" % stim)
+            
+            stim_times = [s for s in stimtimer.times[stimI] if s < end_mw and s > start_mw]
+            n_stim = len(stim_times)
+            # n_stim = len([s for s in stim_times if s <= end_mw and s > start_mw])
+            
+            ev_locked = physio.mw_utils.event_lock_spikes( stim_times,
+                                                groupedSpikes[group], plotWindow[0], plotWindow[1],
+                                                timebase )
+            subplots_i = subplots_x + subplots_y * subplots_width + 1
+            plt.subplot(subplots_height, subplots_width, subplots_i)
+            physio.mw_utils.plot_rasters(ev_locked)
+            a = plt.gca()
+            a.set_yticks([])
+            a.set_yticklabels([])
+            xm = a.get_xlim()[0] + (a.get_xlim()[1] - a.get_xlim()[0]) / 2.
+            ym = a.get_ylim()[0] + (a.get_ylim()[1] - a.get_ylim()[0]) / 2.
+            a.text(xm,ym,'%i' % n_stim, color='r', zorder=-1000,
+                horizontalalignment='center', verticalalignment='center')
+            # a.set_yticks([a.get_ylim()[1]])
+            # a.set_yticklabels([str(a.get_ylim()[1])],
+            #     horizontalalignment='left', color='r', alpha=0.8)
+            if subplots_x == 0:
+                a.set_ylabel(stim.name, rotation='horizontal',
+                    horizontalalignment='right', verticalalignment='center')
+            if subplots_y != (len(stim_names) - 1):
+                a.set_xticks([])
+                a.set_xticklabels([])
+            else:
+                a.set_xticks([0.,plotWindow[1]])
+                a.set_xticklabels(['0','%.1f' % plotWindow[1]])
+            if subplots_y == 0:
+                a.set_title('%i,%i[%i]' % (stim.pos_x, stim.pos_y, stim.size_x),
+                    rotation=45, horizontalalignment='left', verticalalignment='bottom')
+    # plt.show()
+    plt.savefig("%s/%s_%d_psth.pdf" % (outDir, groupBy, group))
+    plt.hold(False)
+    plt.clf()
+
+resultsFile.close()
