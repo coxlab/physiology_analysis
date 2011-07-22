@@ -558,48 +558,86 @@ def read_pixel_clock_from_mw(mw_filename, use_display_update=True):
 
 def time_match_mw_with_pc(pc_codes, pc_times, mw_codes, mw_times,
                                 submatch_size = 10, slack = 0, max_slack=10,
-                                pc_check_stride = 100, pc_file_offset= 0):
+                                mw_check_stride = 1, pc_file_offset= 0):
     
     time_matches = []
     
-    for pc_start_index in range(0, len(pc_codes)-submatch_size, pc_check_stride):
-        match_sequence = pc_codes[pc_start_index:pc_start_index+submatch_size]
-        pc_time = pc_times[pc_start_index]
+    for mw_start_index in range(0, len(mw_codes)-submatch_size, mw_check_stride):
+        match_sequence = mw_codes[mw_start_index:mw_start_index+submatch_size]
         
-        for i in range(0, len(mw_codes) - submatch_size - max_slack):
+        mw_time = mw_times[mw_start_index]
+        
+        for i in range(0, len(pc_codes) - submatch_size - max_slack):
             good_flag = True
-                
+            
             total_slack = 0
-            for j in range(0, submatch_size):
+            for j in xrange(submatch_size):
                 target = match_sequence[j]
-                if target != mw_codes[i+j+total_slack]:
+                if target != pc_codes[i+j+total_slack]:
                     slack_match = False
                     slack_count = 0
                     while slack_count < slack and j != 0:
                         slack_count += 1
                         total_slack += 1
-                        if target == mw_codes[i+j+total_slack]:
+                        if target == pc_codes[i+j+total_slack]:
                             slack_match = True
                             break
-                
+                    
                     if total_slack > max_slack:
                         good_flag = False
                         break
                     
                     if not slack_match:
-                        # didn't find a match within slack
                         good_flag = False
                         break
-                    
+            
             if good_flag:
                 logging.info("Total slack: %d" % total_slack)
                 logging.info("%s matched to %s" % \
-                      (match_sequence, mw_codes[i:i+submatch_size+total_slack]))
-                time_matches.append((pc_time, mw_times[i]))
+                    (match_sequence, pc_codes[i:i+submatch_size+total_slack]))
+                time_matches.append((pc_times[i], mw_time))
                 break
-                
-    # print time_matches
+    
     return TimeBase(time_matches, pc_file_offset)
+    # 
+    # for pc_start_index in range(0, len(pc_codes)-submatch_size, pc_check_stride):
+    #     match_sequence = pc_codes[pc_start_index:pc_start_index+submatch_size]
+    #     pc_time = pc_times[pc_start_index]
+    #     
+    #     for i in range(0, len(mw_codes) - submatch_size - max_slack):
+    #         good_flag = True
+    #             
+    #         total_slack = 0
+    #         for j in range(0, submatch_size):
+    #             target = match_sequence[j]
+    #             if target != mw_codes[i+j+total_slack]:
+    #                 slack_match = False
+    #                 slack_count = 0
+    #                 while slack_count < slack and j != 0:
+    #                     slack_count += 1
+    #                     total_slack += 1
+    #                     if target == mw_codes[i+j+total_slack]:
+    #                         slack_match = True
+    #                         break
+    #             
+    #                 if total_slack > max_slack:
+    #                     good_flag = False
+    #                     break
+    #                 
+    #                 if not slack_match:
+    #                     # didn't find a match within slack
+    #                     good_flag = False
+    #                     break
+    #                 
+    #         if good_flag:
+    #             logging.info("Total slack: %d" % total_slack)
+    #             logging.info("%s matched to %s" % \
+    #                   (match_sequence, mw_codes[i:i+submatch_size+total_slack]))
+    #             time_matches.append((pc_time, mw_times[i]))
+    #             break
+    #             
+    # # print time_matches
+    # return TimeBase(time_matches, pc_file_offset)
     
 
     
