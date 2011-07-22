@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import copy, logging, os
+import ast, copy, logging, os
 logging.basicConfig(level=logging.DEBUG)
 
 import tables
@@ -26,10 +26,18 @@ groupBy = 'clusters'
 if len(sys.argv) > 3:
     groupBy = sys.argv[3]
 
+groupI = None
+if len(sys.argv) > 4:
+    try:
+        groupI = ast.literal_eval(sys.argv[4])
+    except:
+        pass
+
 if not (groupBy in ['clusters', 'channels']):
     raise ValueError("GroupBy[arg3] must be either clusters or channels NOT %s" % groupBy)
 
-plotWindow = [0.1, 0.5]
+plotWindow = [0.5, 1.0]
+plotNBins = 15
 
 logging.debug("Opening results file: %s" % str(resultsFile))
 resultsFile = tables.openFile(resultsFile)
@@ -97,7 +105,15 @@ elif groupBy == 'channels':
 
 if not os.path.exists(outDir): os.makedirs(outDir)
 
-for group in xrange(len(groupedSpikes)):
+if groupI is None:
+    groupI = xrange(len(groupedSpikes))
+else:
+    try:
+        groupI = iter(groupI)
+    except TypeError:
+        groupI = [groupI,]
+
+for group in groupI:
     logging.info("Plotting %s %d" % (groupBy, group))
     
     plt.figure(figsize=(subplots_width, subplots_height))
@@ -123,7 +139,8 @@ for group in xrange(len(groupedSpikes)):
                                                 timebase )
             subplots_i = subplots_x + subplots_y * subplots_width + 1
             plt.subplot(subplots_height, subplots_width, subplots_i)
-            physio.mw_utils.plot_rasters(ev_locked)
+            physio.mw_utils.plot_rasters(ev_locked, time_range=(-plotWindow[0], plotWindow[1]), n_bins=plotNBins)
+            plt.axvline(0.5, zorder=-500, color='r')
             a = plt.gca()
             a.set_yticks([])
             a.set_yticklabels([])
