@@ -1,8 +1,20 @@
 #!/usr/bin/env python
 
-import glob, logging, os, sys
+import glob, logging, os, sys, time
+from contextlib import contextmanager
 
 import numpy as np
+
+@contextmanager
+def waiting_file_lock(lock_file, delay=1):
+    while os.path.exists(lock_file):
+        logging.info("Found lock file, waiting to recheck in %d..." % delay)
+        time.sleep(delay)
+    open(lock_file, 'w').write("1")
+    try:
+        yield
+    finally:
+        os.remove(lock_file)
 
 def get_git_commit_id():
     path = os.path.abspath(sys.argv[0]) # path of script
