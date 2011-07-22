@@ -73,7 +73,10 @@ class TimeBase:
         Remove offsets which differ from the previous offset by thresh seconds
         """
         delta_offsets = self.mw_offsets[1:] - self.mw_offsets[:-1]
-        self.mw_offsets = self.mw_offsets[where(abs(delta_offsets) < thresh)[0]+1]
+        good_indexes = np.where(abs(delta_offsets) < thresh)[0]+1
+        self.mw_offsets = self.mw_offsets[good_indexes]
+        #self.mw_offsets = self.mw_offsets[np.where(abs(delta_offsets) < thresh)[0]+1]
+        self.evt_zipper = np.array(self.evt_zipper)[good_indexes]
     
     def mw_time_to_audio(self, mw_time, mw_offset = 0):
         
