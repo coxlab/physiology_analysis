@@ -55,7 +55,7 @@ logging.debug("Get stimulus times")
 stimtimer = physio.stimsorter.StimTimer()
 stimtimer.blacklist += ['BlueSquare',]
 mwkf = physio.h5_utils.get_mw_event_reader(resultsFile)
-[stimtimer.process_mw_event(e) for e in mwkf.get_events(codes=['#announceStimulus',])]
+[stimtimer.process_mw_event(e) for e in mwkf.get_events(codes=['#announceStimulus',], time_range=epoch_mw)]
 
 def unique(inList):
     d = {}
@@ -130,7 +130,8 @@ for group in groupI:
             if stimI == -1:
                 raise ValueError("stimulus: %s was not found when plotting" % stim)
             
-            stim_times = [s for s in stimtimer.times[stimI] if s < end_mw and s > start_mw]
+            stim_times = [s for s in stimtimer.times[stimI]]
+            # stim_times = [s for s in stimtimer.times[stimI] if s < end_mw and s > start_mw]
             n_stim = len(stim_times)
             # n_stim = len([s for s in stim_times if s <= end_mw and s > start_mw])
             
