@@ -61,10 +61,19 @@ class TimeBase:
         self.mw_offsets = np.array([ e[0] - e[1] for e in evt_zipper ]) - \
                           audio_offset
         
+        self.cull_offsets()
+        
         # this is the offset of the file used to make the zipper, if any
         self.audio_offset = audio_offset
         # if self.audio_offset != 0:
             # logging.error("setting audio_offset which is Not implemented")
+    
+    def cull_offsets(self, thresh = 0.03):
+        """
+        Remove offsets which differ from the previous offset by thresh seconds
+        """
+        delta_offsets = self.mw_offsets[1:] - self.mw_offsets[:-1]
+        self.mw_offsets = self.mw_offsets[where(abs(delta_offsets) < thresh)[0]+1]
     
     def mw_time_to_audio(self, mw_time, mw_offset = 0):
         
