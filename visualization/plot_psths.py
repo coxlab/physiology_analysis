@@ -36,8 +36,8 @@ if len(sys.argv) > 4:
 if not (groupBy in ['clusters', 'channels']):
     raise ValueError("GroupBy[arg3] must be either clusters or channels NOT %s" % groupBy)
 
-plotWindow = [0.5, 1.0]
-plotNBins = 15
+plotWindow = [0.25, .75]
+plotNBins = 20
 
 logging.debug("Opening results file: %s" % str(resultsFile))
 resultsFile = tables.openFile(resultsFile)
