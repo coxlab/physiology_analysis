@@ -58,9 +58,9 @@ class H5Reader(MWReader):
         self.sessionNode = None
         
         # try to set session node by filenmae
-        sessionName = os.path.splitext(os.path.basename(self.fn))[0]
+        sessionName = '/%s' % os.path.splitext(os.path.basename(self.fn))[0]
         if sessionName in self.h5file:
-            self.sessionNode = self.h5file.getNode('/%s' % sessionName)
+            self.sessionNode = self.h5file.getNode(sessionName)
         else:
             # if not search for session node
             self.find_session_node()
