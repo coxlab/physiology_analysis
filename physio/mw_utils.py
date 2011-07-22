@@ -17,19 +17,23 @@ class MWReader(object):
         self.f = mw.MWKFile(self.fn)
     def open(self):
         self.f.open()
-    def get_events(self,codes=[]):
+    def get_events(self,codes=[], time_range=None):
         ecodes = copy.deepcopy(codes)
-        return self.f.get_events(codes=ecodes)
+        if time_range is None:
+            return self.f.get_events(codes=ecodes)
+        else:
+            time_range = (int(time_range[0] * 1000000), int(time_range[1] * 1000000))
+            return self.f.get_events(codes=ecodes, time_range=time_range)
     def get_codec(self):
         return self.f.codec
     def get_reverse_codec(self):
         return self.f.reverse_codec
     # --- common --
-    def get_parsed_events(self,codes=[]):
+    def get_parsed_events(self,codes=[], time_range=None):
         """
         Returns t [times], c [codes], and v [values] for events in codes
         """
-        evs = self.get_events(codes)
+        evs = self.get_events(codes, time_range)
         t = []
         c = []
         v = []
@@ -80,16 +84,23 @@ class H5Reader(MWReader):
         except:
             return v
     
-    def get_events(self,codes=[]):
+    def get_events(self,codes=[], time_range=None):
         """
         This is terribly inefficient at the moment
+        time_range is in seconds
         """
         rcodec = self.get_reverse_codec()
         cs = [rcodec[c] for c in codes]
         matchString = ' | '.join(['code == %i' % c for c in cs])
         logging.debug("using matchString: %s" % matchString)
         eventTable = self.sessionNode.events
-        events = [Event(e['time'],e['code'],self._get_value(e['index'])) for e in eventTable.where(matchString)]
+        if time_range is None:
+            events = [Event(e['time'],e['code'],self._get_value(e['index'])) for e in eventTable.where(matchString)]
+        else:
+            # PyTables version 2.2.1 does not support selection on uint64 (the time type) so...
+            time_range = (time_range[0]*1000000, time_range[1]*1000000)
+            events = [Event(e['time'],e['code'],self._get_value(e['index'])) for e in eventTable.where(matchString) if \
+                            e['time'] >= time_range[0] and e['time'] <=time_range[1]]
         # for code, valueIndex, time in eventTable.cols:
         #     if code in cs:
         #         events.append(Event(time, code, self._get_value(valueIndex)))
