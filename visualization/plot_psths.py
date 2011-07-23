@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 
-import ast, copy, logging, os
+import ast, copy, logging, os, sys
 logging.basicConfig(level=logging.DEBUG)
 
 import tables
 import matplotlib
-#matplotlib.use('qt4Agg') # doesn't like QT?
+# if sys.platform == 'darwin':
+#     matplotlib.use('qt4Agg') # doesn't like QT?
 import numpy as np
 import pylab as plt
 
@@ -154,7 +155,7 @@ for group in groupI:
                 a.set_title('%i,%i[%i]' % (stim.pos_x, stim.pos_y, stim.size_x),
                     rotation=45, horizontalalignment='left', verticalalignment='bottom')
     # plt.show()
-    plt.savefig("%s/%s_%d_psth.pdf" % (outDir, groupBy, group))
+    plt.savefig("%s/%s_%d_psth.svg" % (outDir, groupBy, group))
     plt.hold(False)
     plt.clf()
 
