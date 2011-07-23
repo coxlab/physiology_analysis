@@ -94,30 +94,28 @@ def sox_merge(stem, project_path, out_filename,
     qq = lambda x: '"' + x + '"'
     
     # process each per-channel sox command
-    for ff in filtered_files:
-        ff_input_path = os.path.join(audio_file_path, ff)
-        ff_output_path = os.path.join(per_channel_tmp_dir, ff)
-        per_channel_cmd = per_channel_command_template % (tmp_dir,
-                                                          qq(ff_input_path),
-                                                          qq(ff_output_path))
-        print("Processing individual channel file: %s" % ff)
-        print("\t%s" % per_channel_cmd)
-        subprocess.check_call(shlex.split(per_channel_cmd))
-        
-    
-    
-    full_paths = ['"' + os.path.join(per_channel_tmp_dir, x) + '"' 
-                                                    for x in filtered_files]
-    
-    
-    full_merge_command = merge_command_template % (tmp_dir, 
-                                                   " ".join(full_paths), 
-                                                   format, 
-                                                   out_filename)
-    
-    print("Running sox command: \n\t%s" % full_merge_command)
-    
     with utils.waiting_file_lock('/tmp/physio_sox.lock', 10):
+        for ff in filtered_files:
+            ff_input_path = os.path.join(audio_file_path, ff)
+            ff_output_path = os.path.join(per_channel_tmp_dir, ff)
+            per_channel_cmd = per_channel_command_template % (tmp_dir,
+                                                              qq(ff_input_path),
+                                                              qq(ff_output_path))
+            print("Processing individual channel file: %s" % ff)
+            print("\t%s" % per_channel_cmd)
+            subprocess.check_call(shlex.split(per_channel_cmd))
+        
+        full_paths = ['"' + os.path.join(per_channel_tmp_dir, x) + '"' 
+                                                        for x in filtered_files]
+        
+        
+        full_merge_command = merge_command_template % (tmp_dir, 
+                                                       " ".join(full_paths), 
+                                                       format, 
+                                                       out_filename)
+        
+        print("Running sox command: \n\t%s" % full_merge_command)
+        
         subprocess.check_call(shlex.split(full_merge_command))
     
     return out_filename
