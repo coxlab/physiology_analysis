@@ -60,7 +60,7 @@ def analyze_session(session, customcfgfile=None):
     
     # setup logging
     dlf = logging.FileHandler('/'.join((config.get('session','output'),'%s.log' % session)))
-    dlf.setLevel(logging.DEBUG)
+    #dlf.setLevel(logging.DEBUG)
     logging.root.addHandler(dlf)
     
     time_base_file = '/'.join((config.get('session','scratch'),'time_base'))
