@@ -118,6 +118,7 @@ for group in groupI:
             
             stimI = stimtimer.find_stim(stim)
             if stimI == -1:
+                logging.debug("%s" % stimtimer.stimList)
                 raise ValueError("stimulus: %s was not found when plotting" % stim)
             
             stim_times = [s for s in stimtimer.times[stimI]]
