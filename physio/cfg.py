@@ -79,7 +79,7 @@ class Config(ConfigParser.SafeConfigParser):
             self.set('session','output','/'.join((self.get('filesystem','resultsrepo'),session)))
         
         if self.get('session','scratch').strip() == '':
-            self.set('session','scratch','/'/join((self.get('filesystem','scratch'),session)))
+            self.set('session','scratch','/'.join((self.get('filesystem','scratch'),session)))
         
         if self.get('mworks','file').strip() == '':
             self.set('mworks','file','/'.join((self.get('session','dir'),session + self.get('mworks','ext'))))
