@@ -4,6 +4,8 @@ import subprocess
 import shlex
 import tempfile
 
+import utils
+
 def to_hms(seconds):
     hours = int(seconds / 3600.)
     seconds -= 3600. * hours
@@ -115,8 +117,7 @@ def sox_merge(stem, project_path, out_filename,
     
     print("Running sox command: \n\t%s" % full_merge_command)
     
-
-    subprocess.check_call(shlex.split(full_merge_command))
+    with utils.waiting_file_lock('/tmp/physio_sox.lock', 10):
+        subprocess.check_call(shlex.split(full_merge_command))
     
-        
     return out_filename
