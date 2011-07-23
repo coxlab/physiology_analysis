@@ -66,7 +66,7 @@ class H5ResultsFileSaver(object):
         values = self.spikeFile.createVLArray(group, 'values', tables.VLStringAtom(), "values", expectedsizeinMB=0.0001)
         for (k,v) in sessionGData.iteritems():
             keys.append(k)
-            values.append(v)
+            values.append(str(v))
         self.spikeFile.flush()
     
     def add_probe_gdata(self, probeGData):
@@ -81,7 +81,7 @@ class H5ResultsFileSaver(object):
         values = self.spikeFile.createVLArray(group, 'values', tables.VLStringAtom(), "values", expectedsizeinMB=0.0001)
         for (k,v) in probeGData.iteritems():
             keys.append(k)
-            values.append(v)
+            values.append(str(v))
         self.spikeFile.flush()
     
     def add_pad_positions(self, padPositions):
