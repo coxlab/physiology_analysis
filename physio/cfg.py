@@ -15,7 +15,7 @@ cleanup: True
 y: -28
 h: 2.5
 screenh: 137.214
-output: 
+scratch: 
 
 [audio]
 samprate: 44100
@@ -84,5 +84,5 @@ class Config(ConfigParser.SafeConfigParser):
         if self.get('mworks','file').strip() == '':
             self.set('mworks','file','/'.join((self.get('session','dir'),session + self.get('mworks','ext'))))
         
-        if self.get('pixel clock','output').strip() == '':
-            self.set('pixel clock','output','/'.join((self.get('session','output'),'pixel_clock')))
+        if self.get('pixel clock','scratch').strip() == '':
+            self.set('pixel clock','scratch','/'.join((self.get('session','scratch'),'pixel_clock')))
