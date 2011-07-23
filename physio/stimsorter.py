@@ -2,6 +2,12 @@
 
 import logging
 
+def unique(inList):
+    d = {}
+    for i in inList:
+        d[i] = 1
+    return d.keys()
+
 class Stim(object):
     # attributePrecedence = ['rotation','size_y','size_x','pos_y','pos_x','name']
     attributePrecedence = ['intName','pos_x','pos_y','size_x','size_y','rotation']
@@ -92,6 +98,15 @@ class StimSorter(object):
     def add_stim(self, stim):
         self.stimList.append(stim)
         return len(self.stimList)-1
+    
+    def get_stim_attr(self, attr):
+        return [s.__getattribute__(attr) for s in self.stimList]
+    
+    def get_unique_stim_attr(self, attr):
+        if attr == 'name':
+            return [str(n) for n in sorted(unique(self.get_stim_attr('intName')))]
+        else:
+            return sorted(unique(self.get_stim_attr(attr)))
 
 class StimCounter(StimSorter):
     def __init__(self):

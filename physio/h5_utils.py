@@ -4,6 +4,7 @@ import numpy as np
 import tables
 
 import mw_utils
+import stimsorter
 
 class H5ResultsFileSaver(object):
     def __init__(self, spikesFilename):
@@ -144,3 +145,12 @@ def get_pad_positions(h5file):
 
 def get_git_commit_id(h5file):
     return h5file.root.SpikeTable.attrs.GITCOMMITID
+
+def get_stimtimer(h5file, addToBlacklist=['BlueSquare',], mwkf=None):
+    stimtimer = stimsorter.StimTimer()
+    stimtimer.blacklist += addToBlacklist
+    if mwkf is None:
+        mwkf = get_mw_event_reader(h5file)
+    [stimtimer.process_mw_event(e) for e in mwkf.get_events(codes=['#announceStimulus',], time_range=get_mw_epoch(h5file))]
+    
+    return stimtimer

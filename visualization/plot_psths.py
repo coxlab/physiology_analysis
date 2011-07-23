@@ -52,26 +52,15 @@ logging.debug("Loaded epoch: %s" % str(epoch_mw))
 
 # get stimulus times
 logging.debug("Get stimulus times")
-stimtimer = physio.stimsorter.StimTimer()
-stimtimer.blacklist += ['BlueSquare',]
-mwkf = physio.h5_utils.get_mw_event_reader(resultsFile)
-[stimtimer.process_mw_event(e) for e in mwkf.get_events(codes=['#announceStimulus',], time_range=epoch_mw)]
-
-def unique(inList):
-    d = {}
-    for i in inList:
-        d[i] = 1
-    return d.keys()
-
-stim_names = [str(n) for n in sorted(unique([s.intName for s in stimtimer.stimList]))]
-pos_xs = sorted(unique([s.pos_x for s in stimtimer.stimList]))
-pos_ys = sorted(unique([s.pos_y for s in stimtimer.stimList]))
-size_xs = sorted(unique([s.size_x for s in stimtimer.stimList]))
+stimtimer = physio.h5_utils.get_stimtimer(resultsFile)
+stim_names = stimtimer.get_unique_stim_attr('name')
+pos_xs = stimtimer.get_unique_stim_attr('pos_x')
+pos_ys = stimtimer.get_unique_stim_attr('pos_y')
+size_xs = stimtimer.get_unique_stim_attr('size_x')
 
 for (l,s) in zip([stim_names,pos_xs,pos_ys,size_xs],['names','pos_x','pos_y','size_x']):
     logging.debug("Found %i %s" % (len(l),s))
 
-#subplots_width = len(pos_xs) + len(pos_ys) - 1 + len(size_xs)
 subplots_height = len(stim_names)
 
 valid_stims = []
