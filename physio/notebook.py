@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 
-import logging
+import logging, sys
 # logging.basicConfig(level=logging.DEBUG)
+
+import cfg
 
 import gdata
 import gdata.spreadsheet.service
@@ -160,4 +162,20 @@ def lookup_session(config):
         returnDict[k] = sessionEntry.custom[k].text
     
     return returnDict
+
+
+if __name__ == '__main__':
+    session = 'K4_110714'
+    if len(sys.argv) > 1:
+        session = sys.argv[1]
     
+    config = cfg.Config()
+    config.read_user_config()
+    config.set_session(session)
+    
+    session_dict = lookup_session(config)
+    print "Session Dict:", session_dict
+    
+    config.set('probe','id',session_dict['electrode'].lower().strip())
+    probe_dict = lookup_probe(config)
+    print "Probe Dict:", probe_dict
