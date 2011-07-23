@@ -109,5 +109,8 @@ def make_output_dirs(config):
     output_dir = config.get('session','output')
     if not (os.path.exists(output_dir)): os.makedirs(output_dir)
     
+    scratch_dir = config.get('session','scratch')
+    if not (os.path.exists(scratch_dir)): os.makedirs(scratch_dir)
+    
     pixel_clock_output = config.get('pixel clock','output')
     if not (os.path.exists(pixel_clock_output)): os.makedirs(pixel_clock_output)

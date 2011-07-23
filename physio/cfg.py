@@ -5,9 +5,11 @@ import ConfigParser, io, logging, os
 # blank items will be filled in later (in set_session)
 CFGDEFAULTS = """
 [filesystem]
-datarepo: /data
-tmp: /data/tmp/
-resultsrepo: /scratch
+datarepo: /data/raw
+tmp: /scratch/tmp
+scratch: /scratch
+resultsrepo: /data/results
+cleanup: True
 
 [pixel clock]
 y: -28
@@ -19,7 +21,7 @@ output:
 samprate: 44100
 
 [mworks]
-ext: .mwk
+ext: .h5
 file: 
 
 [epochs]
@@ -29,6 +31,7 @@ settletime: 300
 [session]
 name: 
 dir: 
+scratch: 
 output: 
 
 [probe]
@@ -74,6 +77,9 @@ class Config(ConfigParser.SafeConfigParser):
         
         if self.get('session','output').strip() == '':
             self.set('session','output','/'.join((self.get('filesystem','resultsrepo'),session)))
+        
+        if self.get('session','scratch').strip() == '':
+            self.set('session','scratch','/'/join((self.get('filesystem','scratch'),session)))
         
         if self.get('mworks','file').strip() == '':
             self.set('mworks','file','/'.join((self.get('session','dir'),session + self.get('mworks','ext'))))
