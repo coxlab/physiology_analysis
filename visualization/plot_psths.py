@@ -59,6 +59,11 @@ pos_xs = stimtimer.get_unique_stim_attr('pos_x')
 pos_ys = stimtimer.get_unique_stim_attr('pos_y')
 size_xs = stimtimer.get_unique_stim_attr('size_x')
 
+print stim_names
+print pos_xs
+print pos_ys
+print size_xs
+
 for (l,s) in zip([stim_names,pos_xs,pos_ys,size_xs],['names','pos_x','pos_y','size_x']):
     logging.debug("Found %i %s" % (len(l),s))
 
@@ -122,8 +127,10 @@ for group in groupI:
             
             stimI = stimtimer.find_stim(stim)
             if stimI == -1:
-                logging.debug("%s" % stimtimer.stimList)
-                raise ValueError("stimulus: %s was not found when plotting" % stim)
+                #logging.debug("%s" % stimtimer.stimList)
+                #raise ValueError("stimulus: %s was not found when plotting" % stim)
+                logging.debug("Stim not found: %s" % str(stim))
+                continue
             
             stim_times = [s for s in stimtimer.times[stimI]]
             # stim_times = [s for s in stimtimer.times[stimI] if s < end_mw and s > start_mw]
