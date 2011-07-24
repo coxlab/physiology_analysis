@@ -19,18 +19,24 @@ resultsFile = '../results/session_597_to_5873_a32_batch.h5'
 if len(sys.argv) > 1:
     resultsFile = sys.argv[1]
 
-outDir = './psths'
-if len(sys.argv) > 2:
-    outDir = sys.argv[2]
+#outDir = './psths'
+if len(sys.argv) > 4:
+    outDir = sys.argv[4]
+else:
+    outDir = os.path.splitext(resultsFile)[0] + '/psths'
+    #logging.debug("Writing plots to: %s" % outDir)
 
-groupBy = 'clusters'
-if len(sys.argv) > 3:
-    groupBy = sys.argv[3]
+groupBy = 'channels'
+if len(sys.argv) > 2:
+    groupBy = sys.argv[2]
+
+outDir += '/' + groupBy + '/'
+logging.debug("Writing plots to: %s" % outDir)
 
 groupI = None
-if len(sys.argv) > 4:
+if len(sys.argv) > 3:
     try:
-        groupI = ast.literal_eval(sys.argv[4])
+        groupI = ast.literal_eval(sys.argv[3])
     except:
         pass
 
