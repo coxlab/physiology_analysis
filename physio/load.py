@@ -1,0 +1,30 @@
+#!/usr/bin/env python
+
+import ast, logging, sys
+
+import tables
+
+import h5_utils
+import pixel_clock
+import stats
+
+def load(h5filename, clean=True):
+    f = tables.openFile(h5filename)
+    epoch_mw = h5_utils.get_mw_epoch(f)
+    tb = pixel_clock.TimeBase(*h5_utils.get_time_matches(f))
+    tb.audio_offset = -tb.mw_time_to_audio(epoch_mw[0])
+    stimtimer = h5_utils.get_stimtimer(f)
+    spiketimes = [ x["time"] for x in f.root.SpikeTable.iterrows()]
+    clusters = [ x["clu"] for x in f.root.SpikeTable.iterrows()]
+    triggers = [ x["st"] for x in f.root.SpikeTable.iterrows()]
+    # waveforms = [ x["wave"] for x in f.root.SpikeTable.iterrows()]
+    probe_dict = h5_utils.get_probe_gdata(f)
+    bad_nn_channels = ast.literal_eval('['+probe_dict['badsites']+']')
+    spiketimes, clusters, triggers = stats.clean_spikes(spiketimes, clusters, triggers, bad_nn_channels)
+    return f, tb, stimtimer, spiketimes, clusters, triggers, epoch_mw
+
+if __name__ == '__main__':
+    if len(sys.argv) != 2:
+        print "usage: load.py <h5resultsfilename>"
+    logging.basicConfig(level=logging.DEBUG)
+    h5file, timebase, stimtimer, spiketimes, clusters, triggers, epoch = load(sys.argv[1])

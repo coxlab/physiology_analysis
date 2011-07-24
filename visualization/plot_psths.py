@@ -85,12 +85,16 @@ logging.debug("subplots w:%i, h:%i" % (subplots_width, subplots_height))
 timebase.audio_offset = -timebase.mw_time_to_audio(start_mw)
 
 times = [ x["time"] for x in resultsFile.root.SpikeTable.iterrows()]
+clusters = [ x["clu"] for x in resultsFile.root.SpikeTable.iterrows()]
+triggers = [ x["st"] for x in resultsFile.root.SpikeTable.iterrows()]
+
+probeDict = physio.h5_utils.get_probe_gdata(resultsFile)
+bad_nn_channels = ast.literal_eval('['+probeDict['badsites']+']')
+times, clusters, triggers = physio.stats.clean_spikes(times, clusters, triggers, bad_nn_channels)
 
 if groupBy == 'clusters':
-    clusters = [ x["clu"] for x in resultsFile.root.SpikeTable.iterrows()]
     groupedSpikes = physio.caton_utils.spikes_by_cluster(times, clusters)
 elif groupBy == 'channels':
-    triggers = [ x["st"] for x in resultsFile.root.SpikeTable.iterrows()]
     groupedSpikes = physio.caton_utils.spikes_by_channel(times, triggers)
 
 if not os.path.exists(outDir): os.makedirs(outDir)
