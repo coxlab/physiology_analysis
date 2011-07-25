@@ -42,21 +42,27 @@ def neuronexus_to_tdt(nn):
     return [-1,7,1,5,3,2,22,4,18,6,21,8,17,24,20,23,19,29,25,30,26,31,32,27,13,28,9,15,16,11,12,14,10][nn]
 
 # no need to listify these
+@listify
 def audio_to_neuronexus(au):
     return tdt_to_neuronexus(audio_to_tdt(au))
 
+@listify
 def neuronexus_to_audio(nn):
     return tdt_to_audio(neuronexus_to_tdt(nn))
 
+@listify
 def position_to_audio(pos):
     return tdt_to_audio(position_to_tdt(pos))
 
+@listify
 def audio_to_position(au):
     return tdt_to_position(audio_to_tdt(au))
 
+@listify
 def neuronexus_to_position(nn):
     return tdt_to_position(neuronexus_to_tdt(nn))
 
+@listify
 def position_to_neuronexus(au):
     return tdt_to_neuronexus(position_to_tdt(au))
 

@@ -84,14 +84,29 @@ for (spy, spikegroup) in enumerate(spikegroupI):
         
         # physio.mw_utils.plot_rasters(ev_locked, time_range=(-options.before, options.after), n_bins=options.nbins)
         physio.mw_utils.plot_psth(ev_locked, time_range=(-options.before, options.after), n_bins=options.nbins)
+        pre = 0
+        post = 0
+        for ev in ev_locked:
+            for s in ev:
+                if s <= 0:
+                    pre += 1
+                elif s <= 0.5:
+                    post += 1
+        if pre == 0:
+            visual = float(post) / 5.
+        else:
+            visual = float(post) / (5. * float(pre))
         plt.axvline(0.5, zorder=-500, color='r')
+        spb = (options.before + options.after) / options.nbins# seconds per bin
+        sps = pre / options.before # spikes per second
+        plt.axhline(sps * spb, color='g')
         a = plt.gca()
         a.set_yticks([])
         a.set_yticklabels([])
-        # xm = a.get_xlim()[0] + (a.get_xlim()[1] - a.get_xlim()[0]) / 2.
-        # ym = a.get_ylim()[0] + (a.get_ylim()[1] - a.get_ylim()[0]) / 2.
-        # a.text(xm,ym,'%i' % n_stim, color='r', zorder=-1000,
-        #     horizontalalignment='center', verticalalignment='center')
+        xm = a.get_xlim()[0] + (a.get_xlim()[1] - a.get_xlim()[0]) / 2.
+        ym = a.get_ylim()[0] + (a.get_ylim()[1] - a.get_ylim()[0]) / 2.
+        a.text(xm,ym,'%.2f' % visual, color='k',
+            horizontalalignment='center', verticalalignment='center')
         # a.set_yticks([a.get_ylim()[1]])
         # a.set_yticklabels([str(a.get_ylim()[1])],
         #     horizontalalignment='left', color='r', alpha=0.8)
