@@ -8,12 +8,12 @@ import h5_utils
 import pixel_clock
 import stats
 
-def load(h5filename, clean=True):
+def load(h5filename, clean=True, addToBlacklist=['BlueSquare',]): # hack for addToBlacklist
     f = tables.openFile(h5filename)
     epoch_mw = h5_utils.get_mw_epoch(f)
     tb = pixel_clock.TimeBase(*h5_utils.get_time_matches(f))
     tb.audio_offset = -tb.mw_time_to_audio(epoch_mw[0])
-    stimtimer = h5_utils.get_stimtimer(f)
+    stimtimer = h5_utils.get_stimtimer(f, addToBlacklist)
     spiketimes = [ x["time"] for x in f.root.SpikeTable.iterrows()]
     clusters = [ x["clu"] for x in f.root.SpikeTable.iterrows()]
     triggers = [ x["st"] for x in f.root.SpikeTable.iterrows()]

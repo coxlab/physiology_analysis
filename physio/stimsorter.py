@@ -104,7 +104,11 @@ class StimSorter(object):
     
     def get_unique_stim_attr(self, attr):
         if attr == 'name':
-            return [str(n) for n in sorted(unique(self.get_stim_attr('intName')))]
+            return sorted(unique(self.get_stim_attr(attr)))
+            # inames = self.get_stim_attr('intName')
+            # snames = self.get_stim_attr('name')
+            # snames = sorted(zip(i,n))
+            # return [str(n) for n in sorted(unique(self.get_stim_attr('intName')))]
         else:
             return sorted(unique(self.get_stim_attr(attr)))
 
