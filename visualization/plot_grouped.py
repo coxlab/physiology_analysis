@@ -40,12 +40,13 @@ h5filename = args[0]
 outDir = os.path.splitext(h5filename)[0] + '/grouped'
 
 resultsFile, tb, stimtimer, spiketimes, clusters, triggers, epoch_mw = physio.load.load(h5filename, clean=True, addToBlacklist=[])
+channels = physio.stats.single_channel_triggers_to_channels(triggers)
 stimgroups = stimtimer.get_unique_stim_attr(options.stimgroup)
 
 if options.spikegroup == 'clusters':
     groupedSpikes = physio.caton_utils.spikes_by_cluster(spiketimes, clusters)
 elif options.spikegroup == 'channels':
-    groupedSpikes = physio.caton_utils.spikes_by_channel(spiketimes, triggers)
+    groupedSpikes = physio.caton_utils.spikes_by_channel(spiketimes, channels)
 
 subplots_height = len(groupedSpikes)
 subplots_width = len(stimgroups)
