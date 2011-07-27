@@ -35,7 +35,7 @@ h5filename = args[0]
 
 outDir = os.path.splitext(h5filename)[0] + '/driven'
 
-resultsFile, tb, stimtimer, spiketimes, clusters, triggers, epoch_mw = physio.load.load(h5filename, clean=True) # blacklists bluesquare
+resultsFile, tb, stimtimer, spiketimes, clusters, triggers, epoch_mw = physio.load.load(h5filename, clean=False) # blacklists bluesquare
 channels = physio.stats.single_channel_triggers_to_channels(triggers)
 
 if options.spikegroup == 'clusters':
@@ -130,31 +130,24 @@ def plot_rate(stimtimer, times, xattr, lattr, spikes, before, after, timebase, b
         logging.debug("y: %s" % str(y))
         plt.plot(x,y,label=str(l),marker='o')
     plt.xticks(x)
-    plt.ylim((-2,4))
+    # plt.ylim((-2,4))
     # plt.legend()
 
 for spikegroup in spikegroupI:
     logging.info("Plotting %s %i" % (options.spikegroup[:-1], spikegroup))
+    
+    # for each cluster/channel
+    # get baseline
+    baseline = get_rate(allstimtimes, groupedSpikes[spikegroup], options.before, 0, tb)
+    logging.info("Baseline for %i : %f" % (spikegroup, baseline))
     
     subplots_height = len(idtimes)
     subplots_width = 3 # x,y x,s y,s
     logging.debug("subplots w:%i, h:%i" % (subplots_width, subplots_height))
     plt.figure(figsize=(subplots_width*2, subplots_height*2))
     plt.subplots_adjust(wspace=0.5, hspace=0.5)
-    plt.gcf().suptitle('Driven firing rate by %s' % options.spikegroup)
+    plt.gcf().suptitle('Driven ff by %s [base:%.2f]' % (options.spikegroup, baseline))
     plt.subplot(subplots_height, subplots_width,1)
-    
-    # for each cluster/channel
-    # get baseline
-    baseline = get_rate(allstimtimes, groupedSpikes[spikegroup], options.before, 0, tb)
-    # pre_spikes = physio.mw_utils.event_lock_spikes(allstimtimes, groupedSpikes[spikegroup],
-    #                     options.before, 0, tb)
-    # pre = 0
-    # for ps in pre_spikes:
-    #     pre += len(ps) # number of spikes prior to this stimulus
-    # baseline = (pre / float(len(pre_spikes))) * (1. / float(options.before)) # in spikes per second
-    logging.info("Baseline for %i : %f" % (spikegroup, baseline))
-    # del pre_spikes
     
     # calculate driven firing rate for each stimulus id
     rate_by_id = {}
@@ -173,6 +166,7 @@ for spikegroup in spikegroupI:
     logging.debug("Stim ID sorted by Rate: %s" % str(id_by_rate))
     
     # for each stimulus id
+    ymin, ymax = 0, 0
     for spy in xrange(len(id_by_rate)):
         (stimid, rate) = id_by_rate[spy]
         # # get rates
@@ -201,6 +195,9 @@ for spikegroup in spikegroupI:
         plt.ylabel('%s[%.2f]' % (stimid, rate))
         if spikegroup == spikegroupI[-1]: plt.xlabel('Pos X')
         if spy == 0: plt.title('B:-5 G:0 R:+5')
+        yl = plt.ylim()
+        ymin = min(yl[0],ymin)
+        ymax = max(yl[1],ymax)
         
         # plot driven firing rate by pos_x by size_x : subplot 2
         plt.subplot(subplots_height, subplots_width, spy * subplots_width + 2)
@@ -208,6 +205,9 @@ for spikegroup in spikegroupI:
         plot_rate(stimtimer, sxstimes[stimid], 'pos_x', 'size_x', groupedSpikes[spikegroup], 0, options.after, tb, baseline)
         if spikegroup == spikegroupI[-1]: plt.xlabel('Pos X')
         if spy == 0: plt.title('B:35 G:70 R:105')
+        yl = plt.ylim()
+        ymin = min(yl[0],ymin)
+        ymax = max(yl[1],ymax)
         
         # plot driven firing rate by pos_y by size_x : subplot 3
         plt.subplot(subplots_height, subplots_width, spy * subplots_width + 3)
@@ -215,8 +215,14 @@ for spikegroup in spikegroupI:
         plot_rate(stimtimer, systimes[stimid], 'pos_y', 'size_x', groupedSpikes[spikegroup], 0, options.after, tb, baseline)
         if spikegroup == spikegroupI[-1]: plt.xlabel('Pos Y')
         if spy == 0: plt.title('B:35 G:70 R:105')
-        
-        #break
+        yl = plt.ylim()
+        ymin = min(yl[0],ymin)
+        ymax = max(yl[1],ymax)
+    
+    for i in xrange(subplots_width * subplots_height):
+        # set ylimits for all plots
+        plt.subplot(subplots_height,subplots_width,i+1)
+        plt.ylim([ymin,ymax])
     
     # plt.show()
     plt.savefig("%s/%s_%i_driven_rate.pdf" % (outDir, options.spikegroup[:-1], spikegroup))
