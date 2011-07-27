@@ -5,8 +5,10 @@ logging.basicConfig(level=logging.DEBUG)
 
 import tables
 import matplotlib
-# if sys.platform == 'darwin':
-#     matplotlib.use('qt4Agg') # doesn't like QT?
+if sys.platform == 'darwin':
+    plotFileExtension = '.pdf'
+else:
+    plotFileExtension = '.svg'
 import numpy as np
 import pylab as plt
 
@@ -225,7 +227,7 @@ for spikegroup in spikegroupI:
         plt.ylim([ymin,ymax])
     
     # plt.show()
-    plt.savefig("%s/%s_%i_driven_rate.pdf" % (outDir, options.spikegroup[:-1], spikegroup))
+    plt.savefig("%s/%s_%i_driven_rate%s" % (outDir, options.spikegroup[:-1], spikegroup, plotFileExtension))
     plt.clf()
 
 resultsFile.close()
