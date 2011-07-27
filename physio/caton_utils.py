@@ -7,6 +7,8 @@ import shlex
 import tables
 import numpy
 
+import mw_utils
+
 from caton.core import classify_from_raw_data
 
 # TDT_PADS = [6,9,0,13,4,11,2,10,1,15,21,14,3,8,17,27,5,12,20,26,7,31,16,30,23,25,19,29,22,24,18,28]
@@ -146,12 +148,28 @@ def spikes_by_channel(times, channels, nchan=32):#triggers):
     float_times = numpy.array([t / 44100. for t in times])
     for ch in xrange(nchan):
         spike_trains.append(numpy.atleast_1d(float_times[channels == ch]))
+        # spike_trains.append(float_times[channels == ch])
     # tr_ch = [ numpy.argsort(tr)[-1] for tr in triggers]
     # for ch in numpy.unique(tr_ch):
     #     spike_trains.append(float_times[tr_ch == ch])
     
     return spike_trains
-    
+
+def get_rate(times, spikes, before, after, tb):
+    locked_spikes = mw_utils.event_lock_spikes(times, spikes, before, after, tb)
+    if len(locked_spikes) == 0:
+        del locked_spikes
+        logging.warning("Found no spikes for range: %f %f" % (before, after))
+        return 0
+
+    rate = 0
+    for s in locked_spikes:
+        rate += len(s)
+
+    rate = (rate / float(len(locked_spikes))) * (1. / float(before + after))
+    del locked_spikes
+    return rate
+
 if __name__ == "__main__":
     
     base_path = sys.argv[1]

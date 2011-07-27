@@ -69,7 +69,13 @@ plt.figure(figsize=(subplots_width, subplots_height))
 plt.gcf().suptitle('%s by %s' % (options.spikegroup, options.stimgroup))
 plt.subplot(subplots_height, subplots_width,1)
 
+ymin, ymax = 0,0
+
 for (spy, spikegroup) in enumerate(spikegroupI):
+    
+    # baseline = physio.caton_utils.get_rate(stimtimer.get_all_times(), groupedSpikes[spikegroup], 0.1, 0, tb)
+    # logging.debug("Baseline rate for %s : %.2f" % (str(spikegroup), baseline))
+    
     for (spx, stimgroup) in enumerate(stimgroups):
         logging.info("Plotting %s by %s" % (spikegroup, stimgroup))
         stimtimes = []
@@ -87,29 +93,33 @@ for (spy, spikegroup) in enumerate(spikegroupI):
         
         # physio.mw_utils.plot_rasters(ev_locked, time_range=(-options.before, options.after), n_bins=options.nbins)
         physio.mw_utils.plot_psth(ev_locked, time_range=(-options.before, options.after), n_bins=options.nbins)
-        pre = 0
-        post = 0
-        for ev in ev_locked:
-            for s in ev:
-                if s <= 0:
-                    pre += 1
-                elif s <= 0.5:
-                    post += 1
-        if pre == 0:
-            visual = float(post) / 5.
-        else:
-            visual = float(post) / (5. * float(pre))
+        
+        # pre = 0
+        # post = 0
+        # for ev in ev_locked:
+        #     for s in ev:
+        #         if s <= 0:
+        #             pre += 1
+        #         elif s <= 0.5:
+        #             post += 1
+        # if pre == 0:
+        #     visual = float(post) / 5.
+        # else:
+        #     visual = float(post) / (5. * float(pre))
+        # 
+        # spb = (options.before + options.after) / options.nbins# seconds per bin
+        # sps = pre / options.before # spikes per second
+        # plt.axhline(sps * spb, color='g')
+        # plt.axhline(baseline)
+        
         plt.axvline(0.5, zorder=-500, color='r')
-        spb = (options.before + options.after) / options.nbins# seconds per bin
-        sps = pre / options.before # spikes per second
-        plt.axhline(sps * spb, color='g')
         a = plt.gca()
         a.set_yticks([])
         a.set_yticklabels([])
         xm = a.get_xlim()[0] + (a.get_xlim()[1] - a.get_xlim()[0]) / 2.
         ym = a.get_ylim()[0] + (a.get_ylim()[1] - a.get_ylim()[0]) / 2.
-        a.text(xm,ym,'%.2f' % visual, color='k',
-            horizontalalignment='center', verticalalignment='center')
+        # a.text(xm,ym,'%.2f' % visual, color='k',
+        #     horizontalalignment='center', verticalalignment='center')
         # a.set_yticks([a.get_ylim()[1]])
         # a.set_yticklabels([str(a.get_ylim()[1])],
         #     horizontalalignment='left', color='r', alpha=0.8)
@@ -125,7 +135,13 @@ for (spy, spikegroup) in enumerate(spikegroupI):
         if spy == 0:
             a.set_title("%s[%i]" % (stimgroup, n_stim),
                 rotation=45, horizontalalignment='left', verticalalignment='bottom')
+        yl = a.get_ylim()
+        ymin = min(ymin,yl[0])
+        ymax = max(ymax,yl[1])
 
+for i in xrange(subplots_width * subplots_height):
+    plt.subplot(subplots_height, subplots_width, i+1)
+    plt.ylim([ymin, ymax])
 # plt.show()
 plt.savefig("%s/%s_by_%s_psth.svg" % (outDir, options.spikegroup, options.stimgroup))
 plt.hold(False)

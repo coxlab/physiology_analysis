@@ -131,6 +131,12 @@ class StimTimer(StimSorter):
         self.times = {}
         self.blacklist = blacklist
     
+    def get_all_times(self):
+        alltimes = []
+        for tk in times:
+            alltiems += times[tk]
+        return alltimes
+    
     def process_mw_event(self, event, conv=1./1000000.):
         """
         Process a #stimDisplayUpdate, adding any new stimuli to

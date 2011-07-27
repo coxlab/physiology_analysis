@@ -158,7 +158,7 @@ for spikegroup in spikegroupI:
     # calculate driven firing rate for each stimulus id
     rate_by_id = {}
     for stimid in idtimes:
-        rate_by_id[stimid] = get_rate(idtimes[stimid], groupedSpikes[spikegroup], 0.1, options.after, tb) - baseline
+        rate_by_id[stimid] = get_rate(idtimes[stimid], groupedSpikes[spikegroup], -0.1, options.after, tb) - baseline
         # locked_spikes = physio.mw_utils.event_lock_spikes(idtimes[stimid], groupedSpikes[spikegroup],
         #                     0, options.after, tb)
         # rate = 0

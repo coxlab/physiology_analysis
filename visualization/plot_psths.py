@@ -101,7 +101,7 @@ triggers = [ x["st"] for x in resultsFile.root.SpikeTable.iterrows()]
 
 probeDict = physio.h5_utils.get_probe_gdata(resultsFile)
 bad_nn_channels = ast.literal_eval('['+probeDict['badsites']+']')
-times, clusters, triggers = physio.stats.clean_spikes(times, clusters, triggers, bad_nn_channels)
+# times, clusters, triggers = physio.stats.clean_spikes(times, clusters, triggers, bad_nn_channels)
 channels = physio.stats.single_channel_triggers_to_channels(triggers)
 
 if groupBy == 'clusters':
@@ -127,6 +127,7 @@ for group in groupI:
     plt.figure(figsize=(subplots_width, subplots_height))
     plt.gcf().suptitle('%s %d' % (groupBy, group))
     plt.subplot(subplots_height, subplots_width,1)
+    ymin, ymax = 0,0
     
     for (subplots_y, sn) in enumerate(stim_names):
         for (subplots_x, vs) in enumerate(valid_stims):
@@ -175,6 +176,13 @@ for group in groupI:
             if subplots_y == 0:
                 a.set_title('%i,%i[%i]' % (stim.pos_x, stim.pos_y, stim.size_x),
                     rotation=45, horizontalalignment='left', verticalalignment='bottom')
+            yl = a.get_ylim()
+            ymin = min(ymin, yl[0])
+            ymax = max(ymax, yl[1])
+    
+    for i in xrange(subplots_width * subplots_height):
+        plt.subplot(subplots_height, subplots_width, i+1)
+        plt.ylim([ymin, ymax])
     # plt.show()
     plt.savefig("%s/%s_%d_psth.svg" % (outDir, groupBy, group))
     plt.hold(False)
