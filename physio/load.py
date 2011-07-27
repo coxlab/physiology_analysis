@@ -22,8 +22,8 @@ def load(h5filename, clean=True, addToBlacklist=['BlueSquare',]): # hack for add
     bad_nn_channels = ast.literal_eval('['+probe_dict['badsites']+']')
     if bad_nn_channels == [None]:
         bad_nn_channels = []
-    if clean:
-        spiketimes, clusters, triggers = stats.clean_spikes(spiketimes, clusters, triggers, bad_nn_channels)
+    # if clean:
+    #     spiketimes, clusters, triggers = stats.clean_spikes(spiketimes, clusters, triggers, bad_nn_channels)
     return f, tb, stimtimer, spiketimes, clusters, triggers, epoch_mw
 
 if __name__ == '__main__':

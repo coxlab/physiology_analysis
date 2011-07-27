@@ -139,9 +139,9 @@ for (spy, spikegroup) in enumerate(spikegroupI):
         ymin = min(ymin,yl[0])
         ymax = max(ymax,yl[1])
 
-for i in xrange(subplots_width * subplots_height):
-    plt.subplot(subplots_height, subplots_width, i+1)
-    plt.ylim([ymin, ymax])
+# for i in xrange(subplots_width * subplots_height):
+#     plt.subplot(subplots_height, subplots_width, i+1)
+#     plt.ylim([ymin, ymax])
 # plt.show()
 plt.savefig("%s/%s_by_%s_psth.svg" % (outDir, options.spikegroup, options.stimgroup))
 plt.hold(False)

@@ -180,9 +180,9 @@ for group in groupI:
             ymin = min(ymin, yl[0])
             ymax = max(ymax, yl[1])
     
-    for i in xrange(subplots_width * subplots_height):
-        plt.subplot(subplots_height, subplots_width, i+1)
-        plt.ylim([ymin, ymax])
+    # for i in xrange(subplots_width * subplots_height):
+    #     plt.subplot(subplots_height, subplots_width, i+1)
+    #     plt.ylim([ymin, ymax])
     # plt.show()
     plt.savefig("%s/%s_%d_psth.svg" % (outDir, groupBy, group))
     plt.hold(False)
