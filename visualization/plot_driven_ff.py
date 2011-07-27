@@ -198,7 +198,7 @@ for spikegroup in spikegroupI:
         plt.subplot(subplots_height, subplots_width, spy * subplots_width + 1)
         logging.debug("Subplot: %i" % (spy * subplots_width + 1))
         plot_rate(stimtimer, sxytimes[stimid], 'pos_x', 'pos_y', groupedSpikes[spikegroup], 0, options.after, tb, baseline)
-        plt.ylabel('%s' % stimid)
+        plt.ylabel('%s[%.2f]' % (stimid, rate))
         if spikegroup == spikegroupI[-1]: plt.xlabel('Pos X')
         if spy == 0: plt.title('B:-5 G:0 R:+5')
         
