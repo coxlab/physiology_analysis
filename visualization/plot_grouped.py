@@ -39,7 +39,7 @@ h5filename = args[0]
 
 outDir = os.path.splitext(h5filename)[0] + '/grouped'
 
-resultsFile, tb, stimtimer, spiketimes, clusters, triggers, epoch_mw = physio.load.load(h5filename, clean=False, addToBlacklist=[])
+resultsFile, tb, stimtimer, spiketimes, clusters, triggers, epoch_mw = physio.load.load(h5filename, clean=False)#, addToBlacklist=[])
 channels = physio.stats.single_channel_triggers_to_channels(triggers)
 stimgroups = stimtimer.get_unique_stim_attr(options.stimgroup)
 
