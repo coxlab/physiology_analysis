@@ -47,6 +47,8 @@ if options.spikegroup == 'clusters':
     groupedSpikes = physio.caton_utils.spikes_by_cluster(spiketimes, clusters)
 elif options.spikegroup == 'channels':
     groupedSpikes = physio.caton_utils.spikes_by_channel(spiketimes, channels)
+elif options.spikegroup == 'triggers':
+    groupedSpikes = physio.caton_utils.spikes_by_trigger(spiketimes, triggers)
 
 subplots_height = len(groupedSpikes)
 subplots_width = len(stimgroups)

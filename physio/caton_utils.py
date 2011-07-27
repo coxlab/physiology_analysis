@@ -129,15 +129,23 @@ def spikes_by_cluster(times, clusters):
     float_times = numpy.array([t / 44100. for t in times])
     clusters_array = numpy.array(clusters)
     for i in range(min(clusters), max(clusters)):
-        spike_trains.append(float_times[clusters_array == i])
+        spike_trains.append(numpy.atleast_1d(float_times[clusters_array == i]))
     
+    return spike_trains
+
+def spikes_by_trigger(times, triggers, nchan=32):
+    spike_trains = []
+    float_times = numpy.array([t / 44100. for t in times])
+    tr_ch = [numpy.argsort(tr)[-1] for tr in triggers]
+    for ch in xrange(nchan):
+        spike_trains.append(numpy.atleast_1d(float_times[tr_ch == ch]))
     return spike_trains
 
 def spikes_by_channel(times, channels, nchan=32):#triggers):
     spike_trains = []
     float_times = numpy.array([t / 44100. for t in times])
     for ch in xrange(nchan):
-        spike_trains.append(float_times[channels == ch])
+        spike_trains.append(numpy.atleast_1d(float_times[channels == ch]))
     # tr_ch = [ numpy.argsort(tr)[-1] for tr in triggers]
     # for ch in numpy.unique(tr_ch):
     #     spike_trains.append(float_times[tr_ch == ch])

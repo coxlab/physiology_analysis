@@ -22,7 +22,7 @@ parser.add_option("-s", "--spikegroup", dest="spikegroup", default="clusters",
                     help="Group spikes by this variable: clusters or channels")
 parser.add_option("-b", "--before", dest="before", default=0.1,
                     help="Seconds before stimulus onset to calculate baseline")
-parser.add_option("-a", "--after", dest="after", default=0.5,
+parser.add_option("-a", "--after", dest="after", default=0.2,
                     help="Seconds after stimulus onset to calculate response")
 parser.add_option("-g", "--group", dest="group", default="",
                     help="Plot group or groups. parsed with ast.literal_eval")
@@ -44,6 +44,8 @@ if options.spikegroup == 'clusters':
     groupedSpikes = physio.caton_utils.spikes_by_cluster(spiketimes, clusters)
 elif options.spikegroup == 'channels':
     groupedSpikes = physio.caton_utils.spikes_by_channel(spiketimes, channels)
+elif options.spikegroup == 'triggers':
+    groupedSpikes = physio.caton_utils.spikes_by_trigger(spiketimes, triggers)
 
 if options.group != "":
     ps = ast.literal_eval(options.group)
@@ -138,6 +140,8 @@ def plot_rate(stimtimer, times, xattr, lattr, spikes, before, after, timebase, b
 for spikegroup in spikegroupI:
     logging.info("Plotting %s %i" % (options.spikegroup[:-1], spikegroup))
     
+    firstSpike = 0
+    
     # for each cluster/channel
     # get baseline
     baseline = get_rate(allstimtimes, groupedSpikes[spikegroup], options.before, 0, tb)
@@ -154,7 +158,7 @@ for spikegroup in spikegroupI:
     # calculate driven firing rate for each stimulus id
     rate_by_id = {}
     for stimid in idtimes:
-        rate_by_id[stimid] = get_rate(idtimes[stimid], groupedSpikes[spikegroup], 0, options.after, tb) - baseline
+        rate_by_id[stimid] = get_rate(idtimes[stimid], groupedSpikes[spikegroup], 0.1, options.after, tb) - baseline
         # locked_spikes = physio.mw_utils.event_lock_spikes(idtimes[stimid], groupedSpikes[spikegroup],
         #                     0, options.after, tb)
         # rate = 0

@@ -40,8 +40,8 @@ if len(sys.argv) > 3:
     except:
         pass
 
-if not (groupBy in ['clusters', 'channels']):
-    raise ValueError("GroupBy[arg3] must be either clusters or channels NOT %s" % groupBy)
+# if not (groupBy in ['clusters', 'channels']):
+#     raise ValueError("GroupBy[arg3] must be either clusters or channels NOT %s" % groupBy)
 
 plotWindow = [0.25, .75]
 plotNBins = 20
@@ -108,6 +108,8 @@ if groupBy == 'clusters':
     groupedSpikes = physio.caton_utils.spikes_by_cluster(times, clusters)
 elif groupBy == 'channels':
     groupedSpikes = physio.caton_utils.spikes_by_channel(times, channels)
+elif options.spikegroup == 'triggers':
+    groupedSpikes = physio.caton_utils.spikes_by_trigger(spiketimes, triggers)
 
 if not os.path.exists(outDir): os.makedirs(outDir)
 
