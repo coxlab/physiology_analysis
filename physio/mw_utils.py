@@ -192,11 +192,16 @@ def faster_event_lock_spikes( event_times, spike_times, pre_time, post_time, tim
     for e in event_times:
         m = time_base.mw_time_to_audio(e)
         locked_event = []
-        d = spike_times[spikeI] - m
-        while spikeI < spikeN and ((d > pre_time) and (d < post_time)):
-            locked_event.append(d)
-            spikeI += 1
+        spikeI = 0
+        while spikeI < spikeN:
             d = spike_times[spikeI] - m
+            if d <= pre_time:
+                spikeI += 1
+            elif d > post_time:
+                spikeI = spikeN
+            else:
+                locked_event.append(d)
+                spikeI += 1
         locked_all.append(locked_event)
     
     return locked_all
