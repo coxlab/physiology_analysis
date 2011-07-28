@@ -52,7 +52,7 @@ def collate_responses(stimname, attr):
     return resp
 
 resp = {}
-nameresps = {}
+nameresps = []
 for sn in stimnamelist:
     # stim_name, n_spikes, n_reps
     nameresps.append([sn, sum(visualResponses[stimnames == sn]), sum(stimReps[stimnames == sn])])
