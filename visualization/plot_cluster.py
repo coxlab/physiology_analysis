@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import ast, copy, logging, optparse, os, sys
+import ast, copy, logging, optparse, os, pickle, sys
 logging.basicConfig(level=logging.DEBUG)
 
 import tables
@@ -51,7 +51,7 @@ def collate_responses(stimname, attr):
         resp.append([us, sum(visualResponses[Is]), sum(stimReps[Is])])
     return resp
 
-resp = {}
+stimresps = {}
 nameresps = []
 for sn in stimnamelist:
     # stim_name, n_spikes, n_reps
@@ -62,6 +62,10 @@ for sn in stimnamelist:
     stimresps[sn]['s'] = collate_responses(sn,'size_x')
 
 print "Response by ID:", nameresps
+f = open('resps.p','wb')
+pickle.dump((nameresps, stimresps), f)
+f.close()
+
 # 2. NORMALIZED response to each stimulus collapsed across variation (and corresponding driven firing rate)
 #   stimID ...
 #   [raster] [raster] ....
