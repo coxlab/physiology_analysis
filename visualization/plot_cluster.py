@@ -26,7 +26,7 @@ timebase, stimtimer, spiketimes, epoch_mw = physio.load.load_cluster(options.fil
 # things I need
 # 1. baseline firing rate
 baseline = physio.caton_utils.get_n_spikes(stimtimer.get_all_times(), spiketimes, -0.1, 0, timebase)
-baseline = baseline / len(stimtimer.get_all_times()) / 0.1
+baseline = baseline / float(len(stimtimer.get_all_times())) / 0.1
 print "Baseline firing rate: %.2f" % baseline
 
 visualResponses = {} # ordered like times in stimtimer
