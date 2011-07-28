@@ -41,7 +41,7 @@ stimnamelist = stimtimer.get_unique_stim_attr('intName')
 stimnames = np.array(stimtimer.get_stim_attr('intName'))
 
 def collate_responses(stimname, attr):
-    stimIs = np.where(stimnamelist == stimname)[0]
+    stimIs = np.where(stimnames == stimname)[0]
     uniquelist = stimtimer.get_unique_stim_attr(attr)
     values = np.array(stimtimer.get_stim_attr(attr))
     resp = []
