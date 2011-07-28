@@ -33,7 +33,7 @@ visualResponses = {} # ordered like times in stimtimer
 stimReps = {}
 for st in stimtimer.times:
     visualResponses[st] = physio.caton_utils.get_n_spikes(stimtimer.times[st], spiketimes, 0.1, 0.2, timebase)
-    stimReps[st] = stimtimer.times[st]
+    stimReps[st] = len(stimtimer.times[st])
 visualResponses = np.array(sorted(visualResponses.iteritems(), key=lambda x: x[0]))
 stimReps = np.array(sorted(stimReps.iteritems(), key=lambda x: x[0]))
 
