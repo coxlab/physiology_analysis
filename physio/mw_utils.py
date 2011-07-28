@@ -187,18 +187,18 @@ def aggregate_stimuli( grouped_stimuli ):
 def faster_event_lock_spikes( event_times, spike_times, pre_time, post_time, time_base):
     locked_all = []
     
-    spikeI = 0
     spikeN = len(spike_times)
+    spikeI = 0
     for e in event_times:
         m = time_base.mw_time_to_audio(e)
         locked_event = []
-        spikeI = 0
         while spikeI < spikeN:
             d = spike_times[spikeI] - m
             if d > pre_time:
                 locked_event.append(d)
             elif d > post_time:
-                spikeI = spikeN
+                break
+                # spikeI = spikeN
             spikeI += 1
         locked_all.append(locked_event)
     
