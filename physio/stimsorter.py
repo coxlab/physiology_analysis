@@ -133,8 +133,8 @@ class StimTimer(StimSorter):
     
     def get_all_times(self):
         alltimes = []
-        for tk in times:
-            alltiems += times[tk]
+        for tk in self.times:
+            alltimes += self.times[tk]
         return alltimes
     
     def process_mw_event(self, event, conv=1./1000000.):

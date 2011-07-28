@@ -155,6 +155,20 @@ def spikes_by_channel(times, channels, nchan=32):#triggers):
     
     return spike_trains
 
+def get_n_spikes(times, spikes, before, after, timebase):
+    locked_spikes = mw_utils.faster_event_lock_spikes(times, spikes, before, after, timebase)
+    if len(locked_spikes) == 0:
+        del locked_spikes
+        logging.warning("Found no spikes for range: %f %f" % (before, after))
+        return 0
+    
+    nspikes = 0
+    for s in locked_spikes:
+        nspikes += len(s)
+    
+    del locked_spikes
+    return nspikes
+
 def get_rate(times, spikes, before, after, tb):
     locked_spikes = mw_utils.event_lock_spikes(times, spikes, before, after, tb)
     if len(locked_spikes) == 0:
