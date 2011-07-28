@@ -194,7 +194,7 @@ def faster_event_lock_spikes( event_times, spike_times, pre_time, post_time, tim
         locked_event = []
         while spikeI < spikeN:
             d = spike_times[spikeI] - m
-            if d > pre_time:
+            if d > pre_time and d < post_time:
                 locked_event.append(d)
             elif d > post_time:
                 break
