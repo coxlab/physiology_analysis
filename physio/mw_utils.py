@@ -195,13 +195,11 @@ def faster_event_lock_spikes( event_times, spike_times, pre_time, post_time, tim
         spikeI = 0
         while spikeI < spikeN:
             d = spike_times[spikeI] - m
-            if d <= pre_time:
-                spikeI += 1
+            if d > pre_time:
+                locked_event.append(d)
             elif d > post_time:
                 spikeI = spikeN
-            else:
-                locked_event.append(d)
-                spikeI += 1
+            spikeI += 1
         locked_all.append(locked_event)
     
     return locked_all
