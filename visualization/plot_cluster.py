@@ -20,6 +20,7 @@ if sys.platform == 'darwin':
 else:
     parser.add_option("-f", "--file", dest="file", default="/data/results/K4_110720/K4_110720_597_to_5873.h5")
 (options, args) = parser.parse_args()
+options.cluster = int(options.cluster)
 
 timebase, stimtimer, spiketimes, epoch_mw = physio.load.load_cluster(options.file, options.cluster)
 
@@ -34,8 +35,8 @@ stimReps = {}
 for st in stimtimer.times:
     visualResponses[st] = physio.caton_utils.get_n_spikes(stimtimer.times[st], spiketimes, 0.1, 0.2, timebase)
     stimReps[st] = len(stimtimer.times[st])
-visualResponses = np.array(sorted(visualResponses.iteritems(), key=lambda x: x[0]))
-stimReps = np.array(sorted(stimReps.iteritems(), key=lambda x: x[0]))
+visualResponses = np.array(sorted(visualResponses.iteritems(), key=lambda x: x[0]))[:,1]
+stimReps = np.array(sorted(stimReps.iteritems(), key=lambda x: x[0]))[:,1]
 
 stimnamelist = stimtimer.get_unique_stim_attr('intName')
 stimnames = np.array(stimtimer.get_stim_attr('intName'))
@@ -57,13 +58,14 @@ for sn in stimnamelist:
     # stim_name, n_spikes, n_reps
     nameresps.append([sn, sum(visualResponses[stimnames == sn]), sum(stimReps[stimnames == sn])])
     # stim_name attr : attr_name, n_spikes, n_reps
+    stimresps[sn] = {}
     stimresps[sn]['x'] = collate_responses(sn,'pos_x')
     stimresps[sn]['y'] = collate_responses(sn,'pos_y')
     stimresps[sn]['s'] = collate_responses(sn,'size_x')
 
 print "Response by ID:", nameresps
-f = open('resps.p','wb')
-pickle.dump((nameresps, stimresps), f)
+f = open('clusters/resp_%i.p' % options.cluster,'wb')
+pickle.dump((baseline, nameresps, stimresps), f)
 f.close()
 
 # 2. NORMALIZED response to each stimulus collapsed across variation (and corresponding driven firing rate)
