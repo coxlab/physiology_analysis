@@ -2,6 +2,8 @@ import ast, copy, logging, os, re
 
 import tables
 
+# --------------------- OLD --------------------
+
 global MWEnabled
 try:
     import mworks.data as mw

@@ -6,6 +6,8 @@ from optparse import OptionParser
 # import numpy as np
 import tables
 
+from .. import utils
+
 def find_events_group(eventsFile, regex = r'[a-z,A-Z]+[0-9]_[0-9]+'):
     """
     Determine the name of the group in which events are stored by matching
@@ -26,6 +28,36 @@ def find_events_group(eventsFile, regex = r'[a-z,A-Z]+[0-9]_[0-9]+'):
     for k in eventFile.root._v_children.keys():
         if re.match(options.regex, k):
             return k
+
+def read_events(eventsFilename, code, timeRange = None):
+    """
+    timerange in mw time in microseconds
+    """
+    f = tables.openFile(eventsFilename,'r')
+    g = find_events_group(f)
+    
+    # lookup code if it is not an int
+    if type(code) != int:
+        codec = dict(g.codec.read())
+        if not (code in codec.values()): utils.error('code[%s] not found in codec: %s' % (code, str(codec)))
+        code = codec.keys()[codec.values().index(code)]
+    
+    if timeRange is None:
+        evs = np.array([(r['time'],r['index']) for r in g.events.where('code == %i')])
+    else:
+        # PyTables version 2.2.1 does not support selection on uint64 (the time type) so...
+        assert iterable(timeRange), "timeRange[%s] must be iterable" % str(timeRange)
+        assert len(timeRange) == 2, "timeRange length[%i] must be 2" % len(timeRange)
+        assert type(timeRange[0]) == int, "timeRange[0] type[%s] must be int" % type(timerange[0])
+        evs = np.array([(r['time'],r['index']) for r in g.events.where('code == %i') if \
+                    e['time'] > timeRange[0] and e['time'] <= timeRange[1]])
+    vs = g.values[evs[:,1]]
+    f.close()
+    
+    times = evs[:,0] / 1E6
+    values = [ast.literal_eval(v) for v in vs]
+    
+    return times, values
 
 def add_events_file(eventsFilename, dataFilename):
     """

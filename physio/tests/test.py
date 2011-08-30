@@ -1,8 +1,11 @@
 #!/usr/bin/env python
 
+# TODO fix this for more complicated module structure
+
+from ..analysis import *
+from ..cfg import *
 from ..channelmapping import *
-from ..pixelclock import *
-from ..timebase import *
+from ..clock import *
 
 def run(regex=r"^test_"):
     """

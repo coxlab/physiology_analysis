@@ -5,6 +5,60 @@ from contextlib import contextmanager
 
 import numpy as np
 
+def error(string, exception = Exception):
+    """
+    Wrapper around logging.error that also raises an exception
+    
+    Parameters
+    ----------
+    string : str
+        Error description string
+    exception : Exception
+        Type of exception to raise
+    """
+    logging.error(string)
+    raise exception(string)
+
+def regex_glob(directory, regex):
+    """
+    Find all files in directory that match regex
+    
+    Parameters
+    ----------
+    directory : string
+        Directory to check with os.listdir
+    regex : string
+        Regular expression to check file names. May contain groups
+    
+    Returns
+    -------
+    files : list
+        List of files (with prepended directory) matching regex
+    groups : list
+        Groups from regex matches for each file in files
+    """
+    files = os.listdir(directory)
+    outFiles = []
+    groups = []
+    for f in files:
+        m = re.match(regex, f)
+        if m is None: continue
+        outFiles.append('/'.join((directory,f)))
+        gs = m.groups()
+        if len(gs) == 1:
+            groups.append(gs[0])
+        elif len(gs) > 1:
+            groups.append(gs)
+    return outFiles, groups
+
+def get_git_commit_id():
+    path = os.path.abspath(sys.argv[0]) # path of script
+    cmd = "git log -n 1 --pretty=format:%%H %s" % path
+    p = os.popen(cmd)
+    return p.read()
+
+# ----------------------- Old --------------------
+
 @contextmanager
 def waiting_file_lock(lock_file, delay=1):
     while os.path.exists(lock_file):

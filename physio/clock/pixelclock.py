@@ -1,9 +1,12 @@
 #!/usr/bin/env python
 
-import copy, logging
+import ast, copy, logging
 
 import numpy as np
 import scikits.audiolab as al
+# import tables
+
+from .. import h5
 
 # 0 is LSB - 3 is MSB
 # update is bottom -> up so add the most to channel 1
@@ -813,6 +816,23 @@ def old_time_match_mw_with_pc(pc_codes, pc_times, mw_codes, mw_times,
 
     return time_matches
 
+def read_events(eventsFilename):
+    
+    times, values = h5.events.read_events(eventsFilename, '#stimDisplayUpdate')
+    mwC = []
+    mwT = []
+    for (t,v) in zip(times,values):
+        if v is None: logging.warning("Found #stimDisplayUpdate with value = None at %f" % t)
+        for i in v:
+            if 'bit_code' in i.keys():
+                mwC.append(int(i['bit_code']))
+                mwT.append(t)
+    return mwT, mwC
+
+def test_read_events():
+    # TODO
+    assert False
+    pass
 
 def process(audioFiles, mwTimes, mwCodes, threshold = 0.03, refractory = 44, minCodeTime = 441,
                     pcY = -28, pcHeight = 8.5, screenHeight = 64.54842055808264, sepRatio = 0.2,
@@ -864,7 +884,6 @@ def test_process():
     # audioFiles = ["pixel_clock/%i.wav" % i for i in xrange(1,5)]
     codes, offsets, speed = parse(audioFiles)
     # read mworks codes
-    import tables
     import ast
     f = tables.openFile('K4_110720_events.h5','r')
     evs = [(r['time'],r['index']) for r in f.root.K4_110720.events.where('code == 7')]
@@ -913,6 +932,45 @@ def test_process():
     # pylab.show()
     # 
     # return codes[:,0], codes[:,1], mwT, mwC, matches, oldmatches, newmatches
+
+def process_from_config(config):
+    """
+    Parameters
+    ----------
+    config : cfg.Config instance
+    
+    Returns
+    -------
+    matches : 2d array
+        Array of matching audio and mworks times (in seconds) where:
+            matches[:,0] = audio times
+            matches[:,1] = mworks times
+    avgSpeed : float
+        Average speed of screen refresh in degrees per sample
+    """
+    # get audio files
+    audioDir = config.get('session','dir') + '/Audio Files'
+    pcFiles, pcChannels = utils.regex_glob(audioDir, config.get('pixel clock', 'regex'))
+    pcChannels = [int(ch) for ch in pcChannels]
+    # sort to make sure they are ordered channel 0 -> higher
+    pcFiles = np.array(pcFiles)[np.argsort(pcChannel)]
+    
+    # read mworks stuff
+    eventsFilename = config.get('session','dir')
+    mwT, mwC = read_events(eventsFilename)
+    
+    threshold = config.getfloat('pixel clock', 'threshold')
+    refractory = config.getint('pixel clock', 'refractory')
+    minCodeTime = config.getint('pixel clock', 'mincodetime')
+    pcY = config.getfloat('pixel clock', 'y')
+    pcHeight = config.getfloat('pixel clock', 'height')
+    screenHeight = config.getfloat('pixel clock', 'screenh')
+    sepRatio = config.getfloat('pixel clock', 'sepratio')
+    minMatch = config.getint('pixel clock', 'minmatch')
+    maxErr = config.getint('pixel clock', 'maxerr')
+    
+    processFiles(pcFiles, mwT, mwC, threshold, refractory, minCodeTime,\
+                pcY, pcHeight, screenHeight, sepRatio, minMatch, maxErr)
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)

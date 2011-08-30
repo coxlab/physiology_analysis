@@ -8,6 +8,6 @@ import h5
 import notebook
 import plotting
 import session
-# import utils
+import utils
 
-__all__ = ['cfg', 'channelmapping', 'clock', 'events', 'h5', 'notebook', 'plotting', 'session']
+__all__ = ['cfg', 'channelmapping', 'clock', 'events', 'h5', 'notebook', 'plotting', 'session', 'utils']

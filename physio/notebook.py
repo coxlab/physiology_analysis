@@ -3,10 +3,11 @@
 import logging, sys
 # logging.basicConfig(level=logging.DEBUG)
 
-import cfg
-
 import gdata
 import gdata.spreadsheet.service
+
+import cfg
+import utils
 
 global gdc
 gdc = None  # cache client
@@ -96,11 +97,10 @@ def lookup_probe(config):
 def timestring_to_seconds(timeString):
     """
     Convert a time string of hh:mm:ss to seconds of type int
+    TODO: move to utils?
     """
     tokens = timeString.split(':')
-    if len(tokens) != 3:
-        logging.error("Time string was ambiguous: %s" % timeString)
-        raise ValueError("Time string was ambiguous: %s" % timeString)
+    if len(tokens) != 3: utils.error("Time string was ambiguous: %s" % timeString, ValueError)
     h, m, s = tokens
     return int(s) + int(m)*60 + int(h)*3600
 
@@ -163,6 +163,51 @@ def lookup_session(config):
     
     return returnDict
 
+def lookup_notes(config):
+    """
+    Lookup session and probe information form the online lab notebook
+    
+    Parameters
+    ----------
+    config : cfg.Config instance
+        Session configuration file instance
+    
+    Returns
+    -------
+    sessionDict : dictionary
+        Session information as fetched from gdata
+    probeDict : dictionary
+        Probe information as fetched from gdata
+    
+    Notes
+    -----
+    Also alters config to reflect the loaded notebook information. Specifically:
+        probe[id]
+        probe[offset]
+    """
+    sessionDict = lookup_session(config)
+    if sessionDict is None: utils.error("Failed to fetch session info from gdata", ValueError)
+    
+    if config.get('probe','id').strip() != '':
+        logging.debug("Using probe from configuration file: %s" % config.get('probe','id'))
+    else:
+        probe = sessionDict['electrode'].strip()
+        if probe == '': utils.error("No probe found in notebook entry", ValueError)
+        logging.debug("Using probe from notebook: %s" % probe)
+        config.set('probe','id',probe)
+    
+    probeDict = lookup_probe(config)
+    if probeDict is None: utils.error("Failed to fetch probe info from gdata", ValueError)
+    
+    if config.get('probe','offset').strip() != '':
+        logging.debug("Using probe offset from configuration file: %s" % config.get('probe','offset'))
+    else:
+        offset = notebook.offset_to_float(probeDict['offset'])
+        if offset is None: utils.error("No probe offset in notebook entry", ValueError)
+        logging.debug("Using probe offset from notebok: %s" % str(offset))
+        config.set('probe','offset',str(offset))
+    
+    return sessionDict, probeDict
 
 if __name__ == '__main__':
     session = 'K4_110714'

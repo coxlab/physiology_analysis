@@ -12,15 +12,20 @@ resultsrepo: /data/results
 cleanup: True
 
 [pixel clock]
+threshold: 0.03
+refractory: 44
+mincodetime: 441
 y: -28
 height: 8.5
-sepratio: 0.2
-nchannels: 4
-refractory: 441
 screenh: 64.54842055808264
+sepratio: 0.2
+minmatch: 10
+maxerr: 0
+regex: pixel_clock([0-9])#[0-9]+\.wav
 
 [audio]
 samprate: 44100
+regex: input_([0-9])#[0-9]+\.wav
 
 [mworks]
 ext: .h5

@@ -38,8 +38,6 @@ def cluster(audioDir, resultsDir, timerange, njobs = 8, async = False):
     -----
     parallel -j njobs pyc.py -t timerange[0]:timerange[1] -pv {} resultsDir/{/.} ::: audioDir/input_*
     """
-    
-    if not os.path.exists(audioDir): os.makedirs(audioDir)
     if not os.path.exists(resultsDir): os.makedirs(resultsDir)
     assert iterable(timerange), "timerange[%s] must be iterable" % str(timerange)
     assert len(timerange) == 2, "timerange length[%i] must be 2" % len(timerange)
@@ -47,12 +45,23 @@ def cluster(audioDir, resultsDir, timerange, njobs = 8, async = False):
     cmd = "parallel -j %i -t %i:%i -pv {} %s/{/.} ::: %s/input_*" %\
             (njobs, int(timerange[0]), int(timerange[1]), resultsDir, audioDir)
     p = subprocess.popen(cmd.split(), stderr = subprocess.PIPE, stdout = subprocess.PIPE)
-    stdout, stderr = p.communicate()
-    return stdout, stderr
+    if async:
+        return p
+    else:
+        stdout, stderr = p.communicate()
+        # TODO check return value
+        return stdout, stderr
 
 def test_cluster():
     # TODO : how do I deal with external data?
     pass
+
+def cluster_from_config(config, epoch_audio):
+    audioDir = config.get('session','dir') + '/Audio Files'
+    resultsDir = config.get('session','output')
+    sf = config.get('audio','samprate')
+    timerange = [int(e * sf) for e in epoch_audio]
+    return cluster(audioDir, resultsDir, timerange, njobs = 8, async = False)
 
 if __name__ == '__main__':
     test_cluster()
