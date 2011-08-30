@@ -9,7 +9,7 @@ import gdata
 import gdata.spreadsheet.service
 
 global gdc
-gdc = None
+gdc = None  # cache client
 
 def get_client(config):
     global gdc

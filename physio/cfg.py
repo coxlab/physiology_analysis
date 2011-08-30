@@ -13,9 +13,11 @@ cleanup: True
 
 [pixel clock]
 y: -28
-h: 2.5
-screenh: 137.214
-scratch: 
+height: 8.5
+sepratio: 0.2
+nchannels: 4
+refractory: 441
+screenh: 64.54842055808264
 
 [audio]
 samprate: 44100

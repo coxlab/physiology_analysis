@@ -7,6 +7,9 @@ import numpy as np
 # new methods are much faster for longer matches sequences (us compared to ms!)
 
 class TimeBase(object):
+    """
+    Timebase object used to convert times from mworks to audio and back
+    """
     def __init__(self, matches):
         """
         Parameters
@@ -29,6 +32,12 @@ class TimeBase(object):
     def cull_offsets(self, thresh = 0.03):
         """
         Remove offsets which differ from the previous offset by thresh seconds
+        
+        Parameters
+        ----------
+        thresh : float
+            If the difference between the previous and current offsets is >= thresh
+            than remove the current offset
         """
         deltaOffsets = self.offsets[1:] - self.offsets[:-1]
         goodIndices = np.where(abs(deltaOffsets) < thresh)[0]+1
@@ -36,6 +45,14 @@ class TimeBase(object):
         self.matches = self.matches[goodIndices]
     
     def audio_to_mw(self, audio):
+        """
+        Convert an audio time (in seconds) to mworks time (in seconds)
+        
+        Parameters
+        ----------
+        audio : float
+            Audio time (in seconds)
+        """
         closest = np.where(self.matches[:,0] >= audio)[0]
         if len(closest) == 0:
             logging.warning("audio_time_to_mw matched to last offset")
@@ -43,6 +60,14 @@ class TimeBase(object):
         return audio - self.offsets[closest[0]]
     
     def mw_to_audio(self, mw):
+        """
+        Convert a mworks time (in seconds) to audio time (in seconds)
+        
+        Parameters
+        ----------
+        mw : float
+            MWorks time (in seconds)
+        """
         closest = np.where(self.matches[:,1] >= mw)[0]
         if len(closest) == 0:
             logging.warning("mw_time_to_audio matched to last offset")
@@ -50,7 +75,9 @@ class TimeBase(object):
         return mw + self.offsets[closest[0]]
     
     def old_mw_time_to_audio(self, mw_time, mw_offset = 0):
-        
+        """
+        Depreciated method, use: mw_to_audio
+        """
         mw_t = mw_time + mw_offset
         # print mw_t
         for (i, evt_match) in enumerate(self.matches):
@@ -64,7 +91,9 @@ class TimeBase(object):
         return mw_t + self.offsets[-1]# + self.audio_offset
 
     def old_audio_time_to_mw(self, audio_time, audio_offset = 0):
-        
+        """
+        Depreciated method, use: audio_to_mw
+        """
         a_t = audio_time + audio_offset# - self.audio_offset
         
         for (i, evt_match) in enumerate(self.matches):
@@ -93,3 +122,6 @@ def test_timebase():
         assert d < 1E-9, "MW->Audio failed: mw: %.6f, audio: %.6f Err: %.6f" % (m, a, d)
         d = abs(m - tb.audio_to_mw(a))
         assert d < 1E-9, "Audio->MW failed: audio: %.6f mw: %.6f Err: %.6f" % (a, m, d)
+
+if __name__ == "__main__":
+    test_timebase()

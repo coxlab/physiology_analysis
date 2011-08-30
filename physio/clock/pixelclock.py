@@ -232,7 +232,7 @@ def test_state_to_code():
     assert (state_to_code([1,0,0,0]) == 1) # LSB = 1
     assert (state_to_code([0,0,0,0]) == 0)
 
-def events_to_codes(events, nchannels, refractory):
+def events_to_codes(events, nchannels, minCodeTime):
     """
     Parameters
     ----------
@@ -243,8 +243,8 @@ def events_to_codes(events, nchannels, refractory):
             events[:,2] = directions
     nchannels : int
         Number of pixel clock channels
-    refractory : int
-        Number of sub-threshold points that must be encountered before resetting the trigger
+    minCodeTime : int
+        Minimum time (in samples) for a given code change
     
     Return
     ------
@@ -286,7 +286,7 @@ def events_to_codes(events, nchannels, refractory):
     
     latencies = [ [ [] for x in xrange(nchannels)] for y in xrange(nchannels)]
     for ev in evts:
-        if abs(ev[0] - trigTime) > refractory:
+        if abs(ev[0] - trigTime) > minCodeTime:
             # new event
             code = state_to_code(state)
             codes.append((trigTime, code, trigChannel))
@@ -349,23 +349,15 @@ def offset_codes(codes, latencies, pcY, pcHeight, screenHeight, sepRatio):
     TODO: offset pixel clock from bottom of screen
     """
     nchannels = len(latencies)
-    # int n = (int)(n_markers_variable->getValue());
-    # double sep_ratio = (double)(separation_ratio_variable->getValue());
-    # double marker_width = 1.0 / ((double)n + (double)(n+1)*sep_ratio);
-    # marker_width = 1.0 / (4 + 5*0.2) = 0.2
     markerSize = 1.0 / float(nchannels + (nchannels+1) * sepRatio)
-    # double sep_width = sep_ratio * marker_width;
-    # sep_width = 0.2 * 0.2 = 0.04
     sepSize = sepRatio * markerSize
     markerDegrees = pcHeight * markerSize
     sepDegrees = pcHeight * sepSize
     
     posDeltaDegrees = markerDegrees + sepDegrees # spacing between pixel clock patch bottom edges
-    # print posDeltaDegrees
     posDegrees = [] # bottom edge of on screen pixel clock patches
     for i in xrange(nchannels):
         posDegrees.append(screenHeight - (posDeltaDegrees * (i+1)))
-        # posDegrees.append(markerDegrees * i + sepDegrees * (i+1))
     
     avgSpeeds = np.zeros((nchannels,nchannels))
     allSpeeds = []
@@ -375,29 +367,17 @@ def offset_codes(codes, latencies, pcY, pcHeight, screenHeight, sepRatio):
             wt = abs(x - y) * posDeltaDegrees
             if wt == 0:
                 continue
-                # avgSpeeds[x,y] = 0.
-            # print wt
             speeds = np.array(latencies[x][y]) / wt
-            # print speeds
-            # avgSpeeds[x,y] = np.mean(speeds)
-            # print avgSpeeds[x,y]
             allSpeeds = np.hstack((allSpeeds, speeds))
     
-    # TODO remove this
-    import pickle
-    f = open('latencies.p','w')
-    pickle.dump(latencies,f)
-    f.close()
+    # # TODO remove this
+    # import pickle
+    # f = open('latencies.p','w')
+    # pickle.dump(latencies,f)
+    # f.close()
     
-    # TODO delete this
-    # np.savetxt('avgSpeeds', avgSpeeds)
-    # print allSpeeds
     avgSpeed = np.mean(allSpeeds)
-    # print "Avg speed: ", avgSpeed
     offsets = (np.array(posDegrees) * avgSpeed).astype(int)
-    # print ""
-    # print "Offsets: ", offsets
-    # print offsets, avgSpeed, posDegrees
     
     codeArray = np.array(copy.deepcopy(codes))
     for i in xrange(len(codes)):
@@ -406,9 +386,11 @@ def offset_codes(codes, latencies, pcY, pcHeight, screenHeight, sepRatio):
     
     if avgSpeed != 0: # make this degrees per sample NOT samples per degree
         avgSpeed = 1. / avgSpeed
+    logging.debug("Avg screen update speed in degrees per sample: %f" % avgSpeed)
+    logging.debug("Pixel clock channel offsets in samples: %s" % str(offsets))
     return codeArray, offsets, avgSpeed
 
-def reconstruct_codes(events, nchannels = 4, refractory = 441,\
+def reconstruct_codes(events, nchannels = 4, minCodeTime = 441,\
                     pcY = -28, pcHeight = 8.5, screenHeight = 64.54842055808264, sepRatio = 0.2):
     """
     Parameters
@@ -420,8 +402,8 @@ def reconstruct_codes(events, nchannels = 4, refractory = 441,\
             events[:,2] = directions
     nchannels : int
         Number of pixel clock channels
-    refractory : int
-        Number of sub-threshold points that must be encountered before resetting the trigger
+    minCodeTime : int
+        Minimum time (in samples) for a given code change
     pcY : float
         Vertical position of pixel clock on screen in degrees
     pcHeight : float
@@ -438,14 +420,13 @@ def reconstruct_codes(events, nchannels = 4, refractory = 441,\
             codes[:,0] = time
             codes[:,1] = code
             codes[:,2] = trigger channel
-        These codes are NOT offset for latencies of the triggered channel
     offsets : list
         Offset times (in samples) for the onset of the pixel clock patch display relative
         to the bottom of the screen (the begging of the screen update)
     avgSpeed : float
         Average speed of screen refresh in degrees per sample
     """
-    codes, latencies = events_to_codes(events, nchannels, refractory)
+    codes, latencies = events_to_codes(events, nchannels, minCodeTime)
     codes, offsets, avgSpeed = offset_codes(codes, latencies, pcY, pcHeight, screenHeight, sepRatio)
     return codes, offsets, avgSpeed
 
@@ -467,8 +448,6 @@ def test_events_to_codes():
     for i in xrange(nchannels):
         pos = screenHeight - (markerSize + sepSize) * (i+1)
         offset = (pos / refreshSpeed) * samplerate
-        # offset = int(((screenHeight - (markerSize + sepSize) * (i+1)) / refreshSpeed) * samplerate)
-        # offset = int(((markerSize*i + sepSize*(i+1)) / refreshSpeed) * samplerate)
         offsets.append(int(np.round(offset)))
     
     events = []
@@ -489,10 +468,8 @@ def test_events_to_codes():
                     # line += " %i @ %i in %i" % (i, t+offsets[i], -1)
         lastCode = c
         # print line
-    # print lastCode, codes, times
-    # print transitions
     events = np.array(events)
-    newCodes, latencies = events_to_codes(events, nchannels = nchannels, refractory = 100)
+    newCodes, latencies = events_to_codes(events, nchannels, 100)
     c = np.array(newCodes)[:,1]
     
     assert all(c == codes)
@@ -508,16 +485,6 @@ def test_events_to_codes():
     
     assert all(c == codes)
     assert np.sum((t - np.array(times))) < len(times), "%s" % offsetCodes
-    # print "Refresh Speed:", refreshSpeed / 44100.
-    # print "Codes : %s" % codes
-    # print "Fixed codes: %s" % offsetCodes
-    # print "Offsets : %s" % offsets
-    # print "Offsets : %s" % foundOffsets
-    # print "Latencies : %s" % latencies
-    # print offsetCodes, offsets
-    # print codes
-    # print newCodes
-    # print latencies
 
 def match_test(au, mw, minMatch, maxErr):
     """
@@ -724,9 +691,40 @@ def test_matches():
 def parse(audioFiles, threshold = 0.03, refractory = 44, minCodeTime = 441,
                     pcY = -28, pcHeight = 8.5, screenHeight = 64.54842055808264, sepRatio = 0.2):
     """
-    def reconstruct_codes(events, nchannels = 4, refractory = 441,\
-                        pcY = -28, pcHeight = 8.5, screenHeight = 64.54842055808264, sepRatio = 0.2):
-    First file has LSB
+    Parse pixel clock from audio files
+    
+    Parameters
+    ----------
+    audioFiles : list
+        Ordered list of pixel clock audio files. First file has LSB
+    threshold : float
+        Threshold at which to find events (test: abs(signal) > threshold)
+    refractory : int
+        Number of sub-threshold points that must be encountered before resetting the trigger
+    minCodeTime : int
+        Minimum time (in samples) for a given code change
+    pcY : float
+        Vertical position of pixel clock on screen in degrees
+    pcHeight : float
+        Vertical size of pixel clock in degrees. This may be XScale if pixel clock is rotated
+    screenHeight : float
+        Vertical size of screen in degrees (may need to calculate based on width, see MWorks core)
+    sepRatio : float
+        Seperation ratio of pixel clock patches (see MWorks for more information)
+    
+    Returns
+    -------
+    codes : 2d array
+        Array of reconstructed and offset pixel clock codes where:
+            codes[:,0] = time
+            codes[:,1] = code
+            codes[:,2] = trigger channel
+        These codes are NOT offset for latencies of the triggered channel
+    offsets : list
+        Offset times (in samples) for the onset of the pixel clock patch display relative
+        to the bottom of the screen (the begging of the screen update)
+    avgSpeed : float
+        Average speed of screen refresh in degrees per sample
     """
     # transitions = []
     # channels = []
@@ -761,6 +759,7 @@ def parse(audioFiles, threshold = 0.03, refractory = 44, minCodeTime = 441,
     return codes, offsets, speed
 
 def test_parse():
+    # TODO : how do I deal with external data files?
     # audioFiles = ["pixel_clock/pixel_clock%i#01.wav" % i for i in xrange(1,5)]
     audioFiles = ["pixel_clock/%i.wav" % i for i in xrange(1,5)]
     codes, offsets, speed = parse(audioFiles)
@@ -818,6 +817,41 @@ def old_time_match_mw_with_pc(pc_codes, pc_times, mw_codes, mw_times,
 def process(audioFiles, mwTimes, mwCodes, threshold = 0.03, refractory = 44, minCodeTime = 441,
                     pcY = -28, pcHeight = 8.5, screenHeight = 64.54842055808264, sepRatio = 0.2,
                     minMatch = 10, maxErr = 0):
+    """
+    Process pixel clock audio files and match codes to given MWorks codes
+    
+    Parameters
+    ----------
+    audioFiles : list
+        Ordered list of pixel clock audio files. First file has LSB
+    mwTimes : 1d array
+        List of times (in seconds) for pixel clock code changes in MWorks in seconds
+    mwCodes : 1d array
+        List of pixel clock code changes as seen from MWorks
+    threshold : float
+        Threshold at which to find events (test: abs(signal) > threshold)
+    refractory : int
+        Number of sub-threshold points that must be encountered before resetting the trigger
+    minCodeTime : int
+        Minimum time (in samples) for a given code change
+    pcY : float
+        Vertical position of pixel clock on screen in degrees
+    pcHeight : float
+        Vertical size of pixel clock in degrees. This may be XScale if pixel clock is rotated
+    screenHeight : float
+        Vertical size of screen in degrees (may need to calculate based on width, see MWorks core)
+    sepRatio : float
+        Seperation ratio of pixel clock patches (see MWorks for more information)
+    
+    Returns
+    -------
+    matches : 2d array
+        Array of matching audio and mworks times (in seconds) where:
+            matches[:,0] = audio times
+            matches[:,1] = mworks times
+    avgSpeed : float
+        Average speed of screen refresh in degrees per sample
+    """
     codes, offsets, speed = parse(audioFiles, threshold, refractory, minCodeTime, pcY, pcHeight, screenHeight, sepRatio)
     auTimes = codes[:,0]
     auCodes = codes[:,1]
@@ -825,6 +859,7 @@ def process(audioFiles, mwTimes, mwCodes, threshold = 0.03, refractory = 44, min
     return matches, speed
 
 def test_process():
+    # TODO : how do I deal with external data files?
     audioFiles = ["pixel_clock/pixel_clock%i#01.wav" % i for i in xrange(1,5)]
     # audioFiles = ["pixel_clock/%i.wav" % i for i in xrange(1,5)]
     codes, offsets, speed = parse(audioFiles)
