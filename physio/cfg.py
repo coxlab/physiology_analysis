@@ -91,5 +91,5 @@ class Config(ConfigParser.SafeConfigParser):
         if self.get('mworks','file').strip() == '':
             self.set('mworks','file','/'.join((self.get('session','dir'),session + self.get('mworks','ext'))))
         
-        if self.get('pixel clock','scratch').strip() == '':
-            self.set('pixel clock','scratch','/'.join((self.get('session','scratch'),'pixel_clock')))
+        # if self.get('pixel clock','scratch').strip() == '':
+        #     self.set('pixel clock','scratch','/'.join((self.get('session','scratch'),'pixel_clock')))
