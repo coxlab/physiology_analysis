@@ -25,7 +25,7 @@ def analyze(session, customCfgFile = None):
     if not customCfgFile is None: config.read(customCfgFile)
     
     # determine epochs
-    sessionDict, probeDict = notebook.lookup_notebook(config)
+    sessionDict, probeDict = notebook.lookup_notes(config)
     epochs_audio = notebook.parse_epochs_string(session_dict['stableepochs'])
     if len(epoch_audio) == 0: utils.error("No epochs found")
     
