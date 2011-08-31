@@ -37,7 +37,7 @@ def parse_dependency_links(file_name):
 setup(
     name='physio',
     
-    packages = ['physio','physio/tests'],
+    packages = ['physio','physio/analysis','physio/clock','physio/events','physio/h5','physio/plotting','physio/tests'],
     # package_data={'pywaveclus': ['bin/*']},
     # scripts=['scripts/pyc.py'],
     version='dev',
