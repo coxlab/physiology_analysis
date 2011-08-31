@@ -10,7 +10,7 @@ class TimeBase(object):
     """
     Timebase object used to convert times from mworks to audio and back
     """
-    def __init__(self, matches):
+    def __init__(self, matches, cull = True):
         """
         Parameters
         ----------
@@ -18,6 +18,8 @@ class TimeBase(object):
             Matching time stamps for audio and mw clocks where
             matches[:,0] are audio times
             matches[:,1] are mw times
+        cull : bool
+            Cull offsets (remove large changes in offset)
         """
         self.matches = np.array(copy.deepcopy(matches))
         self.matches = self.matches[self.matches[:,0].argsort(),:] # sort array by first column
@@ -27,7 +29,7 @@ class TimeBase(object):
         #   b + offset = a
         self.offsets = self.matches[:,0] - self.matches[:,1]
         
-        self.cull_offsets()
+        if cull: self.cull_offsets()
     
     def cull_offsets(self, thresh = 0.03):
         """

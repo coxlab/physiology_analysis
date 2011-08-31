@@ -22,11 +22,12 @@ class Session(object):
         self.read_timebase()
     
     def read_timebase(self):
-        matchesNode = self._file.getNode('/TimeMatches')
         # evt_zipper = np.array(matchesNode)
         # audio_offset = matchesNode.attrs.AUDIOOFFSET # is always 0....
         # tb = pixel_clock.TimeBase(evt_zipper, audio_offset)
         # tb.audio_offset = -tb.mw_time_to_audio(epoch_mw[0]) # ? WTF!!!!!!!!!!!!!!
+        matchesNode = self._file.getNode('/TimeMatches')
+        # matches = np.array(matchesNode)
         self._timebase = clock.timebase.TimeBase(np.array(matchesNode))
     
     def close(self):
