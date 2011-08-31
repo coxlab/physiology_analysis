@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import glob, logging, os, sys, time
+import glob, logging, os, re, sys, time
 from contextlib import contextmanager
 
 import numpy as np

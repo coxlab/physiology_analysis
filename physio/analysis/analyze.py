@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import copy, logging, os, shutil, sys, tempfile
+import copy, glob, logging, os, shutil, sys, tempfile
 
 # logging.basicConfig(level=logging.DEBUG)
 
@@ -26,41 +26,49 @@ def analyze(session, customCfgFile = None):
     
     # determine epochs
     sessionDict, probeDict = notebook.lookup_notes(config)
-    epochs_audio = notebook.parse_epochs_string(session_dict['stableepochs'])
-    if len(epoch_audio) == 0: utils.error("No epochs found")
+    epochs_audio = notebook.parse_epochs_string(sessionDict['stableepochs'])
+    if len(epochs_audio) == 0: utils.error("No epochs found")
     
     # process pixel clock
-    matches = clock.pixelclock.process_from_config(config) # [:,0] = audio, [:,1] = mworks
+    matches, _ = clock.pixelclock.process_from_config(config) # [:,0] = audio, [:,1] = mworks
+    if len(matches) == 0: utils.error("No pixel clock matches found")
     
     # process each epoch
     for epoch_audio in epochs_audio:
+        logging.debug("Processing epoch: %s" % str(epoch_audio))
         # pyc
+        logging.debug("clustering")
         stdout, sterr = cluster.cluster_from_config(config, epoch_audio)
         
         # collate
-        resultsFilename = config.get('session','output') + session + '.h5'
+        logging.debug("collating")
+        resultsFilename = config.get('session','output') + '/' + session + '.h5'
         channelFiles = glob.glob(config.get('session','output')+'/*/*.h5')
         h5.combine.combine(channelFiles, resultsFilename)
         
         # find cells
+        logging.debug("finding cells")
         cells.find_cells(resultsFilename)
         
         # add events
-        eventsFilename = config.get('session','dir') + session + '.h5'
+        logging.debug("adding events")
+        eventsFilename = config.get('session','dir') + '/' + session + '.h5'
         h5.events.add_events_file(eventsFilename, resultsFilename)
-        results_file.add_session_h5_file(config.get('mworks','file'))
+        #resultsFile.add_session_h5_file(config.get('mworks','file'))
         
         # add pixelclock
-        offsetMatches = copy.deepcopy(matches)
+        logging.debug("adding pixel clock matches")
+        offsetMatches = np.array(copy.deepcopy(matches))
         offsetMatches[:,0] -= epoch_audio[0]
         h5.utils.write_array(resultsFilename, offsetMatches, 'TimeMatches', 'PC - MW Time Matches')
         
         # add session info
-        h5.utils.write_epoch_audio(filename, epoch_audio)
+        logging.debug("adding sesison information")
+        h5.utils.write_epoch_audio(resultsFilename, epoch_audio)
         h5.utils.write_dict(resultsFilename, sessionDict, 'SessionGData', 'Session data from GDocs')
         h5.utils.write_dict(resultsFilename, probeDict, 'ProbeGData', 'Probe data from GDocs')
         # results_file.add_pad_positions(pad_positions)
-        h5.utils.write_git_commit_id(filename, utils.get_git_commit_id())
+        h5.utils.write_git_commit_id(resultsFilename, utils.get_git_commit_id())
     
     # TODO fix this to equalize disk usage:
     #  read from one -> write to other -> cleanup by copying files back over

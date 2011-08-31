@@ -202,7 +202,7 @@ def lookup_notes(config):
     if config.get('probe','offset').strip() != '':
         logging.debug("Using probe offset from configuration file: %s" % config.get('probe','offset'))
     else:
-        offset = notebook.offset_to_float(probeDict['offset'])
+        offset = offset_to_float(probeDict['offset'])
         if offset is None: utils.error("No probe offset in notebook entry", ValueError)
         logging.debug("Using probe offset from notebok: %s" % str(offset))
         config.set('probe','offset',str(offset))

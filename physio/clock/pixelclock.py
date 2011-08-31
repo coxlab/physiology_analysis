@@ -7,6 +7,7 @@ import scikits.audiolab as al
 # import tables
 
 from .. import h5
+from .. import utils
 
 # 0 is LSB - 3 is MSB
 # update is bottom -> up so add the most to channel 1
@@ -953,10 +954,10 @@ def process_from_config(config):
     pcFiles, pcChannels = utils.regex_glob(audioDir, config.get('pixel clock', 'regex'))
     pcChannels = [int(ch) for ch in pcChannels]
     # sort to make sure they are ordered channel 0 -> higher
-    pcFiles = np.array(pcFiles)[np.argsort(pcChannel)]
+    pcFiles = np.array(pcFiles)[np.argsort(pcChannels)]
     
     # read mworks stuff
-    eventsFilename = config.get('session','dir')
+    eventsFilename = config.get('session','dir') + '/' + config.get('session','name') + '.h5'
     mwT, mwC = read_events(eventsFilename)
     
     threshold = config.getfloat('pixel clock', 'threshold')
@@ -969,7 +970,7 @@ def process_from_config(config):
     minMatch = config.getint('pixel clock', 'minmatch')
     maxErr = config.getint('pixel clock', 'maxerr')
     
-    processFiles(pcFiles, mwT, mwC, threshold, refractory, minCodeTime,\
+    return process(pcFiles, mwT, mwC, threshold, refractory, minCodeTime,\
                 pcY, pcHeight, screenHeight, sepRatio, minMatch, maxErr)
 
 if __name__ == '__main__':

@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 
-import logging, re
+import ast, logging, re
 from optparse import OptionParser
 
-# import numpy as np
+import numpy as np
 import tables
 
 from .. import utils
@@ -22,12 +22,12 @@ def find_events_group(eventsFile, regex = r'[a-z,A-Z]+[0-9]_[0-9]+'):
     
     Returns
     -------
-    eventsgroup : string
+    eventsgroup : hdf5 node
         Group within eventsFile that contains session events
     """
-    for k in eventFile.root._v_children.keys():
-        if re.match(options.regex, k):
-            return k
+    for k in eventsFile.root._v_children.keys():
+        if re.match(regex, k):
+            return eventsFile.getNode('/%s' % k)
 
 def read_events(eventsFilename, code, timeRange = None):
     """
@@ -43,18 +43,18 @@ def read_events(eventsFilename, code, timeRange = None):
         code = codec.keys()[codec.values().index(code)]
     
     if timeRange is None:
-        evs = np.array([(r['time'],r['index']) for r in g.events.where('code == %i')])
+        evs = np.array([(int(r['time']),g.values[r['index']]) for r in g.events.where('code == %i' % code)])
     else:
         # PyTables version 2.2.1 does not support selection on uint64 (the time type) so...
-        assert iterable(timeRange), "timeRange[%s] must be iterable" % str(timeRange)
+        assert np.iterable(timeRange), "timeRange[%s] must be iterable" % str(timeRange)
         assert len(timeRange) == 2, "timeRange length[%i] must be 2" % len(timeRange)
         assert type(timeRange[0]) == int, "timeRange[0] type[%s] must be int" % type(timerange[0])
-        evs = np.array([(r['time'],r['index']) for r in g.events.where('code == %i') if \
-                    e['time'] > timeRange[0] and e['time'] <= timeRange[1]])
-    vs = g.values[evs[:,1]]
+        evs = np.array([(int(r['time']),g.values[r['index']]) for r in g.events.where('code == %i' % code) if \
+                    int(r['time']) > timeRange[0] and int(r['time']) <= timeRange[1]])
+    vs = evs[:,1]
     f.close()
     
-    times = evs[:,0] / 1E6
+    times = np.array(evs[:,0],dtype=float) / float(1E6)
     values = [ast.literal_eval(v) for v in vs]
     
     return times, values
@@ -71,11 +71,12 @@ def add_events_file(eventsFilename, dataFilename):
         Path of file containing other session data (spike events, etc...)
     """
     eventsFile = tables.openFile(eventsFilename, 'r')
-    dataFile = table.openFile(dataFilename, 'a') # make sure this is append and not write
+    dataFile = tables.openFile(dataFilename, 'a') # make sure this is append and not write
     
     # find event group
-    eventsGroupName = find_events_group(eventsFile)
-    eventsGroup = eventsFile.getNode('/%s' % eventsGroupName)
+    #eventsGroupName = find_events_group(eventsFile)
+    #eventsGroup = eventsFile.getNode('/%s' % eventsGroupName)
+    eventsGroup = find_events_group(eventsFile)
     
     # check if events group exists, if so, delete it
     if 'Events' in dataFile.root._v_children.keys():

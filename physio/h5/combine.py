@@ -39,7 +39,7 @@ def combine(inputFiles, outputFilename, channelRegex = r'[a-z,A-Z]+_([0-9]+)\#*'
     outputFilename :
     channelRegex :
     """
-    assert iterable(inputFiles), "inputFiles[%s] must be iterable" % str(inputFiles)
+    assert np.iterable(inputFiles), "inputFiles[%s] must be iterable" % str(inputFiles)
     
     # get channels
     channels = [find_channel(f) for f in inputFiles]
@@ -84,7 +84,7 @@ def combine(inputFiles, outputFilename, channelRegex = r'[a-z,A-Z]+_([0-9]+)\#*'
         infile.close()
     
     # close output file
-    logging.debug("closing: %s" % outFilename)
+    logging.debug("closing: %s" % outputFilename)
     outputFile.flush()
     outputFile.close()
 
