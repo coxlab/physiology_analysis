@@ -46,7 +46,7 @@ def cluster(audioDir, resultsDir, timerange, njobs = 8, async = False):
     assert np.iterable(timerange), "timerange[%s] must be iterable" % str(timerange)
     assert len(timerange) == 2, "timerange length[%i] must be 2" % len(timerange)
     
-    cmd = "parallel -j %i pyc.py -t %i:%i -pv '{}' '%s/{/.}' :::" %\
+    cmd = "parallel -j %i pyc.py -t %i:%i -pv {} %s/{/.} :::" %\
             (njobs, int(timerange[0]), int(timerange[1]), resultsDir)
     
     inputFiles = glob.glob(audioDir+'/input_*')

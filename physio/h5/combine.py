@@ -42,7 +42,7 @@ def combine(inputFiles, outputFilename, channelRegex = r'[a-z,A-Z]+_([0-9]+)\#*'
     assert np.iterable(inputFiles), "inputFiles[%s] must be iterable" % str(inputFiles)
     
     # get channels
-    channels = [find_channel(f) for f in inputFiles]
+    channels = [find_channel(f, channelRegex) for f in inputFiles]
     
     # make outputfile
     outputFile = tables.openFile(outputFilename, 'w')
