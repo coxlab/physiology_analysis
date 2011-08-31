@@ -8,6 +8,8 @@ import tables
 
 # import pywaveclus
 
+import clock
+
 class Session(object):
     """
     Times are always provided in seconds since beginning of epoch
@@ -21,10 +23,11 @@ class Session(object):
     
     def read_timebase(self):
         matchesNode = self._file.getNode('/TimeMatches')
-        evt_zipper = np.array(matchesNode)
-        audio_offset = matchesNode.attrs.AUDIOOFFSET # is always 0....
-        tb = pixel_clock.TimeBase(evt_zipper, audio_offset)
-        tb.audio_offset = -tb.mw_time_to_audio(epoch_mw[0]) # ? WTF!!!!!!!!!!!!!!
+        # evt_zipper = np.array(matchesNode)
+        # audio_offset = matchesNode.attrs.AUDIOOFFSET # is always 0....
+        # tb = pixel_clock.TimeBase(evt_zipper, audio_offset)
+        # tb.audio_offset = -tb.mw_time_to_audio(epoch_mw[0]) # ? WTF!!!!!!!!!!!!!!
+        self._timebase = clock.timebase.TimeBase(np.array(matchesNode))
     
     def close(self):
         self._file.close()
