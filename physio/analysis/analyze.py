@@ -8,6 +8,7 @@ import numpy as np
 import pylab as plt
 
 from .. import cfg
+import cells
 from .. import clock
 import cluster
 from .. import h5
@@ -41,9 +42,12 @@ def analyze(session, customCfgFile = None):
         channelFiles = glob.glob(config.get('session','output')+'/*/*.h5')
         h5.combine.combine(channelFiles, resultsFilename)
         
+        # find cells
+        cells.find_cells(resultsFilename)
+        
         # add events
         eventsFilename = config.get('session','dir') + session + '.h5'
-        h5.events.add_events_file(eventsFilename, resultsFilename):
+        h5.events.add_events_file(eventsFilename, resultsFilename)
         results_file.add_session_h5_file(config.get('mworks','file'))
         
         # add pixelclock
@@ -52,7 +56,7 @@ def analyze(session, customCfgFile = None):
         h5.utils.write_array(resultsFilename, offsetMatches, 'TimeMatches', 'PC - MW Time Matches')
         
         # add session info
-        h5.utils.write_epoch_audio(filename, epoch_audio):
+        h5.utils.write_epoch_audio(filename, epoch_audio)
         h5.utils.write_dict(resultsFilename, sessionDict, 'SessionGData', 'Session data from GDocs')
         h5.utils.write_dict(resultsFilename, probeDict, 'ProbeGData', 'Probe data from GDocs')
         # results_file.add_pad_positions(pad_positions)

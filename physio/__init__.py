@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import analysis
 import cfg
 import channelmapping
 import clock
@@ -10,4 +11,4 @@ import plotting
 import session
 import utils
 
-__all__ = ['cfg', 'channelmapping', 'clock', 'events', 'h5', 'notebook', 'plotting', 'session', 'utils']
+__all__ = ['analysis', 'cfg', 'channelmapping', 'clock', 'events', 'h5', 'notebook', 'plotting', 'session', 'utils']
