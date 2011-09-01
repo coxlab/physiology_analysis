@@ -26,15 +26,15 @@ where session is in the form of <animal>_<date:yearmonthday> example: K4_110720
 
 This will produce a hdf5 file within the results repository (specified in ~/.physio).
 
-Examining results
------------------
+Examining hdf5 session file
+---------------------------
 
-Opening session results:
+Opening session file:
 
     import physio
     
-    mysession = physio.session.Session(resultsfile)
+    mysession = physio.session.Session(sessionfile)
 
-where resultsfile is the path to the hdf5 results file
+where sessionfile is the path to the hdf5 session file
 
 See physio/session.py for more info.
