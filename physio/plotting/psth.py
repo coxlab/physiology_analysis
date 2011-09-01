@@ -3,12 +3,20 @@
 import numpy as np
 import pylab as pl
 
-def plot(eventTimes, spikeTimes, preT = -0.2, postT = 0.5, nbins = 7):
+def plot(eventTimes, spikeTimes, preT = -0.2, postT = 0.5, nbins = 8):
+    allspikes = []
     for et in eventTimes:
         # find spiketimes that match
-        spikes = spikeTimes[(spikeTimes > (et + preT)) & (spikeTimes < (et + postT))]
+        spikes = spikeTimes[(spikeTimes > (et + preT)) & (spikeTimes < (et + postT))] - et
+        # if len(spikes):
+        #     pl.hist(spikes,bins=np.linspace(preT,postT,nbins))
         if len(spikes):
-            pl.hist(spikes,bins=np.linspace(preT,postT,nbins))
+            allspikes.append(spikes)
+    
+    if len(allspikes) == 0: return
+    
+    allspikes = np.hstack(allspikes)
+    pl.hist(allspikes, bins = np.linspace(preT,postT,nbins))
     pl.xlim(preT, postT)
 
 def plot_psth(event_locked, **kwargs):
