@@ -60,6 +60,7 @@ def load(session, customCfgFile = None):
     config.read_session_config(session)
     config.set_session(session)
     if not customCfgFile is None: config.read(customCfgFile)
+    return config
 
 class Config(ConfigParser.SafeConfigParser):
     def __init__(self, *args, **kwargs):
