@@ -88,13 +88,15 @@ class Session(object):
     
     def get_stimuli(self, matchstr = None, timeRange = None):
         times, values = self.get_events('#stimDisplayUpdate', timeRange)
+        stimTimes = []
+        stims = []
         for (t, v) in zip(times, values):
             if v is None: logging.warning("Found #stimDisplayUpdate with value = None at %f" % t)
             for i in v:
-                if 'bit_code' in i.keys():
-                    mwC.append(int(i['bit_code']))
-                    mwT.append(t)
-        pass
+                if ('type' in i.keys()) and (i['type'] == 'image'): # skips bit_code and blueSquare
+                    stimTimes.append(t)
+                    stims.append(i)
+        return stimTimes, stims
     
     def get_blackouts(self):
         pass
