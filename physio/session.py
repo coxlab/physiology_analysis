@@ -41,25 +41,25 @@ class Session(object):
         ch, cl = self._file.root.Cells[i]
         return ch, cl
     
-    def get_cell_spike_times(self, i, timerange = None):
+    def get_cell_spike_times(self, i, timeRange = None):
         ch, cl = self.get_cell(i)
-        return self.get_spike_times(ch, cl, timerange)
+        return self.get_spike_times(ch, cl, timeRange)
     
-    def get_spike_times(self, channel, cluster, timerange = None):
+    def get_spike_times(self, channel, cluster, timeRange = None):
         n = self._file.getNode('/Channels/ch%i' % channel)
-        if timerange is None:
+        if timeRange is None:
             times = [i['time'] for i in self._file.getNode('/Channels/ch%i' % channel).\
                                         where('clu == %i' % cluster)]
         else:
-            assert len(timerange) == 2, "timerange must be length 2: %s" % len(timerange)
-            samplerange = (int(timerange[0] * self._samplingrate),
-                            int(timerange[1] * self._samplingrate))
+            assert len(timeRange) == 2, "timeRange must be length 2: %s" % len(timeRange)
+            samplerange = (int(timeRange[0] * self._samplingrate),
+                            int(timeRange[1] * self._samplingrate))
             times = [i['time'] for i in self._file.getNode('/Channels/ch%i' % channel).\
                                         where('(clu == %i) & (time > %i) & (time < %i)' \
                                             % (cluster, samplerange[0], samplerange[1]))]
         return np.array(times) / float(self._samplingrate)
     
-    def get_events(self, name, timerange = None):
+    def get_events(self, name, timeRange = None):
         return h5.events.read_events(self._file, name, timeRange)
         # eventGroup = self._file.getNode('/Events')
         # # lookup code (code, name)
@@ -68,12 +68,12 @@ class Session(object):
         # code = codes[0]
         # 
         # # lookup events (code, index, time)
-        # if timerange is None:
+        # if timeRange is None:
         #     events = [r.fetch_all_fields() for r in eventGroup.events.where('codes == %i' % code)]
         # else:
-        #     assert len(timerange) == 2, "timerange must be length 2: %s" % len(timerange)
-        #     usrange = (int(self._timebase.audio_to_mw(timerange[0]) * 1E6),\
-        #                 int(self._timebase.audio_to_mw(timerange[1]) * 1E6))
+        #     assert len(timeRange) == 2, "timeRange must be length 2: %s" % len(timeRange)
+        #     usrange = (int(self._timebase.audio_to_mw(timeRange[0]) * 1E6),\
+        #                 int(self._timebase.audio_to_mw(timeRange[1]) * 1E6))
         #     events = [r.fetch_all_fields() for r in eventGroup.events.\
         #                 where('(codes == %i) & (time > %i) & (time < %i)' \
         #                     % (code, usrange[0], usrange[1]))]
@@ -86,8 +86,14 @@ class Session(object):
         # times = [self._timebase.mw_to_audio(ev[2]) for ev in events]
         # return times, values
     
-    def get_stimuli(self, matchstr = None, timerange = None):
-        
+    def get_stimuli(self, matchstr = None, timeRange = None):
+        times, values = self.get_events('#stimDisplayUpdate', timeRange)
+        for (t, v) in zip(times, values):
+            if v is None: logging.warning("Found #stimDisplayUpdate with value = None at %f" % t)
+            for i in v:
+                if 'bit_code' in i.keys():
+                    mwC.append(int(i['bit_code']))
+                    mwT.append(t)
         pass
     
     def get_blackouts(self):

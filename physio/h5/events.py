@@ -8,26 +8,30 @@ import tables
 
 from .. import utils
 
-def find_events_group(eventsFile, regex = r'[a-z,A-Z]+[0-9]_[0-9]+'):
+def find_events_group(eventsFile):#, regex = r'[a-z,A-Z]+[0-9]_[0-9]+'):
     """
-    Determine the name of the group in which events are stored by matching
-    against a regular expression
+    Find the h5file node that contains session events by looking for
+    a group that contains codec, values, and events subnodes
     
     Parameters
     ----------
     eventsFile : hdf5 file object
         Hdf5 file object that contains session events
-    regex : string
-        Regex used to find group that contains session events
     
     Returns
     -------
     eventsgroup : hdf5 node
         Group within eventsFile that contains session events
     """
-    for k in eventsFile.root._v_children.keys():
-        if re.match(regex, k):
-            return eventsFile.getNode('/%s' % k)
+    # for k in eventsFile.root._v_children.keys():
+    #     if re.match(regex, k):
+    #         return eventsFile.getNode('/%s' % k)
+    for node in eventsFile:
+        if type(node) != tables.group.Group: continue
+        if not ('codec' in node): continue
+        if not ('values' in node): continue
+        if not ('events' in node): continue
+        return node
 
 def read_events(eventsFile, code, timeRange = None):
     """
@@ -37,7 +41,7 @@ def read_events(eventsFile, code, timeRange = None):
         Filename or file (used with utils.H5Maker) from which to read events
     code : string or int
         Event code or name
-    timerange : 2 tuple of ints
+    timeRange : 2 tuple of ints
         Range (in mworks time in seconds) over which to read events
     
     Returns
@@ -60,13 +64,13 @@ def read_events(eventsFile, code, timeRange = None):
         if timeRange is None:
             evs = np.array([(int(r['time']),g.values[r['index']]) for r in g.events.where('code == %i' % code)])
         else:
-            # convert timerange to microseconds
+            # convert timeRange to microseconds
             timeRange[0] = int(timeRange[0] * 1E6)
             timeRange[1] = int(timeRange[1] * 1E6)
             # PyTables version 2.2.1 does not support selection on uint64 (the time type) so...
             assert np.iterable(timeRange), "timeRange[%s] must be iterable" % str(timeRange)
             assert len(timeRange) == 2, "timeRange length[%i] must be 2" % len(timeRange)
-            assert type(timeRange[0]) == int, "timeRange[0] type[%s] must be int" % type(timerange[0])
+            assert type(timeRange[0]) == int, "timeRange[0] type[%s] must be int" % type(timeRange[0])
             evs = np.array([(int(r['time']),g.values[r['index']]) for r in g.events.where('code == %i' % code) if \
                         int(r['time']) > timeRange[0] and int(r['time']) <= timeRange[1]])
     vs = evs[:,1]
