@@ -1,81 +1,38 @@
 ======
-Python port of WaveClus Matlab spike sorting package
+Physiology analysis pipeline
 ======
 
-This python package is (mostly) a port of WaveClus to python.
+This is the main analysis pipeline for physiology data collected in the coxlab.
 
-What is WaveClus
-------
+The pipeline (as seen from 1000m) looks like this:
 
-Original WaveClus package:
-http://vis.caltech.edu/~rodri/Wave_clus/Wave_clus_home.htm
+    raw data -> (processing) -> hdf5 session file -> (statistics & visualization) -> results
 
-reported in:
-R. Quian Quiroga, Z. Nadasdy and Y. Ben-Shaul. Neural Computation 16, 1661-1687; 2004.
+Configuration
+-------------
+Most options are configured by creating and editing a .physio file in the users home directory.
+This is an ini type file with default settings found in the physio/cfg.py.
 
-An excellent description of spike sorting can be found here:
-http://www.scholarpedia.org/article/Spike_sorting
+Running the pipeline
+--------------------
 
-How does pywaveclus differ?
-------
+Analyzing a session is as simple as:
 
-WaveClus used a elliptic type bandpass filter.
+    import physio
+    physio.analysis.analyze.analyze(session)
 
-pywaveclus uses wavelet filtering based on code found here:
-http://www.berkelab.org/Software.html
+where session is in the form of <animal>_<date:yearmonthday> example: K4_110720
 
-reported in:
-A. B. Wiltschko, G. J. Gage and J. D. Berke. Journal of Neuroscience Methods 173:1, 34-40; 2008.
+This will produce a hdf5 file within the results repository (specified in ~/.physio).
 
-======
-Installation
-======
+Examining results
+-----------------
 
-Requirements
------
-see requirements.txt for most up to date information
+Opening session results:
 
-- numpy >= 1.5.1
-- scipy >= 0.8.0
-- pywavelets >= 0.2.0
-- scikits.audiolab >= 0.11.0 (only for reading wav files in pyc.py)
-- tables>=2.2.1 (only for saving hdf5 files in pyc.py)
-- nose >= 0.11 (only for testing)
+    import physio
+    mysession = physio.session.Session(resultsfile)
 
-The library version numbers may be more strict than necessary.
+where resultsfile is the path to the hdf5 results file
 
-It may be necessary to install these requirements prior to installing as I don't know if setup.py correctly installs missing requirements.
-
-Installing
------
-python setup.py install
-
-Testing
------
-python setup.py test
-
-or
-
-import pywaveclus.tests
-
-pywaveclus.tests.test.run()
-
-Running
------
-To cluster a single audio file run:
-
-pyc.py <file>
-
-pyc.py has lots of command line options (pyc.py -h) and will produce a hdf5 or mat file containing spike times, clusters, and waveforms.
-
-The mat file contains index matched lists (times[0] corresponds to the same spike as waves[0] and clus[0], etc...):
-
-- times : times of the spikes (in samples/frames)
-- waves : waveforms of the spikes
-- clus  : clusters to which the spikes belongs (cluster 0 is unmatched)
-
-The hdf5 file contains a main table SpikeTable that contains a row for each spike and the following columns:
-
-- time : time of the spike (in samples/frames)
-- wave : waveform of the spike
-- clu  : cluster to which the spike belongs (cluster 0 is unmatched)
+See physio/session.py for more info.
