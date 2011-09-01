@@ -4,6 +4,35 @@ import glob, logging, os, re, sys, time
 from contextlib import contextmanager
 
 import numpy as np
+import tables
+
+class H5Maker:
+    """
+    Accepts either a file or string (filename) and allows with(file/filename) for h5 files
+    """
+    def __init__(self, file_or_filename, *args, **kwargs):
+        """
+        Parameters
+        ----------
+        file_or_filename : str or h5file
+            Filename of h5 file or a pytables h5file object
+        args, kwargs : variable arguments
+        """
+        if type(file_or_filename) is str:
+            self._file = tables.openFile(file_or_filename, *args, **kwargs)
+            self._wasFile = False
+        else:
+            self._file = file_or_filename
+            self._wasFile = True
+    
+    def __enter__(self):
+        return self._file
+    
+    def __exit__(self, exc_type, exc_value, traceback):
+        if not self._wasFile:
+            self._file.flush()
+            self._file.close()
+        return False # propagate exception
 
 def error(string, exception = Exception):
     """

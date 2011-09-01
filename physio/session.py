@@ -9,6 +9,7 @@ import tables
 # import pywaveclus
 
 import clock
+import h5
 
 class Session(object):
     """
@@ -59,32 +60,34 @@ class Session(object):
         return np.array(times) / float(self._samplingrate)
     
     def get_events(self, name, timerange = None):
-        eventGroup = self._file.getNode('/Events')
-        # lookup code (code, name)
-        codes = [r['code'] for r in eventGroup.codec.where('name == "%s"' % name)]
-        assert len(codes) == 0, "Event name [%s] lookup returned != 1 code [%s]" % (name, len(codes))
-        code = codes[0]
-        
-        # lookup events (code, index, time)
-        if timerange is None:
-            events = [r.fetch_all_fields() for r in eventGroup.events.where('codes == %i' % code)]
-        else:
-            assert len(timerange) == 2, "timerange must be length 2: %s" % len(timerange)
-            usrange = (int(self._timebase.audio_to_mw(timerange[0]) * 1E6),\
-                        int(self._timebase.audio_to_mw(timerange[1]) * 1E6))
-            events = [r.fetch_all_fields() for r in eventGroup.events.\
-                        where('(codes == %i) & (time > %i) & (time < %i)' \
-                            % (code, usrange[0], usrange[1]))]
-        indices = [ev[1] for ev in events]
-        
-        # get values
-        values = eventGroup.values[np.array(indices, dtype=int)]
-        
-        # times
-        times = [self._timebase.mw_to_audio(ev[2]) for ev in events]
-        return times, values
+        return h5.events.read_events(self._file, name, timeRange)
+        # eventGroup = self._file.getNode('/Events')
+        # # lookup code (code, name)
+        # codes = [r['code'] for r in eventGroup.codec.where('name == "%s"' % name)]
+        # assert len(codes) == 0, "Event name [%s] lookup returned != 1 code [%s]" % (name, len(codes))
+        # code = codes[0]
+        # 
+        # # lookup events (code, index, time)
+        # if timerange is None:
+        #     events = [r.fetch_all_fields() for r in eventGroup.events.where('codes == %i' % code)]
+        # else:
+        #     assert len(timerange) == 2, "timerange must be length 2: %s" % len(timerange)
+        #     usrange = (int(self._timebase.audio_to_mw(timerange[0]) * 1E6),\
+        #                 int(self._timebase.audio_to_mw(timerange[1]) * 1E6))
+        #     events = [r.fetch_all_fields() for r in eventGroup.events.\
+        #                 where('(codes == %i) & (time > %i) & (time < %i)' \
+        #                     % (code, usrange[0], usrange[1]))]
+        # indices = [ev[1] for ev in events]
+        # 
+        # # get values
+        # values = eventGroup.values[np.array(indices, dtype=int)]
+        # 
+        # # times
+        # times = [self._timebase.mw_to_audio(ev[2]) for ev in events]
+        # return times, values
     
     def get_stimuli(self, matchstr = None, timerange = None):
+        
         pass
     
     def get_blackouts(self):

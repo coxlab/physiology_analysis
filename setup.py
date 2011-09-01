@@ -7,7 +7,7 @@ from distribute_setup import use_setuptools
 use_setuptools()
 from setuptools import setup, find_packages
 
-import re
+import os, re, sys
 
 
 def parse_requirements(file_name):
@@ -33,6 +33,16 @@ def parse_dependency_links(file_name):
 
     return dependency_links
 
+# def get_git_commit_id():
+#     path = os.path.abspath(sys.argv[0]) # path of script
+#     cmd = "git log -n 1 --pretty=format:%%H %s" % path
+#     p = os.popen(cmd)
+#     gcid = p.read()
+#     return gcid
+
+def get_version():
+    import physio
+    return physio.__version__
 
 setup(
     name='physio',
@@ -40,7 +50,7 @@ setup(
     packages = ['physio','physio/analysis','physio/clock','physio/events','physio/h5','physio/plotting','physio/tests'],
     # package_data={'pywaveclus': ['bin/*']},
     # scripts=['scripts/pyc.py'],
-    version='dev',
+    version = get_version(),
 
     include_package_data=True,
 
