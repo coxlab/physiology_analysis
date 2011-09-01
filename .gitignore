@@ -1,2 +1,4 @@
 *.pyc
 data/*
+dist/*
+physio.egg-info/*
