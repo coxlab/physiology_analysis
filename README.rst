@@ -19,6 +19,7 @@ Running the pipeline
 Analyzing a session is as simple as:
 
     import physio
+    
     physio.analysis.analyze.analyze(session)
 
 where session is in the form of <animal>_<date:yearmonthday> example: K4_110720
@@ -31,6 +32,7 @@ Examining results
 Opening session results:
 
     import physio
+    
     mysession = physio.session.Session(resultsfile)
 
 where resultsfile is the path to the hdf5 results file
