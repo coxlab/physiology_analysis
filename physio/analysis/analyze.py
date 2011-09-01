@@ -18,11 +18,12 @@ from .. import utils
 def analyze(session, customCfgFile = None):
     
     # setup configuration TODO consolidate?
-    config = cfg.Config()
-    config.read_user_config()
-    config.read_session_config(session)
-    config.set_session(session)
-    if not customCfgFile is None: config.read(customCfgFile)
+    config = cfg.load(session, customCfgFile)
+    # config = cfg.Config()
+    # config.read_user_config()
+    # config.read_session_config(session)
+    # config.set_session(session)
+    # if not customCfgFile is None: config.read(customCfgFile)
     
     # determine epochs
     sessionDict, probeDict = notebook.lookup_notes(config)

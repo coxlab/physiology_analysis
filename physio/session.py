@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 # import itertools, glob, sys
+import glob
 
 import numpy as np
 # import pylab as pl
@@ -8,10 +9,19 @@ import tables
 
 # import pywaveclus
 
+import cfg
 import clock
 import events
 import h5
 import utils
+
+def load(session, config = None):
+    if config is None:
+        config = cfg.load(session)
+    outputDir = config.get('session','output')
+    h5files = glob.glob(outputDir+'/*.h5')
+    if len(h5files) != 1: utils.error('More than one .h5 file found in output directory: %s' % str(h5files))
+    return Session(h5files[0], config.getint('audio','samprate'))
 
 class Session(object):
     """

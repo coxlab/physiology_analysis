@@ -54,6 +54,13 @@ email:
 password:
 """
 
+def load(session, customCfgFile = None):
+    config = Config()
+    config.read_user_config()
+    config.read_session_config(session)
+    config.set_session(session)
+    if not customCfgFile is None: config.read(customCfgFile)
+
 class Config(ConfigParser.SafeConfigParser):
     def __init__(self, *args, **kwargs):
         ConfigParser.SafeConfigParser.__init__(self, *args, **kwargs)
