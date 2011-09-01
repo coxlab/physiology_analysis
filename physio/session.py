@@ -9,7 +9,9 @@ import tables
 # import pywaveclus
 
 import clock
+import events
 import h5
+import utils
 
 class Session(object):
     """
@@ -23,13 +25,39 @@ class Session(object):
         self.read_timebase()
     
     def read_timebase(self):
-        # evt_zipper = np.array(matchesNode)
-        # audio_offset = matchesNode.attrs.AUDIOOFFSET # is always 0....
-        # tb = pixel_clock.TimeBase(evt_zipper, audio_offset)
-        # tb.audio_offset = -tb.mw_time_to_audio(epoch_mw[0]) # ? WTF!!!!!!!!!!!!!!
         matchesNode = self._file.getNode('/TimeMatches')
-        # matches = np.array(matchesNode)
         self._timebase = clock.timebase.TimeBase(np.array(matchesNode))
+    
+    def get_epoch_time_range(self, unit):
+        """
+        Parameters
+        ----------
+        unit : string
+            Either mworks, mw, audio, or au
+        
+        Returns
+        -------
+        beginning : float
+            Time at beginning of epoch
+        end : float
+            Time at end of epoch
+        
+        Notes
+        -----
+        There are two time units (audio and mworks)
+            mworks times are always relative to the start of mworks
+            audio times are relative to the start of the epoch
+        """
+        
+        au_session = [self._file.root._v_attrs['EPOCH_START_AUDIO'], self._file.root._v_attrs['EPOCH_END_AUDIO']]
+        au_epoch = [0, au_session[1] - au_session[0]]
+        if unit[:2] == 'au':
+            return au_epoch
+        elif unit[:2] == 'mw':
+            mw_epoch = [self._timebase.audio_to_mworks(au_epoch[0]), self._timebase.audio_to_mworks(au_epoch[1])]
+            return mw_epoch
+        else:
+            utils.error("Unknown time unit[%s]" % unit)
     
     def close(self):
         self._file.close()
@@ -60,43 +88,19 @@ class Session(object):
         return np.array(times) / float(self._samplingrate)
     
     def get_events(self, name, timeRange = None):
+        if timeRange is None:
+            timeRange = self.get_epoch_time_range('mworks')
+        
         return h5.events.read_events(self._file, name, timeRange)
-        # eventGroup = self._file.getNode('/Events')
-        # # lookup code (code, name)
-        # codes = [r['code'] for r in eventGroup.codec.where('name == "%s"' % name)]
-        # assert len(codes) == 0, "Event name [%s] lookup returned != 1 code [%s]" % (name, len(codes))
-        # code = codes[0]
-        # 
-        # # lookup events (code, index, time)
-        # if timeRange is None:
-        #     events = [r.fetch_all_fields() for r in eventGroup.events.where('codes == %i' % code)]
-        # else:
-        #     assert len(timeRange) == 2, "timeRange must be length 2: %s" % len(timeRange)
-        #     usrange = (int(self._timebase.audio_to_mw(timeRange[0]) * 1E6),\
-        #                 int(self._timebase.audio_to_mw(timeRange[1]) * 1E6))
-        #     events = [r.fetch_all_fields() for r in eventGroup.events.\
-        #                 where('(codes == %i) & (time > %i) & (time < %i)' \
-        #                     % (code, usrange[0], usrange[1]))]
-        # indices = [ev[1] for ev in events]
-        # 
-        # # get values
-        # values = eventGroup.values[np.array(indices, dtype=int)]
-        # 
-        # # times
-        # times = [self._timebase.mw_to_audio(ev[2]) for ev in events]
-        # return times, values
     
-    def get_stimuli(self, matchstr = None, timeRange = None):
-        times, values = self.get_events('#stimDisplayUpdate', timeRange)
-        stimTimes = []
-        stims = []
-        for (t, v) in zip(times, values):
-            if v is None: logging.warning("Found #stimDisplayUpdate with value = None at %f" % t)
-            for i in v:
-                if ('type' in i.keys()) and (i['type'] == 'image'): # skips bit_code and blueSquare
-                    stimTimes.append(t)
-                    stims.append(i)
-        return stimTimes, stims
+    def get_stimuli(self, matchDict = None, timeRange = None, stimType = 'image'):
+        if timeRange is None:
+            timeRange = self.get_epoch_time_range('mworks')
+        
+        times, stims = events.stimuli.get_stimuli(self._file, timeRange, stimType)
+        if not (matchDict is None):
+            times, stims = events.stimuli.match(times, stims, matchDict)
+        return times, stims
     
     def get_blackouts(self):
         pass

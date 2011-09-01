@@ -8,18 +8,23 @@ import tables
 from .. import utils
 from .. import h5
 
-def get_stimuli(eventsFile, timeRange = None):
-    times, values = h5.events.get_events('#stimDisplayUpdate', timeRange)
-    
+def get_stimuli(eventsFile, timeRange = None, stimType = 'image'):
+    """
+    Parameters
+    ----------
+    stimType : string
+        Type of stimulus to fetch. Default = image which excludes the blueSquare
+    """
+    times, values = h5.events.read_events(eventsFile, '#stimDisplayUpdate', timeRange)
     stimTimes = []
     stims = []
     for (t, v) in zip(times, values):
         if v is None: logging.warning("Found #stimDisplayUpdate with value = None at %f" % t)
         for i in v:
-            if 'image' in i.keys(): # skips bit_code and blueSquare
+            if ('type' in i.keys()) and (i['type'] == stimType): 
                 stimTimes.append(t)
                 stims.append(i)
-    return stimsTimes, stims
+    return stimTimes, stims
 
 def match(stimTimes, stims, matchDict):
     matchedTimes = []

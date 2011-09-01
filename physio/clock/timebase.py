@@ -46,7 +46,7 @@ class TimeBase(object):
         self.offsets = self.offsets[goodIndices]
         self.matches = self.matches[goodIndices]
     
-    def audio_to_mw(self, audio):
+    def audio_to_mworks(self, audio):
         """
         Convert an audio time (in seconds) to mworks time (in seconds)
         
@@ -61,7 +61,7 @@ class TimeBase(object):
             return audio - self.offsets[-1]
         return audio - self.offsets[closest[0]]
     
-    def mw_to_audio(self, mw):
+    def mworks_to_audio(self, mw):
         """
         Convert a mworks time (in seconds) to audio time (in seconds)
         
@@ -78,7 +78,7 @@ class TimeBase(object):
     
     def old_mw_time_to_audio(self, mw_time, mw_offset = 0):
         """
-        Depreciated method, use: mw_to_audio
+        Depreciated method, use: mworks_to_audio
         """
         mw_t = mw_time + mw_offset
         # print mw_t
@@ -94,7 +94,7 @@ class TimeBase(object):
 
     def old_audio_time_to_mw(self, audio_time, audio_offset = 0):
         """
-        Depreciated method, use: audio_to_mw
+        Depreciated method, use: audio_to_mworks
         """
         a_t = audio_time + audio_offset# - self.audio_offset
         
@@ -116,13 +116,13 @@ def test_timebase():
     # exact matches won't happen due to floating point issues
     for match in matches:
         a, m = match
-        d = abs(tb.mw_to_audio(tb.audio_to_mw(a)) - a)
+        d = abs(tb.mworks_to_audio(tb.audio_to_mworks(a)) - a)
         assert d < 1E-9, "Audio->MW->Audio failed: audio: %.6f mw: %.6f Err: %.6f" % (a, m, d)
-        d = abs(tb.audio_to_mw(tb.mw_to_audio(m)) - m)
+        d = abs(tb.audio_to_mworks(tb.mworks_to_audio(m)) - m)
         assert d < 1E-9, "MW->Audio->MW failed: mw: %.6f audio: %.6f Err: %.6f" % (m, a, d)
-        d = abs(a - tb.mw_to_audio(m))
+        d = abs(a - tb.mworks_to_audio(m))
         assert d < 1E-9, "MW->Audio failed: mw: %.6f, audio: %.6f Err: %.6f" % (m, a, d)
-        d = abs(m - tb.audio_to_mw(a))
+        d = abs(m - tb.audio_to_mworks(a))
         assert d < 1E-9, "Audio->MW failed: audio: %.6f mw: %.6f Err: %.6f" % (a, m, d)
 
 if __name__ == "__main__":
