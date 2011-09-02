@@ -14,6 +14,19 @@ from .. import utils
 # 0 is first - 3 is last
 # self.auChannelOffsets = [86, 84, 81, 79] # [2,5,7,9]
 # size should be 8.5 degrees NOT 2.5 (as the clock is rotated 90 degrees)
+#
+# our monitor is a Sharp LC-42D43U
+# resolution = 1360 x 768
+# refresh rates =
+#  horizontal = 47.7 kHz
+#  vertical = 60 Hz
+#  w x y in mm = 930 x 525
+#  overscan is on : check that this is not clipping parts of the display
+#  quoted : 6 ms response time (seems to be somewhat faster)
+#  height in mworks 'degrees' 64.54842055808264
+#  so...
+#   ~ 10758.070093013774 degrees per second
+#   ~ 0.24394716764203569 degrees per sample
 
 def find_negative_threshold_crossings(signal, threshold, refractory):
     """
@@ -165,6 +178,7 @@ def find_transitions(signal, threshold = 0.03, refractory = 44):
         Indicies where the signal crosses the threshold
     """
     crossings = find_both_threshold_crossings(signal, threshold, refractory)
+    # return crossings
     return refine_crossings(signal, crossings)
 
 def test_threshold_crossings():
@@ -286,6 +300,7 @@ def events_to_codes(events, nchannels, minCodeTime):
     # print "Initial state: %s = %i" % (state, state_to_code(state))
     trigTime = evts[0,0]
     trigChannel = int(evts[0,1])
+    trigDirection = int(evts[0,2])
     codes = []
     
     latencies = [ [ [] for x in xrange(nchannels)] for y in xrange(nchannels)]
@@ -296,13 +311,17 @@ def events_to_codes(events, nchannels, minCodeTime):
             codes.append((trigTime, code, trigChannel))
             trigTime = ev[0]
             trigChannel = int(abs(ev[1]))
+            trigDirection = int(ev[2])
         # update state
         ch = int(ev[1])
         state[ch] += int(ev[2])
         if not (state[ch] in [0,1]):
             logging.debug("Invalid state found[%s] at %i, truncating" % (str(state), ev[0]))
             state[ch] = max(0,min(1,state[ch]))
-        latencies[trigChannel][ch].append(ev[0] - trigTime)
+        else:
+            # only store on valid states and + transitions
+            # TODO look at transition direction of trigger, did it go up or down? only look for THOSE events
+            if (trigDirection == 1) and (int(ev[2]) == 1): latencies[trigChannel][ch].append(ev[0] - trigTime)
     
     # assume last code was complete
     code = state_to_code(state)
@@ -365,6 +384,7 @@ def offset_codes(codes, latencies, pcY, pcHeight, screenHeight, sepRatio):
     
     avgSpeeds = np.zeros((nchannels,nchannels))
     allSpeeds = []
+    
     for x in xrange(nchannels):
         for y in xrange(nchannels):
             if x == y: continue
@@ -379,6 +399,7 @@ def offset_codes(codes, latencies, pcY, pcHeight, screenHeight, sepRatio):
     # f = open('latencies.p','w')
     # pickle.dump(latencies,f)
     # f.close()
+    # np.savetxt('allspeeds',allSpeeds)
     
     avgSpeed = np.mean(allSpeeds)
     offsets = (np.array(posDegrees) * avgSpeed).astype(int)

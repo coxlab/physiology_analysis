@@ -2,5 +2,6 @@
 
 import psth
 import raster
+import xcorr
 
-__all__ = ['psth', 'raster']
+__all__ = ['psth', 'raster', 'xcorr']
