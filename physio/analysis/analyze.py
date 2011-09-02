@@ -15,6 +15,17 @@ from .. import h5
 from .. import notebook
 from .. import utils
 
+def check_results(session, customCfgFile = None):
+    # check if results version agrees with the current version
+    config = cfg.load(session, customCfgFile)
+    rf = config.get('session','output') + '/' + session + '.h5'
+    if os.path.exists(rf):
+        # TODO check if version agrees
+        return
+    
+    # ...then re-analyze data
+    analyze(session, customCfgFile)
+
 def analyze(session, customCfgFile = None):
     
     # setup configuration TODO consolidate?

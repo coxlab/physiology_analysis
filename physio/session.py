@@ -109,6 +109,9 @@ class Session(object):
         return h5.events.get_codec(self._file)
     
     def get_stimuli(self, matchDict = None, timeRange = None, stimType = 'image'):
+        """
+        Does not look for 'failed' trials
+        """
         if timeRange is None:
             timeRange = self.get_epoch_time_range('mworks')
         
@@ -117,6 +120,31 @@ class Session(object):
             times, stims = events.stimuli.match(times, stims, matchDict)
         autimes = [self._timebase.mworks_to_audio(t) for t in times]
         return autimes, stims
+    
+    def get_trials(self, matchDict = None, timeRange = None):
+        times, stims = self.get_stimuli(matchDict, timeRange)
+        tr = self.get_epoch_time_range('mworks')
+        tr[0] = 0
+        dtt, dtv = self.get_events('Distractor_Time', timeRange = tr)
+        if len(dtt) != 1: utils.error("Cannot handle sessions where distractor presentation time changed")
+        presentationTime = dtv[0] / 1000.
+        
+        ftimes, _ = self.get_events('failure')
+        
+        goodTimes = []
+        goodStims = []
+        badTimes = []
+        badStims = []
+        for (t,s) in zip(times, stims):
+            if any(((ftimes - t) > 0) & ((ftimes - t) < presentationTime)):
+                # failed trial
+                badTimes.append(t)
+                badStims.append(s)
+            else:
+                # good trial
+                goodTimes.append(t)
+                goodStims.append(s)
+        return goodTimes, goodStims, badTimes, badStims
     
     def get_blackouts(self):
         pass
