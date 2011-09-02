@@ -60,7 +60,7 @@ def read_events(eventsFile, code, timeRange = None):
         Filename or file (used with utils.H5Maker) from which to read events
     code : string or int
         Event code or name
-    timeRange : 2 tuple of ints
+    timeRange : 2 tuple of floats
         Range (in mworks time in seconds) over which to read events
     
     Returns
@@ -81,7 +81,7 @@ def read_events(eventsFile, code, timeRange = None):
             code = codec.keys()[codec.values().index(code)]
         
         if timeRange is None:
-            evs = np.array([(int(r['time']),g.values[r['index']]) for r in g.events.where('code == %i' % code)])
+            evs = [(int(r['time']),g.values[r['index']]) for r in g.events.where('code == %i' % code)]
         else:
             # convert timeRange to microseconds
             timeRange = list(timeRange)
@@ -91,15 +91,17 @@ def read_events(eventsFile, code, timeRange = None):
             assert np.iterable(timeRange), "timeRange[%s] must be iterable" % str(timeRange)
             assert len(timeRange) == 2, "timeRange length[%i] must be 2" % len(timeRange)
             assert type(timeRange[0]) == int, "timeRange[0] type[%s] must be int" % type(timeRange[0])
-            evs = np.array([(int(r['time']),g.values[r['index']]) for r in g.events.where('code == %i' % code) if \
-                        int(r['time']) > timeRange[0] and int(r['time']) <= timeRange[1]])
+            evs = [(int(r['time']),g.values[r['index']]) for r in g.events.where('code == %i' % code) if \
+                        int(r['time']) > timeRange[0] and int(r['time']) <= timeRange[1]]
     
     if len(evs) == 0: return np.array([]), []
-    vs = evs[:,1]
+    # vs = evs[:,1]
     # f.close()
     
-    times = np.array(evs[:,0],dtype=float) / float(1E6)
-    values = [ast.literal_eval(v) for v in vs]
+    #times = np.array(evs[:,0],dtype=float) / float(1E6)
+    # times = evs[:,0].astype(float) / float(1E6)
+    times = np.array([int(ev[0]) for ev in evs], dtype = float) / float(1E6)
+    values = [ast.literal_eval(ev[1]) for ev in evs]
     
     return times, values
 
