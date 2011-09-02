@@ -33,6 +33,25 @@ def find_events_group(eventsFile):#, regex = r'[a-z,A-Z]+[0-9]_[0-9]+'):
         if not ('events' in node): continue
         return node
 
+def get_codec(eventsFile):
+    """
+    Get the session events codec from an hdf5 results or events file
+    
+    Parameters
+    ----------
+    eventsFile : string or h5file
+        Filename or file (used with utils.H5Maker) from which to read events
+    
+    Returns
+    -------
+    codec : dict
+        Session events codec
+    """
+    with utils.H5Maker(eventsFile,'r') as f:
+        g = find_events_group(f)
+        codec = dict(g.codec.read())
+    return codec
+
 def read_events(eventsFile, code, timeRange = None):
     """
     Parameters
@@ -65,6 +84,7 @@ def read_events(eventsFile, code, timeRange = None):
             evs = np.array([(int(r['time']),g.values[r['index']]) for r in g.events.where('code == %i' % code)])
         else:
             # convert timeRange to microseconds
+            timeRange = list(timeRange)
             timeRange[0] = int(timeRange[0] * 1E6)
             timeRange[1] = int(timeRange[1] * 1E6)
             # PyTables version 2.2.1 does not support selection on uint64 (the time type) so...
@@ -73,6 +93,8 @@ def read_events(eventsFile, code, timeRange = None):
             assert type(timeRange[0]) == int, "timeRange[0] type[%s] must be int" % type(timeRange[0])
             evs = np.array([(int(r['time']),g.values[r['index']]) for r in g.events.where('code == %i' % code) if \
                         int(r['time']) > timeRange[0] and int(r['time']) <= timeRange[1]])
+    
+    if len(evs) == 0: return np.array([]), []
     vs = evs[:,1]
     # f.close()
     

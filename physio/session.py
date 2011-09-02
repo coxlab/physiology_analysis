@@ -105,6 +105,9 @@ class Session(object):
         autimes = [self._timebase.mworks_to_audio(t) for t in times]
         return autimes, values
     
+    def get_codec(self):
+        return h5.events.get_codec(self._file)
+    
     def get_stimuli(self, matchDict = None, timeRange = None, stimType = 'image'):
         if timeRange is None:
             timeRange = self.get_epoch_time_range('mworks')
