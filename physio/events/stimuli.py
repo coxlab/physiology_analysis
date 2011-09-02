@@ -43,7 +43,7 @@ def unhash(stimhash):
     assert len(tokens) == 6, "Invalid stimulus hash[%s] contained != 6 tokens[%i]" % (stimhash, len(tokens))
     stim = {}
     stim['name'] = tokens[0]
-    for (name, token) in zip(['pos_x','pos_y','rotation','stim_x','stim_y'], tokens[1:]):
+    for (name, token) in zip(['pos_x','pos_y','rotation','size_x','size_y'], tokens[1:]):
         stim[name] = float(token)
     return stim
 
