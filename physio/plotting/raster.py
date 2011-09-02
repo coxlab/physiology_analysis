@@ -3,24 +3,19 @@
 import numpy as np
 import pylab as pl
 
-def plot(eventTimes, spikeTimes, preT = -0.2, postT = 0.5, nbins = 8, color = '0.5'):
-    allspikes = []
-    for et in eventTimes:
+def plot(eventTimes, spikeTimes, preT = -0.2, postT = 0.5, marker = '|k'):
+    
+    for (y,et) in enumerate(eventTimes):
         # find spiketimes that match
         spikes = spikeTimes[(spikeTimes > (et + preT)) & (spikeTimes < (et + postT))] - et
-        # if len(spikes):
-        #     pl.hist(spikes,bins=np.linspace(preT,postT,nbins))
-        if len(spikes):
-            allspikes.append(spikes)
+        if len(spikes): pl.plot(spikes, np.ones_like(spikes)*y, marker, hold = True)
     
-    if len(allspikes) == 0: return
-    
-    allspikes = np.hstack(allspikes)
-    pl.hist(allspikes, bins = np.linspace(preT,postT,nbins))
     pl.xlim(preT, postT)
 
-def plot_psth(event_locked, **kwargs):
 
+def plot_rasters(event_locked, **kwargs):
+
+    v_spacing = kwargs.get("vertical_spacing", 0.05)
     time_range = kwargs.get("time_range", (-0.100, 0.500))
     n_bins = kwargs.get("n_bins", 25)
     bin_color = kwargs.get("bin_color", '0.5')
@@ -38,6 +33,7 @@ def plot_psth(event_locked, **kwargs):
         evt = event_locked[i]
 
         for t in evt:
+            plt.plot( t, y, '|k')
             ts.append(t)
 
     if len(ts) != 0:

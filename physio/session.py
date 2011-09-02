@@ -25,7 +25,7 @@ def load(session, config = None):
 
 class Session(object):
     """
-    Times are always provided in seconds since beginning of epoch
+    Times are always provided in seconds since beginning of epoch in audio units
     """
     def __init__(self, h5filename, samplingrate = 44100):
         self._file = tables.openFile(h5filename,'r')
@@ -101,7 +101,9 @@ class Session(object):
         if timeRange is None:
             timeRange = self.get_epoch_time_range('mworks')
         
-        return h5.events.read_events(self._file, name, timeRange)
+        times, values = h5.events.read_events(self._file, name, timeRange)
+        autimes = [self._timebase.mworks_to_audio(t) for t in times]
+        return autimes, values
     
     def get_stimuli(self, matchDict = None, timeRange = None, stimType = 'image'):
         if timeRange is None:
@@ -110,7 +112,8 @@ class Session(object):
         times, stims = events.stimuli.get_stimuli(self._file, timeRange, stimType)
         if not (matchDict is None):
             times, stims = events.stimuli.match(times, stims, matchDict)
-        return times, stims
+        autimes = [self._timebase.mworks_to_audio(t) for t in times]
+        return autimes, stims
     
     def get_blackouts(self):
         pass
