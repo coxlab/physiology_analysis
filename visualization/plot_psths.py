@@ -36,7 +36,7 @@ if len(args) != 1:
 
 session = physio.session.load(args[0])#'K4_110720')
 if options.outdir.strip() == '':
-    config = cfg.load(args[0])
+    config = physio.cfg.load(args[0])
     outdir = config.get('session','output')
     outdir += '/plots'
     options.outdir = outdir
