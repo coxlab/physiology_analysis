@@ -10,12 +10,12 @@ import physio
 
 plotWindow = [-0.25, .75]
 plotNBins = 20
-channel = 10
+channel = 7
 # nChannels = 32
 # depthOrdered = physio.channelmapping.position_to_tdt(range(nChannels))
 
-# session = physio.session.load('K4_110720')
-session = physio.session.load('K4_110830')
+session = physio.session.load('K4_110720')
+# session = physio.session.load('K4_110830')
 
 trialTimes, stimuli, _, _ = session.get_trials()
 nTrials = len(trialTimes)
@@ -79,6 +79,7 @@ for (y, datum) in enumerate(data):
             pl.xticks([])
         else:
             pl.xticks([0., .5])
+            pl.xlabel("Seconds")
         ymaxs[y] = max(ymaxs[y], pl.ylim()[1])
 
 session.close()
