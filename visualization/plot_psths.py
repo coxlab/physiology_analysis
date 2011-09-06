@@ -47,7 +47,7 @@ for s in stimCounts.keys():
     logging.debug("\t%i presentations of %s" % (stimCounts[s],s))
 
 # get unique positions & sizes
-values = []
+values = {}
 for s in uniqueStimuli:
     values[s[options.group]] = 1
 values = sorted(values.keys())
