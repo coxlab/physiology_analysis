@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import logging, optparse, sys
+import logging, optparse, os, sys
 logging.basicConfig(level = logging.DEBUG)
 
 import numpy as np
@@ -19,6 +19,8 @@ parser.add_option("-n", "--nbins", dest="nbins", default=20,
                     help="Number of bins in histogram")
 parser.add_option("-c", "--channel", dest="channel", default=7,
                     help="Channel to plot")
+parser.add_option("-o", "--outdir", dest="outdir", default="",
+                    help="Output directory")
 
 (options, args) = parser.parse_args()
 if len(args) != 1:
@@ -33,6 +35,12 @@ if len(args) != 1:
 # depthOrdered = physio.channelmapping.position_to_tdt(range(nChannels))
 
 session = physio.session.load(args[0])#'K4_110720')
+if options.outdir.strip() == '':
+    config = cfg.load(args[0])
+    outdir = config.get('session','output')
+    outdir += '/plots'
+    options.outdir = outdir
+    if not os.path.exists(options.outdir): os.makedirs(options.outdir) # TODO move this down
 # session = physio.session.load('K4_110830')
 
 
@@ -114,5 +122,6 @@ for y in xrange(subplotsHeight):
     for x in xrange(subplotsWidth):
         pl.subplot(subplotsHeight, subplotsWidth, subplotsWidth * y + x + 1)
         pl.ylim(0,ymaxs[y])
-        
-pl.savefig("psth_%i_%s.png" % (options.channel, options.group))
+
+if not os.path.exists(options.outdir): os.makedirs(options.outdir) # TODO move this down
+pl.savefig("%s/psth_%i_%s.png" % (options.outdir, options.channel, options.group))
