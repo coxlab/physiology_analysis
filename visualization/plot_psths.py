@@ -59,7 +59,7 @@ pl.figure(figsize=(subplotsWidth*2, subplotsHeight*2))
 pl.subplot(subplotsHeight, subplotsWidth,1)
 logging.debug("Plotting %i by %i plots(%i)" % (subplotsWidth, subplotsHeight, subplotsWidth * subplotsHeight))
 
-ymax = 0
+ymaxs = [0 for i in data]
 for (y, datum) in enumerate(data):
     for (x, condition) in enumerate(conditions):
         logging.debug("\tPlotting[%i, %i]: ch/cl %s : s %s" % (x, y, datum, condition))
@@ -79,13 +79,13 @@ for (y, datum) in enumerate(data):
             pl.xticks([])
         else:
             pl.xticks([0., .5])
-        ymax = max(ymax, pl.ylim()[1])
+        ymaxs[y] = max(ymaxes[y], pl.ylim()[1])
 
 session.close()
 
 for y in xrange(subplotsHeight):
     for x in xrange(subplotsWidth):
         pl.subplot(subplotsHeight, subplotsWidth, subplotsWidth * y + x + 1)
-        pl.ylim(0,ymax)
+        pl.ylim(0,ymax[y])
         
 pl.savefig("psth.png")
