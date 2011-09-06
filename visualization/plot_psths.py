@@ -70,7 +70,10 @@ for (y, datum) in enumerate(data):
         pl.axvline(0., color = 'k')
         pl.axvspan(0., 0.5, color = 'k', alpha = 0.1)
         
-        if x == 0: pl.ylabel('Cluster: %i' % datum[1])
+        if x == 0:
+            pl.ylabel('Cluster: %i\nRate(Hz)' % datum[1])
+        else:
+            pl.yticks([])
         if y == 0: pl.title('%s' % str(condition), rotation=45)
         if y < len(data) - 1:
             pl.xticks([])
