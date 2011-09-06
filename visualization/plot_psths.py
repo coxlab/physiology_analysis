@@ -10,17 +10,17 @@ import physio
 
 parser = optparse.OptionParser(usage="usage: %prog [options] session")
 parser.add_option("-g", "--group", dest="group", default="name",
-                    help="Group stimuli by this variable: name, pos_x, pos_y, size_x...")
+                    help="Group stimuli by this variable: name, pos_x, pos_y, size_x...", type='str')
 parser.add_option("-b", "--before", dest="before", default=-0.25,
-                    help="Seconds before stimulus onset to plot")
+                    help="Seconds before stimulus onset to plot", type='float')
 parser.add_option("-a", "--after", dest="after", default=0.75,
-                    help="Seconds after stimulus onset to plot")
+                    help="Seconds after stimulus onset to plot", type='float')
 parser.add_option("-n", "--nbins", dest="nbins", default=20,
-                    help="Number of bins in histogram")
+                    help="Number of bins in histogram", type='int')
 parser.add_option("-c", "--channel", dest="channel", default=7,
-                    help="Channel to plot")
+                    help="Channel to plot", type='int')
 parser.add_option("-o", "--outdir", dest="outdir", default="",
-                    help="Output directory")
+                    help="Output directory", type='str')
 
 (options, args) = parser.parse_args()
 if len(args) != 1:
@@ -40,7 +40,6 @@ if options.outdir.strip() == '':
     outdir = config.get('session','output')
     outdir += '/plots'
     options.outdir = outdir
-    if not os.path.exists(options.outdir): os.makedirs(options.outdir) # TODO move this down
 # session = physio.session.load('K4_110830')
 
 
