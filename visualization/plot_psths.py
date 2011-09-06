@@ -86,6 +86,6 @@ session.close()
 for y in xrange(subplotsHeight):
     for x in xrange(subplotsWidth):
         pl.subplot(subplotsHeight, subplotsWidth, subplotsWidth * y + x + 1)
-        pl.ylim(0,ymax[y])
+        pl.ylim(0,ymaxs[y])
         
 pl.savefig("psth.png")
