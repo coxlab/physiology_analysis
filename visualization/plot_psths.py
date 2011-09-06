@@ -10,7 +10,7 @@ import physio
 
 plotWindow = [-0.25, .75]
 plotNBins = 20
-channel = 7
+channel = 10
 # nChannels = 32
 # depthOrdered = physio.channelmapping.position_to_tdt(range(nChannels))
 
@@ -71,7 +71,10 @@ for (y, datum) in enumerate(data):
         
         if x == 0: pl.ylabel('Cluster: %i' % datum[1])
         if y == 0: pl.title('%s' % str(condition), rotation=45)
-        if y < len(data) - 1: pl.xticks([])
+        if y < len(data) - 1:
+            pl.xticks([])
+        else:
+            pl.xticks([0., .5])
         ymax = max(ymax, pl.ylim()[1])
 
 session.close()
