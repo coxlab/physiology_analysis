@@ -64,21 +64,21 @@ for (y, datum) in enumerate(data):
         logging.debug("\tPlotting[%i, %i]: ch/cl %s : s %s" % (x, y, datum, condition))
         trials, _, _, _ = session.get_trials(condition)
         spikes = session.get_spike_times(*datum)
-        pl.subplot(subplotsHeight, subplotsWidth, subplotsWidth * y + x)
+        pl.subplot(subplotsHeight, subplotsWidth, subplotsWidth * y + x + 1)
         physio.plotting.psth.plot(trials, spikes, plotWindow[0], plotWindow[1], plotNBins)
         pl.axvline(0., color = 'k')
         pl.axvspan(0., 0.5, color = 'k', alpha = 0.1)
         
         if x == 0: pl.ylabel('Cluster: %i' % datum[1])
         if y == 0: pl.title('%s' % str(condition), rotation=45)
-        if y < len(data): pl.xticks([])
+        if y < len(data) - 1: pl.xticks([])
         ymax = max(ymax, pl.ylim()[1])
 
 session.close()
 
 for y in xrange(subplotsHeight):
     for x in xrange(subplotsWidth):
-        pl.subplot(subplotsHeight, subplotsWidth, subplotsWidth * y + x)
+        pl.subplot(subplotsHeight, subplotsWidth, subplotsWidth * y + x + 1)
         pl.ylim(0,ymax)
         
 pl.savefig("psth.png")
