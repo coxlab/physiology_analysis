@@ -70,7 +70,7 @@ values = sorted(values.keys())
 #[name, :], [name, px, py[1], :], [name, px[1], py, :], [name, size, :]
 conditions = []
 for v in values:
-    conditions.append({condition : v})
+    conditions.append({options.group : v})
 # for n in names:
 #     conditions.append({'name' : n})
 # conditions = uniqueStimuli
