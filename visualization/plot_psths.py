@@ -79,7 +79,7 @@ for (y, datum) in enumerate(data):
             pl.xticks([])
         else:
             pl.xticks([0., .5])
-        ymaxs[y] = max(ymaxes[y], pl.ylim()[1])
+        ymaxs[y] = max(ymaxs[y], pl.ylim()[1])
 
 session.close()
 
