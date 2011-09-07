@@ -7,6 +7,7 @@ import scikits.audiolab as al
 # import tables
 
 from .. import h5
+from .. import dsp
 from .. import utils
 
 # 0 is LSB - 3 is MSB
@@ -28,137 +29,6 @@ from .. import utils
 #   ~ 10758.070093013774 degrees per second
 #   ~ 0.24394716764203569 degrees per sample
 
-def find_negative_threshold_crossings(signal, threshold, refractory):
-    """
-    Find points that are less than a negative threshold value
-    
-    Parameters
-    ----------
-    signal : 1d array
-        Signal in which to find threshold crossings
-    threshold : float
-        Threshold at which to find crossings (test: signal < threshold)
-    refractory : int
-        Number of sub-threshold points that must be encountered before resetting the trigger
-    
-    Returns
-    -------
-    crossings : 1d array
-        Indicies where the signal crosses the threshold
-    """
-    
-    assert threshold <= 0, "Threshold [%f] must be negative" % threshold
-    assert type(signal) == np.ndarray, "Signal must be a ndarray not %s" % type(signal)
-    assert signal.ndim == 1, "Signal must be 1d not %i" % signal.ndim
-    assert refractory >= 0, "Refractory[%i] must >= 0" % refractory
-    
-    st = np.where(signal < threshold)[0]
-    if len(st) < 2:
-        return st
-    ds = np.where(np.diff(st) > refractory)[0]
-    gi = np.hstack((st[0],st[ds+1]))
-    return gi
-
-def find_positive_threshold_crossings(signal, threshold, refractory):
-    """
-    Find points that are greater than a positive threshold value
-    
-    Parameters
-    ----------
-    signal : 1d array
-        Signal in which to find threshold crossings
-    threshold : float
-        Threshold at which to find crossings (test: signal > threshold)
-    refractory : int
-        Number of sub-threshold points that must be encountered before resetting the trigger
-    
-    Returns
-    -------
-    crossings : 1d array
-        Indicies where the signal crosses the threshold
-    """
-    
-    assert threshold >= 0, "Threshold [%f] should be positive" % threshold
-    assert type(signal) == np.ndarray, "Signal must be a ndarray not %s" % type(signal)
-    assert signal.ndim == 1, "Signal must be 1d not %i" % signal.ndim
-    assert refractory >= 0, "Refractory[%i] must >= 0" % refractory
-    
-    st = np.where(signal > threshold)[0]
-    if len(st) < 2:
-        return st
-    ds = np.where(np.diff(st) > refractory)[0]
-    gi = np.hstack((st[0],st[ds+1]))
-    return gi
-
-def find_both_threshold_crossings(signal, threshold, refractory):
-    """
-    Find points that are more extreme than a threshold value
-    
-    Parameters
-    ----------
-    signal : 1d array
-        Signal in which to find threshold crossings
-    threshold : float
-        Threshold at which to find crossings (test: abs(signal) > threshold)
-    refractory : int
-        Number of sub-threshold points that must be encountered before resetting the trigger
-    
-    Returns
-    -------
-    crossings : 1d array
-        Indicies where the signal crosses the threshold
-    """
-    
-    assert threshold >= 0, "Threshold [%f] should be positive" % threshold
-    assert type(signal) == np.ndarray, "Signal must be a ndarray not %s" % type(signal)
-    assert signal.ndim == 1, "Signal must be 1d not %i" % signal.ndim
-    assert refractory >= 0, "Refractory[%i] must >= 0" % refractory
-    
-    stp = np.where(signal > threshold)[0]
-    stn = np.where(signal < -threshold)[0]
-    st = np.union1d(stp,stn)
-    if len(st) < 2:
-        return st
-    ds = np.where(np.diff(st) > refractory)[0]
-    gi = np.hstack((st[0], st[ds+1]))
-    return gi 
-
-def refine_crossings(signal, crossings):
-    """
-    Refine the threshold crossings by looking back in time for the first contiguous interval
-    that moved the signal in the same direction as the threshold crossing
-    
-    Parameters
-    ----------
-    signal : 1d array
-        Signal in which to find threshold crossings
-    crossings : 1d array
-        Indicies where the signal crosses the threshold
-    
-    Returns
-    -------
-    refined : 1d array
-        Indicies where the signal began its rise/fall to a threshold crossing
-    
-    Notes
-    -----
-    For a rectified sine wave (abs(sin)) with threshold at 0.5, the threshold
-    crossings will be at halfway up each 'bump'. The refined crossings will be
-    at the valleys between bumps.
-    """
-    refined = np.empty_like(crossings)
-    for i in xrange(len(crossings)):
-        transition = crossings[i]
-        if transition == 0: continue
-        
-        crossing = signal[transition]
-        delta = signal[transition] - signal[transition-1]
-        while (transition > 0) and \
-            (np.sign(signal[transition] - signal[transition-1]) == np.sign(crossing)):
-            transition -= 1
-        refined[i] = transition
-    return refined
-
 def find_transitions(signal, threshold = 0.03, refractory = 44):
     """
     Find pixel clock transitions
@@ -177,43 +47,9 @@ def find_transitions(signal, threshold = 0.03, refractory = 44):
     crossings : 1d array
         Indicies where the signal crosses the threshold
     """
-    crossings = find_both_threshold_crossings(signal, threshold, refractory)
+    crossings = dsp.peaks.find_both_threshold_crossings(signal, threshold, refractory)
     # return crossings
-    return refine_crossings(signal, crossings)
-
-def test_threshold_crossings():
-    t = np.linspace(0., 10., 101)
-    f = 0.5
-    x = np.sin(t * f * 2 * np.pi)
-    p = np.where(x > 0, x, np.zeros_like(x))
-    n = np.where(x < 0, x, np.zeros_like(x))
-    a = np.abs(x)
-    i = -a
-    
-    gi = find_negative_threshold_crossings(x, -0.3, 3)
-    assert all(gi == [11,31,51,71,91])
-    
-    gi = find_positive_threshold_crossings(x, 0.3, 3)
-    assert all(gi == [1,21,41,61,81])
-    
-    gi = find_both_threshold_crossings(x, 0.3, 2)
-    assert gi[0] == 1
-    
-    gi = find_both_threshold_crossings(x, 0.3, 1)
-    assert all(gi == [1, 11, 21, 31, 41, 51, 61, 71, 81, 91])
-    
-    # refine crossing
-    gi = find_both_threshold_crossings(a, 0.3, 1)
-    rt = refine_crossings(a, gi)
-    assert all(rt == [ 0, 10, 20, 30, 40, 50, 60, 70, 80, 90])
-    
-    # 
-    gi = find_transitions(a, 0.3, 1)
-    assert all(gi == rt)
-    
-    gi = find_both_threshold_crossings(i, 0.3, 1)
-    rt = refine_crossings(i, gi)
-    assert all(rt == [ 0, 10, 20, 30, 40, 50, 60, 70, 80, 90])
+    return dsp.peaks.refine_crossings(signal, crossings)
 
 def state_to_code(state):
     """
@@ -231,24 +67,6 @@ def state_to_code(state):
         Reconstructed pixel clock code
     """
     return sum([state[i] << i for i in xrange(len(state))])
-
-def test_state_to_code():
-    assert (state_to_code([1,1,1,1]) == 15)
-    assert (state_to_code([0,1,1,1]) == 14)
-    assert (state_to_code([1,0,1,1]) == 13)
-    assert (state_to_code([0,0,1,1]) == 12)
-    assert (state_to_code([1,1,0,1]) == 11)
-    assert (state_to_code([0,1,0,1]) == 10)
-    assert (state_to_code([1,0,0,1]) == 9)
-    assert (state_to_code([0,0,0,1]) == 8) # MSB = 1
-    assert (state_to_code([1,1,1,0]) == 7)
-    assert (state_to_code([0,1,1,0]) == 6)
-    assert (state_to_code([1,0,1,0]) == 5)
-    assert (state_to_code([0,0,1,0]) == 4)
-    assert (state_to_code([1,1,0,0]) == 3)
-    assert (state_to_code([0,1,0,0]) == 2)
-    assert (state_to_code([1,0,0,0]) == 1) # LSB = 1
-    assert (state_to_code([0,0,0,0]) == 0)
 
 def events_to_codes(events, nchannels, minCodeTime):
     """
@@ -313,7 +131,7 @@ def events_to_codes(events, nchannels, minCodeTime):
             trigChannel = int(abs(ev[1]))
             trigDirection = int(ev[2])
         # update state
-        ch = int(ev[1])
+        ch = int(abs(ev[1]))
         state[ch] += int(ev[2])
         if not (state[ch] in [0,1]):
             logging.debug("Invalid state found[%s] at %i, truncating" % (str(state), ev[0]))
@@ -329,6 +147,20 @@ def events_to_codes(events, nchannels, minCodeTime):
         codes.append((trigTime, code, trigChannel))
     
     return codes, latencies
+
+def get_marker_delta(nchannels, pcY, pcHeight, screenHeight, sepRatio):
+    markerSize = 1.0 / float(nchannels + (nchannels+1) * sepRatio)
+    sepSize = sepRatio * markerSize
+    markerDegrees = pcHeight * markerSize
+    sepDegrees = pcHeight * sepSize
+    return markerDegrees + sepDegrees
+
+def get_marker_positions(nchannels, pcY, pcHeight, screenHeight, sepRatio):
+    if pcY != -28: raise ValueError("Pixel clock is assumed to be at bottom of screen")
+    delta = get_marker_delta(nchannels, pcY, pcHeight, screenHeight, sepRatio)
+    pos = [screenHeight - (delta * (i+1)) for i in xrange(nchannels)]
+    logging.debug("Pixel Clock Postions: %s" % str(pos))
+    return pos
 
 def offset_codes(codes, latencies, pcY, pcHeight, screenHeight, sepRatio):
     """
@@ -371,24 +203,29 @@ def offset_codes(codes, latencies, pcY, pcHeight, screenHeight, sepRatio):
     -----
     TODO: offset pixel clock from bottom of screen
     """
+    
     nchannels = len(latencies)
-    markerSize = 1.0 / float(nchannels + (nchannels+1) * sepRatio)
-    sepSize = sepRatio * markerSize
-    markerDegrees = pcHeight * markerSize
-    sepDegrees = pcHeight * sepSize
+    positions = get_marker_positions(nchannels, pcY, pcHeight, screenHeight, sepRatio)
+    delta = get_marker_delta(nchannels, pcY, pcHeight, screenHeight, sepRatio)
+    # markerSize = 1.0 / float(nchannels + (nchannels+1) * sepRatio)
+    # sepSize = sepRatio * markerSize
+    # markerDegrees = pcHeight * markerSize
+    # sepDegrees = pcHeight * sepSize
+    # # logging.debug("MarkerDs: %.4f" % markerDegrees)
+    # # logging.debug("Sep   Ds: %.4f" % sepDegrees)
+    # 
+    # posDeltaDegrees = markerDegrees + sepDegrees # spacing between pixel clock patch bottom edges
+    # posDegrees = [] # bottom edge of on screen pixel clock patches
+    # for i in xrange(nchannels):
+    #     posDegrees.append(screenHeight - (posDeltaDegrees * (i+1)))
     
-    posDeltaDegrees = markerDegrees + sepDegrees # spacing between pixel clock patch bottom edges
-    posDegrees = [] # bottom edge of on screen pixel clock patches
-    for i in xrange(nchannels):
-        posDegrees.append(screenHeight - (posDeltaDegrees * (i+1)))
-    
-    avgSpeeds = np.zeros((nchannels,nchannels))
+    # avgSpeeds = np.zeros((nchannels,nchannels))
     allSpeeds = []
     
     for x in xrange(nchannels):
         for y in xrange(nchannels):
-            if x == y: continue
-            wt = abs(x - y) * posDeltaDegrees
+            if abs(x - y) < 2: continue # only use latencies for non-adjacent patches
+            wt = abs(x - y) * delta
             if wt == 0:
                 continue
             speeds = np.array(latencies[x][y]) / wt
@@ -401,8 +238,11 @@ def offset_codes(codes, latencies, pcY, pcHeight, screenHeight, sepRatio):
     # f.close()
     # np.savetxt('allspeeds',allSpeeds)
     
-    avgSpeed = np.mean(allSpeeds)
-    offsets = (np.array(posDegrees) * avgSpeed).astype(int)
+    avgSpeed = np.mean(allSpeeds) # avgSpeed in samples per degree
+    print allSpeeds
+    # offsets = (np.array(posDegrees) * avgSpeed).astype(int)
+    offsets = np.array(positions) * avgSpeed
+    offsets = np.round(offsets).astype(int)
     
     codeArray = np.array(copy.deepcopy(codes))
     for i in xrange(len(codes)):
@@ -454,62 +294,6 @@ def reconstruct_codes(events, nchannels = 4, minCodeTime = 441,\
     codes, latencies = events_to_codes(events, nchannels, minCodeTime)
     codes, offsets, avgSpeed = offset_codes(codes, latencies, pcY, pcHeight, screenHeight, sepRatio)
     return codes, offsets, avgSpeed
-
-def test_events_to_codes():
-    codes = [15,    4,   9,  11,   2,   1]
-    times = [1000, 2000, 3000, 4000, 5000, 6000]
-    pcY = -28
-    pcHeight = 8.5
-    screenHeight = 64.54842055808264
-    sepRatio = 0.2
-    nchannels = 4
-    refreshTime = 0.004
-    samplerate = 44100
-    
-    markerSize = 1.0 / (nchannels + (nchannels+1) * sepRatio) * pcHeight
-    sepSize = sepRatio * markerSize
-    refreshSpeed = screenHeight / refreshTime
-    offsets = []
-    for i in xrange(nchannels):
-        pos = screenHeight - (markerSize + sepSize) * (i+1)
-        offset = (pos / refreshSpeed) * samplerate
-        offsets.append(int(np.round(offset)))
-    
-    events = []
-    lastCode = 8
-    nchannels = 4
-    bitmasks = [1, 2, 4, 8]
-    for (c,t) in zip(codes,times):
-        # line = "Code %i[%s] to %i[%s] ::" % (lastCode, bin(lastCode), c, bin(c))
-        for i in xrange(nchannels):
-            last = lastCode & bitmasks[i]
-            new = c & bitmasks[i]
-            if last != new:
-                if new > last:
-                    events.append((t+offsets[i], i, +1))
-                    # line += " %i @ %i in %i" % (i, t+offsets[i], +1)
-                else:
-                    events.append((t+offsets[i], i, -1))
-                    # line += " %i @ %i in %i" % (i, t+offsets[i], -1)
-        lastCode = c
-        # print line
-    events = np.array(events)
-    newCodes, latencies = events_to_codes(events, nchannels, 100)
-    c = np.array(newCodes)[:,1]
-    
-    assert all(c == codes)
-    
-    offsetCodes, foundOffsets, avgSpeed = offset_codes(newCodes, latencies, pcY, pcHeight, screenHeight, sepRatio)
-    logging.debug("Actual Offsets: %s" % str(offsets)) # [1, 4, 7, 10]
-    logging.debug("Found  Offsets: %s" % str(foundOffsets))
-    logging.debug("Actual Speed  : %s" % (screenHeight / (refreshTime*samplerate)))
-    logging.debug("Found  Speed  : %s" % (avgSpeed))
-    
-    t = np.array(offsetCodes)[:,0]
-    c = np.array(offsetCodes)[:,1]
-    
-    assert all(c == codes)
-    assert np.sum((t - np.array(times))) < len(times), "%s" % offsetCodes
 
 def match_test(au, mw, minMatch, maxErr):
     """

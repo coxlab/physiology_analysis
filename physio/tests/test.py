@@ -1,11 +1,14 @@
 #!/usr/bin/env python
 
 # TODO fix this for more complicated module structure
+import logging
 
-from ..analysis import *
+from ..analysis.tests import *
 from ..cfg import *
 from ..channelmapping import *
-from ..clock import *
+from ..clock.tests import *
+
+logging.basicConfig(level=logging.DEBUG)
 
 def run(regex=r"^test_"):
     """

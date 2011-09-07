@@ -4,6 +4,7 @@ import analysis
 import cfg
 import channelmapping
 import clock
+import dsp
 import events
 import h5
 import notebook
@@ -16,4 +17,4 @@ import utils
 # Increment this when resulting hdf5 file format is broken
 __version__ = '1.0.1'
 
-__all__ = ['analysis', 'cfg', 'channelmapping', 'clock', 'events', 'h5', 'notebook', 'plotting', 'reports', 'spikes', 'session', 'utils']
+__all__ = ['analysis', 'cfg', 'channelmapping', 'clock', 'dsp', 'events', 'h5', 'notebook', 'plotting', 'reports', 'spikes', 'session', 'utils']

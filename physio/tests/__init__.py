@@ -3,3 +3,6 @@
 import test
 
 __all__ = ['test']
+
+def run():
+    test.run()
