@@ -52,6 +52,10 @@ def get_codec(eventsFile):
         codec = dict(g.codec.read())
     return codec
 
+def parse_value(value):
+    if value == '[null]': return []
+    return ast.literal_eval(value)
+
 def read_events(eventsFile, code, timeRange = None):
     """
     Parameters
@@ -68,7 +72,7 @@ def read_events(eventsFile, code, timeRange = None):
     times : list
         List of event times (in mworks times in second)
     values : list
-        List of event values (processed with ast.literal_eval)
+        List of event values (processed with parse_value)
     """
     # f = tables.openFile(eventsFilename,'r')
     with utils.H5Maker(eventsFile,'r') as f:
@@ -101,7 +105,7 @@ def read_events(eventsFile, code, timeRange = None):
     #times = np.array(evs[:,0],dtype=float) / float(1E6)
     # times = evs[:,0].astype(float) / float(1E6)
     times = np.array([int(ev[0]) for ev in evs], dtype = float) / float(1E6)
-    values = [ast.literal_eval(ev[1]) for ev in evs]
+    values = [parse_value(ev[1]) for ev in evs]
     
     return times, values
 
