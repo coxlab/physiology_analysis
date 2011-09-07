@@ -56,7 +56,7 @@ def parse_value(value):
     if value == '[null]': return []
     return ast.literal_eval(value)
 
-def read_events(eventsFile, code, timeRange = None):
+def get_events(eventsFile, code, timeRange = None):
     """
     Parameters
     ----------

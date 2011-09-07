@@ -838,9 +838,9 @@ def old_time_match_mw_with_pc(pc_codes, pc_times, mw_codes, mw_times,
 
     return time_matches
 
-def read_events(eventsFilename):
+def get_events(eventsFilename):
     
-    times, values = h5.events.read_events(eventsFilename, '#stimDisplayUpdate')
+    times, values = h5.events.get_events(eventsFilename, '#stimDisplayUpdate')
     mwC = []
     mwT = []
     for (t,v) in zip(times,values):
@@ -851,7 +851,7 @@ def read_events(eventsFilename):
                 mwT.append(t)
     return mwT, mwC
 
-def test_read_events():
+def test_get_events():
     # TODO
     assert False
     pass
@@ -979,7 +979,7 @@ def process_from_config(config):
     
     # read mworks stuff
     eventsFilename = config.get('session','dir') + '/' + config.get('session','name') + '.h5'
-    mwT, mwC = read_events(eventsFilename)
+    mwT, mwC = get_events(eventsFilename)
     
     threshold = config.getfloat('pixel clock', 'threshold')
     refractory = config.getint('pixel clock', 'refractory')

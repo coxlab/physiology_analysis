@@ -101,7 +101,7 @@ class Session(object):
         if timeRange is None:
             timeRange = self.get_epoch_time_range('mworks')
         
-        times, values = h5.events.read_events(self._file, name, timeRange)
+        times, values = h5.events.get_events(self._file, name, timeRange)
         autimes = [self._timebase.mworks_to_audio(t) for t in times]
         return autimes, values
     

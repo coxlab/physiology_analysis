@@ -15,7 +15,7 @@ def get_stimuli(eventsFile, timeRange = None, stimType = 'image'):
     stimType : string
         Type of stimulus to fetch. Default = image which excludes the blueSquare
     """
-    times, values = h5.events.read_events(eventsFile, '#stimDisplayUpdate', timeRange)
+    times, values = h5.events.get_events(eventsFile, '#stimDisplayUpdate', timeRange)
     stimTimes = []
     stims = []
     for (t, v) in zip(times, values):
