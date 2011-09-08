@@ -11,6 +11,9 @@ scratch: /scratch
 resultsrepo: /data/results
 cleanup: True
 
+[clustering]
+options:
+
 [pixel clock]
 threshold: 0.03
 refractory: 44

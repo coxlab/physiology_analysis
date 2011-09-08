@@ -6,7 +6,7 @@ import numpy as np
 
 from .. import utils
 
-def cluster(audioDir, resultsDir, timeRange, njobs = 8, async = False):
+def cluster(audioDir, resultsDir, timeRange, options = '', njobs = 8, async = False):
     """
     Cluster all audio files for a given session
     
@@ -18,6 +18,8 @@ def cluster(audioDir, resultsDir, timeRange, njobs = 8, async = False):
         Path of directory to use for results
     timeRange : tuple
         Time range (in samples) over which to cluster
+    options : string
+        Additionall command line options to pass to pyc.py
     njobs : int
         Number of simultaneous jobs to run
     async : bool
@@ -40,14 +42,14 @@ def cluster(audioDir, resultsDir, timeRange, njobs = 8, async = False):
     
     Notes
     -----
-    parallel -j njobs pyc.py -t timeRange[0]:timeRange[1] -pv {} resultsDir/{/.} ::: audioDir/input_*
+    parallel -j njobs pyc.py <options> -t timeRange[0]:timeRange[1] -pv {} resultsDir/{/.} ::: audioDir/input_*
     """
     if not os.path.exists(resultsDir): os.makedirs(resultsDir)
     assert np.iterable(timeRange), "timeRange[%s] must be iterable" % str(timeRange)
     assert len(timeRange) == 2, "timeRange length[%i] must be 2" % len(timeRange)
     
-    cmd = "parallel -j %i pyc.py -t %i:%i -pv {} %s/{/.} :::" %\
-            (njobs, int(timeRange[0]), int(timeRange[1]), resultsDir)
+    cmd = "parallel -j %i pyc.py %s -t %i:%i -pv {} %s/{/.} :::" %\
+            (njobs, options, int(timeRange[0]), int(timeRange[1]), resultsDir)
     
     inputFiles = glob.glob(audioDir+'/input_*')
     for inputFile in inputFiles:
@@ -71,9 +73,10 @@ def cluster_from_config(config, epoch_audio):
     audioDir = config.get('session','dir') + '/Audio Files'
     resultsDir = config.get('session','output')
     sf = config.getint('audio','samprate')
+    options = config.get('clustering','options')
     timeRange = [int(e * sf) for e in epoch_audio]
     logging.debug("timeRange %s" % str(timeRange))
-    return cluster(audioDir, resultsDir, timeRange, njobs = 8, async = False)
+    return cluster(audioDir, resultsDir, timeRange, options = options, njobs = 8, async = False)
 
 if __name__ == '__main__':
     test_cluster()
