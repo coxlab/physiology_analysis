@@ -100,7 +100,7 @@ for (y, datum) in enumerate(data):
         spikes = session.get_spike_times(*datum)
         pl.subplot(subplotsHeight, subplotsWidth, subplotsWidth * y + x + 1)
         # physio.plotting.psth.plot(trials, spikes, options.before, options.after, options.nbins)
-        physio.plotting.psth.plot(trials, spikes, options.before, options.after)
+        physio.plotting.raster.plot(trials, spikes, options.before, options.after)
         pl.axvline(0., color = 'k')
         pl.axvspan(0., 0.5, color = 'k', alpha = 0.1)
         
