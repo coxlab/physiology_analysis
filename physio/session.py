@@ -138,7 +138,7 @@ class Session(object):
         badStims = []
         for (t,s) in zip(times, stims):
             # find distractor time
-            di = where(dtts < t)[0][-1] # index of current distractor time
+            di = np.where(dtts < t)[0][-1] # index of current distractor time
             # dt = dtts[di]
             pt = dtvs[di] / 1000. # convert to seconds
             if any(((ftimes - t) > 0) & ((ftimes - t) < pt)):
