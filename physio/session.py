@@ -125,9 +125,10 @@ class Session(object):
         times, stims = self.get_stimuli(matchDict, timeRange)
         tr = self.get_epoch_time_range('mworks')
         tr[0] = 0
-        dtt, dtv = self.get_events('Distractor_Time', timeRange = tr)
-        if len(dtt) != 1: utils.error("Cannot handle sessions where distractor presentation time changed")
-        presentationTime = dtv[0] / 1000.
+        dtts, dtvs = self.get_events('Distractor_Time', timeRange = tr)
+        dtts = np.array(dtts)
+        # if len(dtt) != 1: utils.error("Cannot handle sessions where distractor presentation time changed")
+        # presentationTime = dtv[0] / 1000.
         
         ftimes, _ = self.get_events('failure')
         
@@ -136,7 +137,11 @@ class Session(object):
         badTimes = []
         badStims = []
         for (t,s) in zip(times, stims):
-            if any(((ftimes - t) > 0) & ((ftimes - t) < presentationTime)):
+            # find distractor time
+            di = where(dtts < t)[0][-1] # index of current distractor time
+            # dt = dtts[di]
+            pt = dtvs[di] / 1000. # convert to seconds
+            if any(((ftimes - t) > 0) & ((ftimes - t) < pt)):
                 # failed trial
                 badTimes.append(t)
                 badStims.append(s)
