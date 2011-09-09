@@ -52,6 +52,8 @@ def analyze(session, customCfgFile = None):
         # pyc
         logging.debug("clustering")
         stdout, sterr = cluster.cluster_from_config(config, epoch_audio)
+        logging.debug("clustering stdout:\n%s" % stdout)
+        logging.debug("clustering stderr:\n%s" % stderr)
         
         # collate
         logging.debug("collating")
