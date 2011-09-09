@@ -30,6 +30,7 @@ def analyze(session, customCfgFile = None):
     
     # setup configuration TODO consolidate?
     config = cfg.load(session, customCfgFile)
+    logging.root.addHandler(logging.FileHandler('%s/physio.log' % config.get('session','output'), mode='w'))
     # config = cfg.Config()
     # config.read_user_config()
     # config.read_session_config(session)
