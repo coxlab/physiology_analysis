@@ -52,7 +52,7 @@ def analyze(session, customCfgFile = None):
         logging.debug("Processing epoch: %s" % str(epoch_audio))
         # pyc
         logging.debug("clustering")
-        stdout, sterr = cluster.cluster_from_config(config, epoch_audio)
+        stdout, stderr = cluster.cluster_from_config(config, epoch_audio)
         logging.debug("clustering stdout:\n%s" % stdout)
         logging.debug("clustering stderr:\n%s" % stderr)
         
