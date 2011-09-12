@@ -40,9 +40,11 @@ def get_channel_locations(cncDict, offset, time):
                     'path_depth']
     current = {}
     for eventName in eventNames:
-        print cncDict[eventName]
+        # print cncDict[eventName]
         for t, v in zip(*cncDict[eventName]):
-            if t >= time: current[eventName] = float(v)
+            if t >= time:
+                current[eventName] = float(v)
+                break
     
     if eventName in eventNames:
         if not (eventName in current.keys()):
