@@ -12,7 +12,7 @@ def get_cnc_events(eventsFile, timeRange = None):
                     'path_depth']
     cncDict = {}
     for eventName in eventNames:
-        times, values = h5.events.get_events(eventsFile, 'path_origin_x', timeRange)
+        times, values = h5.events.get_events(eventsFile, eventName, timeRange)
         cncDict[eventName] = (times, values)
     
     return cncDict
@@ -20,16 +20,16 @@ def get_cnc_events(eventsFile, timeRange = None):
 def offset_string_to_float(offsetString):
     offset = None
     try:
-        offset = int(offsetString)
+        offset = float(offsetString)
     except:
         try:
-            offset = int(offsetString.split()[0])
+            offset = float(offsetString.split()[0])
         except:
             utils.error("unknown probe offset string: %s" % offsetString, ValueError)
     if offset == None: utils.error("unknown probe offset string: %s" % offsetString, ValueError)
     return offset
 
-def get_tip_offset(resultsFile):
+def get_tip_offset(resultsFilename):
     with utils.H5Maker(resultsFilename, 'r') as resultsFile:
         probeDict = h5.utils.group_to_dictionary(resultsFile.getNode('/ProbeGData'))
     return offset_string_to_float(probeDict['offset'])
@@ -40,16 +40,23 @@ def get_channel_locations(cncDict, offset, time):
                     'path_depth']
     current = {}
     for eventName in eventNames:
-        for t, v in cncDict[eventName]:
+        print cncDict[eventName]
+        for t, v in zip(*cncDict[eventName]):
             if t >= time: current[eventName] = float(v)
     
-    if current.keys() != eventNames: utils.error("cnc dict did not contain valid info: %s" % str(current))
+    if eventName in eventNames:
+        if not (eventName in current.keys()):
+            utils.error("cnc dict does not contain: %s" % str(eventName))
     
     origin = np.array([current['path_origin_x'], current['path_origin_y'], current['path_origin_z']])
+    logging.debug("Path origin: %s" % str(origin))
     slope = np.array([current['path_slope_x'], current['path_slope_y'], current['path_slope_z']])
+    logging.debug("Path slope: %s" % str(slope))
     depth = current['path_depth']
+    logging.debug("Path depth: %s" % str(depth))
     
     tip = origin + slope * depth
+    logging.debug("Tip location: %s" % str(tip))
     
     channels = [tip + slope * (o * 0.1 + 0.5 + offset) for o in xrange(32)]
     
