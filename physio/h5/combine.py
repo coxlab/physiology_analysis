@@ -6,6 +6,8 @@ from optparse import OptionParser
 import numpy as np
 import tables
 
+import utils # h5 utils
+
 def find_channel(filepath, regex):
     """
     Parameters
@@ -72,8 +74,9 @@ def combine(inputFiles, outputFilename, channelRegex = r'[a-z,A-Z]+_([0-9]+)\#*'
         logging.debug("copying spc results")
         # SPC/<cdata/ctree>
         spcg = outputFile.createGroup(spcgroup, 'ch%i' % ch, 'Channel %i SPC results' % ch)
-        infile.createArray(spcg, 'cdata', np.array(infile.root.SPC.cdata))
-        infile.createArray(spcg, 'ctree', np.array(infile.root.SPC.ctree))
+        if '/SPC/cdata' in infile and '/SPC/ctree' in infile:
+            infile.createArray(spcg, 'cdata', np.array(infile.root.SPC.cdata))
+            infile.createArray(spcg, 'ctree', np.array(infile.root.SPC.ctree))
         outputFile.flush()
         
         # meta data
