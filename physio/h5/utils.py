@@ -3,7 +3,7 @@ import logging, os, pickle
 import numpy as np
 import tables
 
-import utils
+from .. import utils
 
 def group_to_dictionary(group, keyArray='keys', valArray='values'):
     """
