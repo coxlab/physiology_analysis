@@ -30,6 +30,7 @@ def analyze(session, customCfgFile = None):
     
     # setup configuration TODO consolidate?
     config = cfg.load(session, customCfgFile)
+    if not os.path.exists(config.get('session','output')): os.makedirs(config.get('session','output'))
     logging.root.addHandler(logging.FileHandler('%s/physio.log' % config.get('session','output'), mode='w'))
     # config = cfg.Config()
     # config.read_user_config()
