@@ -151,6 +151,9 @@ class Session(object):
                 goodStims.append(s)
         return goodTimes, goodStims, badTimes, badStims
     
+    def get_channel_locations(self):
+        pass
+    
     def get_blackouts(self):
         pass
     

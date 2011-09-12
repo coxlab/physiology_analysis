@@ -10,6 +10,7 @@ tmp: /scratch/tmp
 scratch: /scratch
 resultsrepo: /data/results
 cleanup: True
+atlas: /atlas
 
 [clustering]
 options:
