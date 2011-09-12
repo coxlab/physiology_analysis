@@ -152,7 +152,10 @@ class Session(object):
         return goodTimes, goodStims, badTimes, badStims
     
     def get_channel_locations(self):
-        pass
+        cncDict = events.cnc.get_cnc_events(self._file)
+        offset = events.cnc.get_tip_offset(self._file):
+        time, _ = self.get_epoch_time_range('mworks')
+        return events.cnc.get_channel_locations(cncDict, offset, time):
     
     def get_blackouts(self):
         pass
