@@ -5,6 +5,9 @@ import tables
 
 from .. import utils
 
+import pywaveclus
+import physio # for version #
+
 def group_to_dictionary(group, keyArray='keys', valArray='values'):
     """
     Construct a dictionry from a h5 group that contains two arrays (keyArray, valArray)
@@ -62,7 +65,29 @@ def write_epoch_audio(filename, epoch_audio):
 
 def write_git_commit_id(filename, commitId):
     logging.debug("Writing git commit id[%s] to hdf5 file %s" % (str(commitId), filename))
-    f = tables.openFile(filename, 'a')
-    f.root._v_attrs.GIT_COMMIT_ID = commitId
-    f.flush()
-    f.close()
+    with utils.H5Maker(filename, 'a') as f:
+        # f = tables.openFile(filename, 'a')
+        f.root._v_attrs.GIT_COMMIT_ID = commitId
+        f.flush()
+        # f.close()
+
+# def get_version(): # for testing
+#     return physio.__version__
+
+def write_physio_version(filename):
+    v = physio.__version__
+    logging.debug("Writing physio version[%s] to hdf5 file %s" % (v, filename))
+    with utils.H5Maker(filename, 'a') as f:
+        # f = tables.openFile(filename, 'a')
+        f.root._v_attrs.PHYSIO_VERSION = v
+        f.flush()
+        # f.close()
+
+def write_pywaveclus_version(filename):
+    v = pywaveclus.__version__
+    logging.debug("Writing pywaveclus version[%s] to hdf5 file %s" % (v, filename))
+    with utils.H5Maker(filename, 'a') as f:
+        # f = tables.openFile(filename, 'a')
+        f.root._v_attrs.PYWAVECLUS_VERSION = v
+        f.flush()
+        # f.close()
