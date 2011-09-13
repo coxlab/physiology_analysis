@@ -108,4 +108,5 @@ class Config(ConfigParser.SafeConfigParser):
         #     self.set('pixel clock','scratch','/'.join((self.get('session','scratch'),'pixel_clock')))
     
     def set_epoch(self, audioTimerange):
-        self.set('session','output','_'.join((self.get('session','outputprefix'), audioTimerange[0], audioTimerange[1])))
+        epochDir = "%s_%i_%i" % (self.get('session','outputprefix'), int(audioTimerange[0]), int(audioTimerange[1]))
+        self.set('session','output',epochDir)
