@@ -50,16 +50,16 @@ def analyze(session, customCfgFile = None):
     # process each epoch
     for epoch_audio in epochs_audio:
         logging.debug("Processing epoch: %s" % str(epoch_audio))
-        # set epoch number
-        config.set_epoch(epoch_audio)
-        if not os.path.exists(config.get('session','output')): os.makedirs(config.get('session','output'))
-        # TODO set epoch number
         
         # add settling time
         start_audio, end_audio = epoch_audio
         start_audio += config.getfloat('epochs','settletime')
         epoch_audio = (start_audio, end_audio)
         logging.debug("Epoch post settling time: %s" % str(epoch_audio))
+        
+        # set epoch number
+        config.set_epoch(epoch_audio)
+        if not os.path.exists(config.get('session','output')): os.makedirs(config.get('session','output'))
         
         # pyc
         logging.debug("clustering")
