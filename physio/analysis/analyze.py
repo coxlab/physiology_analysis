@@ -57,6 +57,7 @@ def analyze(session, customCfgFile = None):
         start_audio, end_audio = epoch_audio
         start_audio += config.getfloat('epochs','settletime')
         epoch_audio = (start_audio, end_audio)
+        logging.debug("Epoch post settling time: %s" % str(epoch_audio))
         
         # pyc
         logging.debug("clustering")
