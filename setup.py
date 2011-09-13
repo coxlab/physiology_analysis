@@ -42,7 +42,7 @@ def parse_dependency_links(file_name):
 
 def get_version():
     import physio
-    return physio.__version__
+    return physio.__version__ #'-'.join((physio.__version__, get_git_commit_id()))
 
 setup(
     name='physio',

@@ -57,6 +57,7 @@ def analyze(session, customCfgFile = None):
         start_audio, end_audio = epoch_audio
         start_audio += config.getfloat('epochs','settletime')
         epoch_audio = (start_audio, end_audio)
+        logging.debug("Epoch post settling time: %s" % str(epoch_audio))
         
         # pyc
         logging.debug("clustering")
@@ -93,6 +94,8 @@ def analyze(session, customCfgFile = None):
         h5.utils.write_dict(resultsFilename, probeDict, 'ProbeGData', 'Probe data from GDocs')
         # results_file.add_pad_positions(pad_positions)
         h5.utils.write_git_commit_id(resultsFilename, utils.get_git_commit_id())
+        h5.utils.write_physio_version(resultsFilename)
+        h5.utils.write_pywaveclus_version(resultsFilename)
     
     # TODO fix this to equalize disk usage:
     #  read from one -> write to other -> cleanup by copying files back over
