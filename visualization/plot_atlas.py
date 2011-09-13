@@ -106,6 +106,8 @@ for (ch, location) in zip(range(1,33), locations):
     pl.text(x-10, y+10, "%.3f, %.3f, %.3f" % (ml, ap, dv), ha = 'right', va = 'top')
     
     pl.title("Channel: %i" % ch)
+    pl.xlabel("ML (mm)")
+    pl.ylabel("DV (mm)")
     
     # reset axes
     pl.xlim(0,im.shape[1])
