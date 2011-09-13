@@ -72,6 +72,50 @@ def get_channel_locations(cncDict, offset, time):
     
     return tdt
 
+def find_stable_epochs(depthTimes, depthValues, minTime = 600, minDepth = -30):
+    """
+    Find long periods where the probe was stationary and below a certain depth
+    
+    Parameters
+    ---------
+    depthTimes : array of floats
+        Times at path_depth events (in seconds)
+    depthValues : array of floats
+        Values at path_depth events
+    minTime : float
+        Minimum time (in seconds) of an epoch
+    minDepth : float
+        Only count epochs at a depth more extreme (more negative) than this value
+    
+    Returns
+    -------
+    epochs : array of arrays
+        Array of epochs where each epoch is a list of:
+            epoch[0] = time of starting depth event (in seconds)
+            epoch[1] = time of ending depth event (in seconds)
+            epoch[2] = depth value at starting depth event
+    
+    Notes
+    -----
+    Epoch times will ahve the same unit as depthTimes
+    """
+    assert len(depthTimes) == len(depthValues),\
+        "depthTimes[%i] and depthValues[%i] must be the same length" % (len(depthTimes), len(depthValues))
+    
+    nEvents = len(depthTimes)
+    prevDepth = depthValues
+    prevTime = depthTimes
+    epochs = []
+    for i in xrange(nEvents):
+        # if the values are the same, assume you didn't move
+        if prevDepth == depthValues[i]: continue
+        if ((depthTimes[i] - prevTime) > minTime) and (prevDepth < minDepth):
+            epochs.append([prevTime, depthTimes[i], prevDepth])
+        prevTime = depthTimes[i]
+        prevDepth = depthValues[i]
+    
+    return epochs
+
 # def find_stable_epochs_in_events(eventDict, minTime=600, minDepth=-30):
 #     """
 #     Uses a eventDict found from read_cnc_from_mw to find period where the cnc was 'stable'
