@@ -3,8 +3,9 @@ import logging, sys
 
 import numpy as np
 
-from .. import utils
+from .. import channelmapping
 from .. import h5
+from .. import utils
 
 def get_cnc_events(eventsFile, timeRange = None):
     eventNames = ['path_origin_x', 'path_origin_y', 'path_origin_z',
@@ -60,9 +61,16 @@ def get_channel_locations(cncDict, offset, time):
     tip = origin + slope * depth
     logging.debug("Tip location: %s" % str(tip))
     
-    channels = [tip + slope * (o * 0.1 + 0.5 + offset) for o in xrange(32)]
+    # channels = [tip + slope * (o * 0.1 + 0.5 + offset) for o in xrange(32)]
+    channels = [origin + slope * (depth + (o * 0.1 + 0.05 + offset)) for o in xrange(32)]
     
-    return channels
+    # remap to tdt order
+    tdt = []
+    for i in xrange(1,33):
+        chi = channelmapping.tdt_to_position(i)
+        tdt.append(channels[chi])
+    
+    return tdt
 
 # def find_stable_epochs_in_events(eventDict, minTime=600, minDepth=-30):
 #     """
