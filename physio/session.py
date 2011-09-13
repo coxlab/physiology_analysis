@@ -18,7 +18,6 @@ import utils
 def get_epochs(config):
     mainDir = config.get('session','outputprefix')
     sessionName = config.get('session','name')
-    def regex_glob(directory, regex):
     epochs = sorted([os.path.basename(ed) for ed in utils.regex_glob(mainDir, r'\d+_\d+')])
     return epochs
 
