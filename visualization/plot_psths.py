@@ -23,26 +23,21 @@ parser.add_option("-o", "--outdir", dest="outdir", default="",
                     help="Output directory", type='str')
 
 (options, args) = parser.parse_args()
-if len(args) != 1:
+if len(args) < 1:
     parser.print_usage()
     sys.exit(1)
 
-# plotWindow = [-0.25, .75]
-# plotNBins = 20
-# channel = 7
-# group = 'name'
-# nChannels = 32
-# depthOrdered = physio.channelmapping.position_to_tdt(range(nChannels))
+epochNumber = 0
+if len(args) == 2:
+    epochNumber = int(args[1])
 
-session = physio.session.load(args[0])#'K4_110720')
+session = physio.session.load(args[0], epochNumber)
 if options.outdir.strip() == '':
     config = physio.cfg.load(args[0])
-    outdir = config.get('session','output')
+    outdir = physio.session.get_epoch_dir(config, epochNumber)
+    # outdir = config.get('session','output')
     outdir += '/plots'
     options.outdir = outdir
-# session = physio.session.load('K4_110830')
-
-
 
 trialTimes, stimuli, _, _ = session.get_trials()
 nTrials = len(trialTimes)

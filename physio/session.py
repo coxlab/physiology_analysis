@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 # import itertools, glob, sys
-import glob
+import glob, os
 
 import numpy as np
 # import pylab as pl
@@ -15,13 +15,32 @@ import events
 import h5
 import utils
 
-def load(session, config = None):
+def get_epochs(config):
+    mainDir = config.get('session','outputprefix')
+    sessionName = config.get('session','name')
+    epochs = sorted([os.path.basename(ed) for ed in glob.glob('%s/%s_*' % (mainDir, sessionName))])
+    return epochs
+
+def get_epoch_dir(config, number):
+    epoch = get_epochs(config)[number]
+    return '/'.join((config.get('session','outputprefix'), epoch))
+
+def load(session, epochNumber = 0, config = None):
     if config is None:
         config = cfg.load(session)
-    outputDir = config.get('session','output')
-    h5files = glob.glob(outputDir+'/*.h5')
+    
+    # find results file for epoch number
+    epochDir = get_epoch_dir(config, epochNumber)
+    # epoch = get_epochs(config)[epochNumber]
+    # epochDir = '/'.join((config.get('session','outputprefix'), epoch))
+    h5files = glob.glob(epochDir+'/*.h5')
     if len(h5files) != 1: utils.error('More than one .h5 file found in output directory: %s' % str(h5files))
     return Session(h5files[0], config.getint('audio','samprate'))
+    # 
+    # outputDir = config.get('session','output')
+    # h5files = glob.glob(outputDir+'/*.h5')
+    # if len(h5files) != 1: utils.error('More than one .h5 file found in output directory: %s' % str(h5files))
+    # return Session(h5files[0], config.getint('audio','samprate'))
 
 class Session(object):
     """

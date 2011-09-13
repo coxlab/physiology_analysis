@@ -30,8 +30,8 @@ def analyze(session, customCfgFile = None):
     
     # setup configuration TODO consolidate?
     config = cfg.load(session, customCfgFile)
-    if not os.path.exists(config.get('session','output')): os.makedirs(config.get('session','output'))
-    logging.root.addHandler(logging.FileHandler('%s/physio.log' % config.get('session','output'), mode='w'))
+    if not os.path.exists(config.get('session','outputprefix')): os.makedirs(config.get('session','outputprefix'))
+    logging.root.addHandler(logging.FileHandler('%s/physio.log' % config.get('session','outputprefix'), mode='w'))
     # config = cfg.Config()
     # config.read_user_config()
     # config.read_session_config(session)
@@ -51,6 +51,8 @@ def analyze(session, customCfgFile = None):
     for epoch_audio in epochs_audio:
         logging.debug("Processing epoch: %s" % str(epoch_audio))
         # set epoch number
+        config.set_epoch(epoch_audio)
+        if not os.path.exists(config.get('session','output')): os.makedirs(config.get('session','output'))
         # TODO set epoch number
         
         # add settling time

@@ -44,6 +44,7 @@ name:
 dir: 
 scratch: 
 output: 
+outputprefix: 
 
 [probe]
 id: 
@@ -94,8 +95,8 @@ class Config(ConfigParser.SafeConfigParser):
         if self.get('session','dir').strip() == '':
             self.set('session','dir','/'.join((self.get('filesystem','datarepo'),session)))
         
-        if self.get('session','output').strip() == '':
-            self.set('session','output','/'.join((self.get('filesystem','resultsrepo'),session)))
+        if self.get('session','outputprefix').strip() == '':
+            self.set('session','outputprefix','/'.join((self.get('filesystem','resultsrepo'),session)))
         
         if self.get('session','scratch').strip() == '':
             self.set('session','scratch','/'.join((self.get('filesystem','scratch'),session)))
@@ -105,3 +106,6 @@ class Config(ConfigParser.SafeConfigParser):
         
         # if self.get('pixel clock','scratch').strip() == '':
         #     self.set('pixel clock','scratch','/'.join((self.get('session','scratch'),'pixel_clock')))
+    
+    def set_epoch(self, audioTimerange):
+        self.set('session','output','_'.join((self.get('session','outputprefix'), audioTimerange[0], audioTimerange[1])))
