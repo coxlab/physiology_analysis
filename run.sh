@@ -9,7 +9,7 @@ do
     echo "physio.py -f $1"
     physio.py -f $1
     echo "plot.sh $1"
-    plot.sh $1
+    sh plot.sh $1
 done
 
 popd

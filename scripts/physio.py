@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 
-import logging
+import logging, optparse
 logging.basicConfig(level = logging.DEBUG)
 
 import physio
 
-parser = OptionParser(usage="usage: %prog [options] sessions...")
+parser = optparse.OptionParser(usage="usage: %prog [options] sessions...")
 # parser.add_option("-b", "--baselineTime", dest = "baselineTime",
 #                     help = "number of samples at beginning of recording used to calculate spike threshold",
 #                     default = 441000, type='int')
