@@ -49,7 +49,7 @@ setup(
     
     packages = ['physio','physio/analysis','physio/clock','physio/dsp','physio/events','physio/h5','physio/plotting','physio/reports','physio/spikes','physio/tests'],
     # package_data={'pywaveclus': ['bin/*']},
-    scripts=['scripts/physio.py'],
+    scripts=['scripts/phy.py'],
     version = get_version(),
 
     include_package_data=True,
