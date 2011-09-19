@@ -48,8 +48,11 @@ def cluster(audioDir, resultsDir, timeRange, options = '', njobs = 8, async = Fa
     assert np.iterable(timeRange), "timeRange[%s] must be iterable" % str(timeRange)
     assert len(timeRange) == 2, "timeRange length[%i] must be 2" % len(timeRange)
     
-    cmd = "parallel -j %i pyc.py %s -t %i:%i -pv {} %s/{/.} :::" %\
-            (njobs, options, int(timeRange[0]), int(timeRange[1]), resultsDir)
+    # cmd = "parallel -j %i pyc.py %s -t %i:%i -pv {} %s/{/.} :::" %\
+    #             (njobs, options, int(timeRange[0]), int(timeRange[1]), resultsDir)
+    
+    cmd = "parallel -j %i pycluster.py timerange %i:%i {} outdir %/{/.} %s :::" %\
+            (njobs, int(timeRange[0]), int(timeRange[1]), resultsDir, options)
     
     inputFiles = glob.glob(audioDir+'/input_*')
     for inputFile in inputFiles:
