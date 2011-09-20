@@ -77,7 +77,9 @@ for v in values:
 #     conditions.append({'name' : n})
 # conditions = uniqueStimuli
 # data = [(ch,cl) for ch in depthOrdered for cl in range(1,6)]
-data = [(options.channel, cl) for cl in range(1,6)]
+nclusters = session.get_n_clusters(options.channel)
+clusters = range(0,nclusters)
+data = [(options.channel, cl) for cl in clusters]
 
 
 subplotsWidth = len(conditions)
