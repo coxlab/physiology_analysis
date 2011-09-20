@@ -40,7 +40,8 @@ nTrials = len(trialTimes)
 logging.debug("N Trials: %i" % nTrials)
 
 channels = range(1,33)
-clusters = range(1,6)
+nclusters = [session.get_n_clusters(ch) for ch in channels]
+clusters = range(0,max(nclusters))
 
 subplotsWidth = len(channels)
 subplotsHeight = len(clusters)
@@ -50,8 +51,8 @@ pl.subplot(subplotsHeight, subplotsWidth,1)
 pl.subplots_adjust(left = 0.025, right = 0.975, top = 0.9, bottom = 0.1, wspace = 0.45)
 logging.debug("Plotting %i by %i plots(%i)" % (subplotsWidth, subplotsHeight, subplotsWidth * subplotsHeight))
 
-for (y, cluster) in enumerate(clusters):
-    for (x, channel) in enumerate(channels):
+for (x, channel) in enumerate(channels):
+    for (y, cluster) in enumerate(clusters):
         logging.debug("\tPlotting[%i, %i]: ch %s : cl %s" % (x, y, channel, cluster))
         spikes = session.get_spike_times(channel, cluster)
         pl.subplot(subplotsHeight, subplotsWidth, subplotsWidth * y + x + 1)

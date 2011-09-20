@@ -91,6 +91,12 @@ class Session(object):
     def close(self):
         self._file.close()
     
+    def get_n_clusters(self, channel):
+        n = self._file.getNode('/Channels/ch%i' % channel)
+        clus = np.array([r['clu'] for r in n])
+        maxI = clus.max()
+        return maxI + 1
+    
     def get_n_cells(self):
         return self._file.root.Cells.nrows
     
