@@ -55,7 +55,7 @@ class Session(object):
     
     def read_timebase(self):
         matchesNode = self._file.getNode('/TimeMatches')
-        self._timebase = clock.timebase.TimeBase(np.array(matchesNode))
+        self._timebase = clock.timebase.TimeBase(np.array(matchesNode), fitline=True)
     
     def get_epoch_time_range(self, unit):
         """

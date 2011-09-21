@@ -3,6 +3,7 @@
 import copy, logging
 
 import numpy as np
+from scipy.stats import linregress
 
 # new methods are much faster for longer matches sequences (us compared to ms!)
 
@@ -10,7 +11,7 @@ class TimeBase(object):
     """
     Timebase object used to convert times from mworks to audio and back
     """
-    def __init__(self, matches, cull = True):
+    def __init__(self, matches, cull = True, fitline = False):
         """
         Parameters
         ----------
@@ -30,6 +31,8 @@ class TimeBase(object):
         self.offsets = self.matches[:,0] - self.matches[:,1]
         
         if cull: self.cull_offsets()
+
+        if fitline: self.fit_line()
     
     def cull_offsets(self, thresh = 0.03):
         """
@@ -45,6 +48,15 @@ class TimeBase(object):
         goodIndices = np.where(abs(deltaOffsets) < thresh)[0]+1
         self.offsets = self.offsets[goodIndices]
         self.matches = self.matches[goodIndices]
+    
+    def fit_line(self):
+        """
+        Fit regression line to offsets and use that for all time matching
+        """
+        x = self.matches[:,0]
+        y = self.matches[:,0] - self.matches[:,1]
+        slope, offset = linregress(x, y)
+        self.offsets = x * slope + offset
     
     def audio_to_mworks(self, audio):
         """
