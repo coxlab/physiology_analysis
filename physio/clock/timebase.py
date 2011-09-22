@@ -55,7 +55,7 @@ class TimeBase(object):
         """
         x = self.matches[:,0]
         y = self.matches[:,0] - self.matches[:,1]
-        slope, offset = linregress(x, y)
+        slope, offset, _, _, _ = linregress(x, y)
         self.offsets = x * slope + offset
     
     def audio_to_mworks(self, audio):
