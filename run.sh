@@ -2,7 +2,7 @@
 
 plotdir="/home/graham/Repositories/coxlab/physiology_analysis/visualization/"
 
-pushd $plotdir
+cd $plotdir
 
 for session in "$@"
 do
@@ -11,5 +11,3 @@ do
     echo "plot.sh $1"
     sh plot.sh $1
 done
-
-popd

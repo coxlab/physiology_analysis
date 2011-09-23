@@ -55,7 +55,7 @@ class Session(object):
     
     def read_timebase(self):
         matchesNode = self._file.getNode('/TimeMatches')
-        self._timebase = clock.timebase.TimeBase(np.array(matchesNode), fitline=True)
+        self._timebase = clock.timebase.TimeBase(np.array(matchesNode), fitline=False)#fitline=True)
     
     def get_epoch_time_range(self, unit):
         """
@@ -94,6 +94,7 @@ class Session(object):
     def get_n_clusters(self, channel):
         n = self._file.getNode('/Channels/ch%i' % channel)
         clus = np.array([r['clu'] for r in n])
+        if len(clus) == 0: return 0
         maxI = clus.max()
         return maxI + 1
     
