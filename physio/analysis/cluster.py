@@ -1,10 +1,37 @@
 #!/usr/bin/env python
 
-import glob, logging, os, subprocess
+import glob, logging, os, re, subprocess
 
 import numpy as np
 
+from .. import channelmapping
+from .. import h5
 from .. import utils
+
+def get_adjacent(inputFiles, n = 2):
+    """
+    n : number of neighbors on either side
+    so n 1 = up to 2 files
+       n 2 = up to 4 files
+    """
+    adjFiles = []
+    depthToFile = {}
+    depths = []
+    for inputFile in inputFiles:
+        # get channel number
+        tdtch = h5.combine.find_channel(inputFile, r'[a-z,A-Z]+_([0-9]+)\#*')
+        depth = channelmapping.tdt_to_position(tdtch)
+        depthToFile[depth] = inputFile
+        depths.append(depth)
+    for d in depths:
+        left = max(0,d-n)
+        right = min(d+n,max(depths))
+        files = []
+        for i in xrange(left, right+1):
+            if i != d: # don't include the center file
+                files.append(depthToFile[i])
+        adjFiles.append(files)
+    return adjFiles
 
 def cluster(audioDir, resultsDir, timeRange, options = '', njobs = 8, async = False):
     """
@@ -51,13 +78,21 @@ def cluster(audioDir, resultsDir, timeRange, options = '', njobs = 8, async = Fa
     # cmd = "parallel -j %i pyc.py %s -t %i:%i -pv {} %s/{/.} :::" %\
     #             (njobs, options, int(timeRange[0]), int(timeRange[1]), resultsDir)
     
-    cmd = "parallel -j %i pycluster.py {} timerange %i:%i outputdir %s/{/.} %s :::" %\
+    cmd = "parallel -j %i pycluster.py {1} timerange %i:%i outputdir %s/{/.} adjacentfiles '{2}' %s :::" %\
             (njobs, int(timeRange[0]), int(timeRange[1]), resultsDir, options)
     
     inputFiles = glob.glob(audioDir+'/input_*')
     for inputFile in inputFiles:
         cmd += " " + os.path.basename(inputFile) + " "
     
+    adjFiles = get_adjacent(inputFiles)
+    cmd += " ::: "
+    for adjFile in adjFiles:
+        cmd += "'"
+        for adj in adjFile:
+            cmd += " " + adj + " "
+        cmd += "'"
+
     logging.debug("Running: %s" % cmd)
     p = subprocess.Popen(cmd.split(), stderr = subprocess.PIPE, stdout = subprocess.PIPE, cwd = audioDir)
     if async:
