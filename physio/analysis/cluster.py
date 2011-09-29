@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import glob, logging, os, re, subprocess
+import glob, logging, os, re, shlex, subprocess
 
 import numpy as np
 
@@ -78,7 +78,7 @@ def cluster(audioDir, resultsDir, timeRange, options = '', njobs = 8, async = Fa
     # cmd = "parallel -j %i pyc.py %s -t %i:%i -pv {} %s/{/.} :::" %\
     #             (njobs, options, int(timeRange[0]), int(timeRange[1]), resultsDir)
     
-    cmd = "parallel -j %i pycluster.py {1} timerange %i:%i outputdir %s/{/.} adjacentfiles '{2}' %s :::" %\
+    cmd = """parallel -j %i pycluster.py {1} timerange %i:%i outputdir %s/{1/.} adjacentfiles '{2}' %s :::""" %\
             (njobs, int(timeRange[0]), int(timeRange[1]), resultsDir, options)
     
     inputFiles = glob.glob(audioDir+'/input_*')
@@ -88,13 +88,15 @@ def cluster(audioDir, resultsDir, timeRange, options = '', njobs = 8, async = Fa
     adjFiles = get_adjacent(inputFiles)
     cmd += " ::: "
     for adjFile in adjFiles:
-        cmd += "'"
+        cmd += "'" + '"'
         for adj in adjFile:
-            cmd += " " + adj + " "
-        cmd += "'"
+            cmd += os.path.basename(adj) + " "
+        cmd = cmd[:-1] + '"' + "' " # removes last space
 
     logging.debug("Running: %s" % cmd)
-    p = subprocess.Popen(cmd.split(), stderr = subprocess.PIPE, stdout = subprocess.PIPE, cwd = audioDir)
+    splitcmd = shlex.split(cmd)
+    logging.debug("Running: %s" % str(splitcmd))
+    p = subprocess.Popen(splitcmd, stderr = subprocess.PIPE, stdout = subprocess.PIPE, cwd = audioDir)
     if async:
         return p
     else:
@@ -114,7 +116,7 @@ def cluster_from_config(config, epoch_audio):
     options = config.get('clustering','options')
     timeRange = [int(e * sf) for e in epoch_audio]
     logging.debug("timeRange %s" % str(timeRange))
-    return cluster(audioDir, resultsDir, timeRange, options = options, njobs = 8, async = False)
+    return cluster(audioDir, resultsDir, timeRange, options = options, njobs = 4, async = False)
 
 if __name__ == '__main__':
     test_cluster()
