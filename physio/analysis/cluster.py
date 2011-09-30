@@ -78,7 +78,7 @@ def cluster(audioDir, resultsDir, timeRange, options = '', njobs = 8, async = Fa
     # cmd = "parallel -j %i pyc.py %s -t %i:%i -pv {} %s/{/.} :::" %\
     #             (njobs, options, int(timeRange[0]), int(timeRange[1]), resultsDir)
     
-    cmd = """parallel -j %i pycluster.py {1} timerange %i:%i outputdir %s/{1/.} adjacentfiles '{2}' %s :::""" %\
+    cmd = """parallel --xapply -j %i pycluster.py {1} timerange %i:%i outputdir %s/{1/.} adjacentfiles '{2}' %s :::""" %\
             (njobs, int(timeRange[0]), int(timeRange[1]), resultsDir, options)
     
     inputFiles = glob.glob(audioDir+'/input_*')
