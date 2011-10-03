@@ -55,8 +55,8 @@ class Session(object):
     
     def read_timebase(self):
         matchesNode = self._file.getNode('/TimeMatches')
-        austart = self._file_root._v_attrs['EPOCH_START_AUDIO']
-        self._timebase = clock.timebase.TimeBase(np.array(matchesNode) + austart, fitline=False)#fitline=True)
+        #austart = self._file_root._v_attrs['EPOCH_START_AUDIO']
+        self._timebase = clock.timebase.TimeBase(np.array(matchesNode), fitline=False)#fitline=True)
     
     def get_epoch_time_range(self, unit):
         """
