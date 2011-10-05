@@ -6,8 +6,8 @@ cd $plotdir
 
 for session in "$@"
 do
-    echo "phy.py -f $1"
-    phy.py -f $1
-    echo "plot.sh $1"
-    sh plot.sh $1
+    echo "phy.py -f $session"
+    phy.py -f $session
+    echo "plot.sh $session"
+    sh plot.sh $session
 done

@@ -87,8 +87,8 @@ def analyze(session, customCfgFile = None):
         logging.debug("adding pixel clock matches")
         offsetMatches = np.array(copy.deepcopy(matches))
         #offsetMatches[:,0] = (offsetMatches[:,0] - epoch_audio[0]) / float(config.getint('audio','samprate'))
-        offsetMatches[:,0] = (offsetMatches[:,0] / float(config.getint('audio','samprate'))) - epoch_audio[0]
-        #offsetMatches[:,0] = (offsetMatches[:,0]) / float(config.getint('audio','samprate'))
+        #offsetMatches[:,0] = (offsetMatches[:,0] / float(config.getint('audio','samprate'))) - epoch_audio[0]
+        offsetMatches[:,0] = (offsetMatches[:,0] / float(config.getint('audio','samprate')))
         h5.utils.write_array(resultsFilename, offsetMatches, 'TimeMatches', 'PC - MW Time Matches')
         
         # add session info

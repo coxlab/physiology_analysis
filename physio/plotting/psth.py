@@ -19,7 +19,9 @@ def plot(eventTimes, spikeTimes, preT = -0.2, postT = 0.5, nbins = 8, color = '0
     if weighted:
         dt = (postT - preT) / float(nbins)
         weights = (np.ones_like(allspikes) / float(len(eventTimes))) / dt
-    pl.hist(allspikes, bins = np.linspace(preT,postT,nbins+1), weights = weights)
+        pl.hist(allspikes, bins = np.linspace(preT,postT,nbins+1), weights = weights)
+    else:
+        pl.hist(allspikes, bins = np.linspace(preT,postT,nbins+1))
     pl.xlim(preT, postT)
 
 def plot_psth(event_locked, **kwargs):

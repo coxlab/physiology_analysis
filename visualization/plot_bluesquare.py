@@ -56,7 +56,7 @@ for (x, channel) in enumerate(channels):
         logging.debug("\tPlotting[%i, %i]: ch %s : cl %s" % (x, y, channel, cluster))
         spikes = session.get_spike_times(channel, cluster)
         pl.subplot(subplotsHeight, subplotsWidth, subplotsWidth * y + x + 1)
-        physio.plotting.psth.plot(trialTimes, spikes, options.before, options.after, options.nbins)
+        physio.plotting.psth.plot(trialTimes, spikes, options.before, options.after, options.nbins)#, weighted = False)
         #physio.plotting.raster.plot(trialTimes, spikes, options.before, options.after)
         pl.axvline(0., color = 'k')
         pl.axvspan(0., 0.5, color = 'k', alpha = 0.1)
