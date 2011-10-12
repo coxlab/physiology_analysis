@@ -550,7 +550,9 @@ def parse(audioFiles, threshold = 0.03, refractory = 44, minCodeTime = 441,
         logging.debug("Processing %s" % af)
         t = find_transitions(s, threshold, refractory)
         # c = np.sign(s[t]) * i# get state of transitions: - == down
+        logging.debug("Getting sign: %i %i" % (t.max(), t.argmax()))
         d = np.sign(s[t])
+        logging.debug("Getting ones")
         c = np.ones(len(d)) * i
         logging.debug("Found %i transitions on channel %i" % (len(t), i))
         ap = np.transpose(np.vstack((t,c,d)))

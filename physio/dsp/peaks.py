@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-
+import logging
 import numpy as np
 
 def find_negative_threshold_crossings(signal, threshold, refractory):
@@ -82,7 +82,7 @@ def find_both_threshold_crossings(signal, threshold, refractory):
     crossings : 1d array
         Indicies where the signal crosses the threshold
     """
-    
+    logging.debug("Finding both threshold crossings")
     assert threshold >= 0, "Threshold [%f] should be positive" % threshold
     assert type(signal) == np.ndarray, "Signal must be a ndarray not %s" % type(signal)
     assert signal.ndim == 1, "Signal must be 1d not %i" % signal.ndim
@@ -120,15 +120,22 @@ def refine_crossings(signal, crossings):
     crossings will be at halfway up each 'bump'. The refined crossings will be
     at the valleys between bumps.
     """
+    logging.debug("Refining threshold crossings")
     refined = np.empty_like(crossings)
     for i in xrange(len(crossings)):
         transition = crossings[i]
-        if transition == 0: continue
-        
+        if transition == 0:
+            refined[i] = transition
+            continue
+        #logging.debug("Refining transition: %s" % str(transition)) 
         crossing = signal[transition]
         delta = signal[transition] - signal[transition-1]
         while (transition > 0) and \
             (np.sign(signal[transition] - signal[transition-1]) == np.sign(crossing)):
+            #logging.debug("Transition: %s" % str(transition))
             transition -= 1
         refined[i] = transition
+        #if refined[i] > 309229200:
+        #    print i, refined[i], transition
+    #logging.debug("Done refining transitions")
     return refined
