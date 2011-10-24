@@ -16,5 +16,5 @@ do
     echo "plot.sh $session"
     sh plot.sh $session
     # clean up
-    # TODO
+    rm -rf /scratch/$session/
 done
