@@ -13,6 +13,9 @@ do
     cp /data/raw/$session/$session.h5 /scratch/$session/
     echo "phy.py -f $session"
     phy.py -f $session
+    echo "copying over ica matrices"
+    cp /scratch/$session/Audio\ Files/mixingmatrix /data/raw/$session/
+    cp /scratch/$session/Audio\ Files/unmixingmatrix /data/raw/$session/
     echo "plot.sh $session"
     sh plot.sh $session
     # clean up
