@@ -57,73 +57,79 @@ if len(args) < 1:
     parser.print_usage()
     sys.exit(1)
 
-epochNumber = 0
+config = physio.cfg.load(args[0])
+
+epochs = []
 if len(args) == 2:
-    epochNumber = int(args[1])
+    epochs = [int(args[1]),]
+else:
+    epochs = range(physio.session.get_n_epochs(config))
 
-session = physio.session.load(args[0], epochNumber)
-if options.outdir.strip() == '':
-    config = physio.cfg.load(args[0])
-    outdir = physio.session.get_epoch_dir(config, epochNumber)
-    # outdir = config.get('session','output')
-    outdir += '/plots'
-    options.outdir = outdir
 
-if not os.path.exists(options.outdir): os.makedirs(options.outdir)
+for epochNumber in epochs:
+    session = physio.session.load(args[0], epochNumber)
+    if options.outdir.strip() == '':
+        #config = physio.cfg.load(args[0])
+        outdir = physio.session.get_epoch_dir(config, epochNumber)
+        # outdir = config.get('session','output')
+        outdir += '/plots'
+        options.outdir = outdir
 
-locations = session.get_channel_locations()
-logging.debug("Locations: %s" % str(locations))
+    if not os.path.exists(options.outdir): os.makedirs(options.outdir)
 
-def skull_to_pixel(ml, dv, sliceIndex, imShape):
-    if sliceIndex > 102:
-        dv = dv + 1.
-    #return x * self.imageSize[0]/16.0 + self.imageSize[0]/2., self.imageSize[1] + self.imageSize[1]/11.0 * y
-    x = ml * imShape[1]/16.0 + imShape[1] / 2.
-    y = dv * imShape[0]/11.0
-    return x, y #x / 8., y / 5.5 + 1.
+    locations = session.get_channel_locations()
+    logging.debug("Locations: %s" % str(locations))
 
-for (ch, location) in zip(range(1,33), locations):
-    # generate plot of position on atlas slice
-    pl.clf()
-    # ml - ap - dv
-    ml, ap, dv = location
-    sliceIndex = 0
-    for (k, v) in sliceBounds.iteritems():
-        if ap > v:
-            sliceIndex = k
-            break
-    
-    if sliceIndex == 0: physio.utils.error("Could not find slice index for: %f" % ap, ValueError)
-    
-    atlasDir = config.get('filesystem','atlas')
-    sliceFile = '%s/%03i.png' % (atlasDir, k)
-    
-    im = pl.imread(sliceFile)
-    
-    pl.imshow(im)
-    
-    # convert ml, dv to pixel coordinates
-    x, y = skull_to_pixel(ml, -dv, sliceIndex, im.shape)
-    logging.debug("Channel: %i at %.3f %.3f %.3f" % (ch, ml, ap, dv))
-    pl.scatter(x, y, color = 'r')
-    pl.axhline(y, linestyle = '-.', color = 'b')
-    pl.axvline(x, linestyle = '-.', color = 'b')
-    pl.text(x-10, y+10, "%.3f, %.3f, %.3f" % (ml, ap, dv), ha = 'right', va = 'top')
-    
-    pl.title("Channel: %i" % ch)
-    pl.xlabel("ML (mm)")
-    pl.ylabel("DV (mm)")
-    
-    # reset axes
-    pl.xlim(0,im.shape[1])
-    pl.ylim(im.shape[0],0)
-    pl.xticks(np.linspace(0,im.shape[1],17), range(-8,9,1))
-    if sliceIndex > 102:
-        pl.yticks(np.linspace(0,im.shape[0],12), range(1,13,1))
-    else:
-        pl.yticks(np.linspace(0,im.shape[0],12), range(0,12,1))
-    
-    pl.savefig('%s/atlas_%i.png' % (options.outdir, ch))
+    def skull_to_pixel(ml, dv, sliceIndex, imShape):
+        if sliceIndex > 102:
+            dv = dv + 1.
+        #return x * self.imageSize[0]/16.0 + self.imageSize[0]/2., self.imageSize[1] + self.imageSize[1]/11.0 * y
+        x = ml * imShape[1]/16.0 + imShape[1] / 2.
+        y = dv * imShape[0]/11.0
+        return x, y #x / 8., y / 5.5 + 1.
+
+    for (ch, location) in zip(range(1,33), locations):
+        # generate plot of position on atlas slice
+        pl.clf()
+        # ml - ap - dv
+        ml, ap, dv = location
+        sliceIndex = 0
+        for (k, v) in sliceBounds.iteritems():
+            if ap > v:
+                sliceIndex = k
+                break
+        
+        if sliceIndex == 0: physio.utils.error("Could not find slice index for: %f" % ap, ValueError)
+        
+        atlasDir = config.get('filesystem','atlas')
+        sliceFile = '%s/%03i.png' % (atlasDir, k)
+        
+        im = pl.imread(sliceFile)
+        
+        pl.imshow(im)
+        
+        # convert ml, dv to pixel coordinates
+        x, y = skull_to_pixel(ml, -dv, sliceIndex, im.shape)
+        logging.debug("Channel: %i at %.3f %.3f %.3f" % (ch, ml, ap, dv))
+        pl.scatter(x, y, color = 'r')
+        pl.axhline(y, linestyle = '-.', color = 'b')
+        pl.axvline(x, linestyle = '-.', color = 'b')
+        pl.text(x-10, y+10, "%.3f, %.3f, %.3f" % (ml, ap, dv), ha = 'right', va = 'top')
+        
+        pl.title("Channel: %i" % ch)
+        pl.xlabel("ML (mm)")
+        pl.ylabel("DV (mm)")
+        
+        # reset axes
+        pl.xlim(0,im.shape[1])
+        pl.ylim(im.shape[0],0)
+        pl.xticks(np.linspace(0,im.shape[1],17), range(-8,9,1))
+        if sliceIndex > 102:
+            pl.yticks(np.linspace(0,im.shape[0],12), range(1,13,1))
+        else:
+            pl.yticks(np.linspace(0,im.shape[0],12), range(0,12,1))
+        
+        pl.savefig('%s/atlas_%i.png' % (options.outdir, ch))
 
 
 # config.get('filesystem','atlas')
