@@ -15,6 +15,9 @@ import events
 import h5
 import utils
 
+def get_n_epochs(config):
+    return len(get_epochs)
+
 def get_epochs(config):
     mainDir = config.get('session','outputprefix')
     epochs = sorted([os.path.basename(ed) for ed in utils.regex_glob(mainDir, r'^\d+_\d+/?$')[0]],\
