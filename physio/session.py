@@ -16,7 +16,7 @@ import h5
 import utils
 
 def get_n_epochs(config):
-    return len(get_epochs)
+    return len(get_epochs(config))
 
 def get_epochs(config):
     mainDir = config.get('session','outputprefix')
