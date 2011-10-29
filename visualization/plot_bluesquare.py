@@ -35,7 +35,7 @@ else:
 
 for epochNumber in epochs:
     session = physio.session.load(args[0], epochNumber)
-    if options.outdir.strip() == '':
+    if True or options.outdir.strip() == '':
         #config = physio.cfg.load(args[0])
         outdir = physio.session.get_epoch_dir(config, epochNumber)
         # outdir = config.get('session','output')
