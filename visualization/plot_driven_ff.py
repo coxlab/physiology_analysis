@@ -71,6 +71,7 @@ midId = idByRate[midI]
 print "Min, mid, max:", minId, midId, maxId
 
 pl.figure()
+pl.suptitle("%s:%i[%i]" % (sessionName, channel, cluster))
 pl.subplot(211)
 pl.subplot(224)
 rates = [idRates[i] for i in idByRate]
@@ -87,8 +88,62 @@ pl.xlabel("Stimulus Id")
 pl.xlim((-1,len(rates)+1))
 
 # collapse across position (plot size)
+def get_rate(spikes, condition, rwin):
+    trials, _, _, _ = session.get_trials(condition)
+    if len(trials) == 0:
+        raise ValueError("no trials for condition: %s" % str(condition))
+    s = physio.spikes.stats.event_lock(trials, spikes, rwin[0], rwin[1], unpack=True)
+    return len(s) / (float(rwin[1] - rwin[0]) * len(trials))
+
+pl.subplot(223)
+rateBySize = []
+for i,c in zip((minId, midId, maxId),('b','g','r')):
+    rates = []
+    for size in sizes:
+        rates.append(get_rate(spikes, {'name': i, 'size_x': size}, rwin))
+    rateBySize.append(rates)
+    pl.plot(rates, color=c)
+pl.xticks(range(len(sizes)), [str(s) for s in sizes])
+pl.xlabel("Stimulus Size (degrees)")
+pl.ylabel("Firing Rate (Hz)")
+pl.axhline(brate)
+pl.xlim((-1,len(sizes)+1))
+print "Rate By Size", rateBySize
 
 # collapse across size (plot position)
+poss = []
+for y in posys:
+    row = []
+    for x in posxs:
+        row.append(x)
+    poss.append(row)
+
+rateByPos = pl.ones((3, len(posys), len(posxs))) * brate
+for (ii, i) in enumerate((minId, midId, maxId)):
+    for (iy, y) in enumerate(posys):
+        for (ix, x) in enumerate(posxs):
+            try:
+                rate = get_rate(spikes, {'name': i, 'pos_x': x, 'pos_y':y}, rwin)
+                rateByPos[ii,iy,ix] = rate
+                #rates.append(get_rate(spikes, {'name': i, 'pos_x': x, 'pos_y':y}, rwin))
+            except ValueError as E:
+                print E
+print rateByPos
+cmaps = (pl.cm.Blues, pl.cm.Greens, pl.cm.Reds)
+for (i,cm) in enumerate(cmaps):
+    pl.subplot(231+i)
+    rates = rateByPos[i]
+    pl.xticks(range(len(posxs)), ["%.1f" % x for x in posxs])
+    pl.yticks(range(len(posys)), ["%.1f" % y for y in posys])
+    pl.imshow(rates, interpolation='nearest', cmap=cm)
+    for y in xrange(rates.shape[0]):
+        for x in xrange(rates.shape[1]):
+            pl.text(x,y,"%.1f" % rates[y,x], ha='center', va='center')
+    #pl.xticks(range(len(posxs)), ["%.1f" % x for x in posxs])
+    #pl.yticks(range(len(posys)), ["%.1f" % y for y in posys])
+    if i == 0:
+        pl.xlabel("X Position (degrees)")
+        pl.ylabel("Y Position (degrees)")
 
 # save plot
 pl.savefig("test.png")
