@@ -26,7 +26,7 @@ def summarize(session, outputFilename, binsize=0.05, binwindow=(-200,700)):
     tbins = pl.arange(binwindow[0],binwindow[1]+binsize/2,binsize)
     tbins = zip(tbins[:-1],tbins[1:])
     
-    class TrialSpikes(tables.isDescription):
+    class TrialSpikes(tables.IsDescription):
         time = tables.Float64Col()
         channel = tables.UInt8Col()
         cluster = tables.UInt8Col()
@@ -34,18 +34,18 @@ def summarize(session, outputFilename, binsize=0.05, binwindow=(-200,700)):
         stimX = tables.Float32Col()
         stimY = tables.Float32Col()
         stimSize = tables.Float32Col()
-        bins = tables.UInt18(len(tbins))
+        bins = tables.UInt16Col(len(tbins))
     
     # make output file
     outputFile = tables.openFile(outputFilename, 'w')
     trialTable = outputFile.createTable('/', 'Trials', TrialSpikes)
     for cellI in xrange(session.get_n_cells()):
         logging.debug("Processing cell: %i" % cellI)
-        ch, cl = session.get_cell()
+        ch, cl = session.get_cell(cellI)
         spikeTimes = session.get_spike_times(ch, cl)
         spikeBins = pl.zeros((len(allStimTimes),len(tbins)))
         for (i,tbin) in enumerate(tbins):
-            spikeBins[:,i] = pl.array([len(bs) for bs in spikes.event_lock(allStimTimes, spikeTimes, tbin[0], tbin[1])])
+            spikeBins[:,i] = pl.array([len(bs) for bs in spikes.stats.event_lock(allStimTimes, spikeTimes, tbin[0], tbin[1])])
         # write data for this cell
         for (tt, st, tb) in zip(allStimTimes, allStimuli, spikeTimes):
                 trialTable.row['time'] = tt
@@ -54,9 +54,9 @@ def summarize(session, outputFilename, binsize=0.05, binwindow=(-200,700)):
                 trialTable.row['stimID'] = st['name']
                 trialTable.row['stimX'] = st['pos_x']
                 trialTable.row['stimY'] = st['pos_y']
-                trialTable.row['stimS'] = st['size_x']
+                trialTable.row['stimSize'] = st['size_x']
                 trialTable.row['bins'] = tb
-                trialTable.append()
+                trialTable.row.append()
         outputFile.flush()
     
     # TODO add hash of session hdf5 file
