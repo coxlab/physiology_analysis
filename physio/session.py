@@ -214,7 +214,7 @@ class Session(object):
         if len(good) == 0:
             return [], [], [], [], []
         else:
-            return tt[good+1], tv[good+1], hv[good+1], vv[good+1], pv[good+1]
+            return np.array(tt)[good+1], np.array(tv)[good+1], np.array(hv)[good+1], np.array(vv)[good+1], np.array(pv)[good+1]
     
     def get_blackouts(self):
         pass
