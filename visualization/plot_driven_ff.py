@@ -11,10 +11,10 @@ import physio
 rwin = (0.1,0.2)
 bwin = (-0.1,0)
 
-sessionName = 'K4_110804'
+sessionName = 'L2_110927'
 epochNumber = 0
-channel = 2
-cluster = 4
+channel = 6
+cluster = 3
 
 config = physio.cfg.load(sessionName)
 #epochs = []
@@ -153,17 +153,21 @@ for (ii, i) in enumerate((minId, midId, maxId)):
                 rateByPosSE[ii,iy,ix] = pl.nan
 print rateByPos
 cmaps = (pl.cm.Blues, pl.cm.Greens, pl.cm.Reds)
-pl.subplot(133)
+#pl.subplot(133)
 spw = len(posxs) * 3
 sph = len(posys)
 ymax = 0
+ax = None
 for iy in xrange(len(posys)):
     for ix in xrange(len(posxs)):
         # check if nan
         rates = rateByPos[:,iy,ix]
         ses = rateByPosSE[:,iy,ix]
         if any(pl.isnan(rates)): continue
-        pl.subplot(sph,spw,len(posxs)*2 + ix + iy * spw + 1)
+        if ax is None:
+            ax = pl.gcf().add_subplot(sph,spw,len(posxs)*2 + ix + iy * spw + 1)
+        else:
+            pl.gcf().add_subplot(sph,spw,len(posxs)*2 + ix + iy * spw + 1, sharex=ax, sharey=ax)
         pl.bar(range(len(rates)), rates, yerr=ses, color=('b','g','r'), ecolor='k')
         pl.xticks([])
         pl.yticks([])
@@ -174,8 +178,8 @@ for iy in xrange(len(posys)):
         rates = rateByPos[:,iy,ix]
         ses = rateByPosSE[:,iy,ix]
         if any(pl.isnan(rates)): continue
-        pl.subplot(sph,spw,len(posxs)*2 + ix + iy * spw + 1)
-        pl.ylim((0,ymax))
+        #pl.subplot(sph,spw,len(posxs)*2 + ix + iy * spw + 1)
+        #pl.ylim((0,ymax))
 #for (i,cm) in enumerate(cmaps):
 #    pl.subplot(231+i)
 #    rates = rateByPos[i]
