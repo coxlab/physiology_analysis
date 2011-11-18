@@ -3,5 +3,6 @@
 import analyze
 import cells
 import cluster
+import summarize
 
-__all__ = ['analyze', 'cells', 'cluster']
+__all__ = ['analyze', 'cells', 'cluster', 'summarize']
