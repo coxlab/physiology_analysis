@@ -15,6 +15,21 @@ def calc_velocity(t, v):
     vel = (v[1:] - v[:-1]) / (t[1:] - t[:-1])
     return vel
 
+def find_good_by_deviation(h, v, thresh=30):
+    """
+    Find indices of data points that do not deviate more than thresh
+    """
+    hm = np.mean(h)
+    logging.debug("Horizontal mean: %f" % hm)
+    vm = np.mean(v)
+    logging.debug("Vertical mean: %f" % vm)
+    
+    hgood = np.where(abs(h - hm) < thresh)[0]
+    vgood = np.where(abs(v - vm) < thresh)[0]
+    
+    good = np.intersect1d(hgood, vgood)
+    return good
+
 def clean_by_deviation(tt, t, h, v, thresh=30):
     hm = np.mean(h)
     logging.debug("Horizontal mean: %f" % hm)

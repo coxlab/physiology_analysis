@@ -191,6 +191,31 @@ class Session(object):
         time, _ = self.get_epoch_time_range('mworks')
         return events.cnc.get_channel_locations(cncDict, offset, time)
     
+    def get_gaze(self, start=1, timeRange=None):
+        """
+        Parameters
+        ----------
+            start : datapoint index to start processing gaze data
+                sample 0 tends to be an error, so this is by default 1
+        Returns
+        -------
+            tt : audio times of culled gaze data points
+            tv : cobra timestamps
+            hv : horizontal gaze
+            vv : vertical gaze
+            pv : pupil radius
+        """
+        ht, hv = self.get_events('gaze_h', timeRange)
+        vt, vv = self.get_events('gaze_v', timeRange)
+        pt, pv = self.get_events('pupil_radius', timeRange)
+        tt, tv = self.get_events('cobra_timestamp', timeRange)
+        # find indices of 'good' data points, ones that don't deviate too far from the mean
+        good = events.gaze.find_good_by_deviation(hv[start:], vv[start:])
+        if len(good) == 0:
+            return [], [], [], [], []
+        else:
+            return tt[good+1], tv[good+1], hv[good+1], vv[good+1], pv[good+1]
+    
     def get_blackouts(self):
         pass
     
