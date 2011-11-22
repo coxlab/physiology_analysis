@@ -3,10 +3,11 @@
 import logging, optparse, os, sys
 logging.basicConfig(level = logging.DEBUG)
 
+import physio
+
 import numpy as np
 import pylab as pl
 
-import physio
 
 parser = optparse.OptionParser(usage="usage: %prog [options] session")
 parser.add_option("-g", "--group", dest="group", default="name",
@@ -89,23 +90,29 @@ for epochNumber in epochs:
     for (y, datum) in enumerate(data):
         for (x, condition) in enumerate(conditions):
             logging.debug("\tPlotting[%i, %i]: ch/cl %s : s %s" % (x, y, datum, condition))
-            trials, _, _, _ = session.get_trials(condition)
             
             if process_gaze:
-                culled_trials = []
-                for t in trials:
-
-                    start = t - options.before
-                    end = t + options.after
-
-                    gaze_vals = h_gaze[np.logical_and(ts_gaze > start, 
-                                                      ts_gaze < end)]
-                    
-                    gaze_std = np.std(np.array(gaze_vals))
-                    if gaze_std < options.gaze_std_thresh:
-                        culled_trials.append(t)
-
-                trials = culled_trials
+                trials, _, _, _ = session.get_gaze_filtered_trials(
+                                          condition,
+                                          intra_trial_std_threshold=options.gaze_std_thresh)
+            else:
+                trials, _, _, _ = session.get_trials(condition)
+            
+            # if process_gaze:
+                # culled_trials = []
+                # for t in trials:
+                # 
+                #     start = t - options.before
+                #     end = t + options.after
+                # 
+                #     gaze_vals = h_gaze[np.logical_and(ts_gaze > start, 
+                #                                       ts_gaze < end)]
+                #     
+                #     gaze_std = np.std(np.array(gaze_vals))
+                #     if gaze_std < options.gaze_std_thresh:
+                #         culled_trials.append(t)
+                # 
+                # trials = culled_trials
             
             spikes = session.get_spike_times(*datum)
             pl.subplot(subplotsHeight, subplotsWidth, subplotsWidth * y + x + 1)

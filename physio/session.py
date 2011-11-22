@@ -216,6 +216,52 @@ class Session(object):
         else:
             return np.array(tt)[good+1], np.array(tv)[good+1], np.array(hv)[good+1], np.array(vv)[good+1], np.array(pv)[good+1]
     
+    def get_gaze_filtered_trials(self, matchDict = None, timeRange = None,
+                                 intra_trial_std_threshold=None,
+                                 default_gaze_deviation_threshold=None,
+                                 pre_time=0.1, post_time=0.5):
+        
+        trials, stims, bt, bs  = self.get_trials(self, matchDict, timeRange)
+
+        ts_gaze, _, h_gaze, _, _ = self.get_gaze()
+        
+        # try to estimate the "default" gaze
+        # (this is kind of a hack)
+        median_gaze = np.median(h_gaze)
+        
+        culled_trials = []
+        culled_stims = []
+        culled_bad_trials = bt
+        culled_bad_stims = bs
+        for (t,s) in zip(trials, stims):
+
+            start = t - pre_time
+            end = t + post_time
+
+            gaze_vals = np.array(h_gaze[np.logical_and(ts_gaze > start, 
+                                                       ts_gaze < end)])
+            
+            gaze_mean = np.mean(gaze_vals)
+            gaze_std = np.std(gaze_vals)
+            
+            cull = False
+            if (intra_trial_std_threshold is not None and 
+                gaze_std > intra_trial_std_treshold):
+                cull = True
+            
+            if (default_gaze_deviation_threshold is not None and
+                abs(median_gaze - gaze_mean) > default_gaze_deviation_threshold):
+                cull = True
+            
+            if not cull:
+                culled_trials.append(t)
+                culled_stims.append(s)
+            else:
+                culled_bad_trials.append(t)
+                culled_bad_stims.append(s)
+
+        return culled_trials, culled_stims, culled_bad_trials, culled_bad_stims 
+    
     def get_blackouts(self):
         pass
     
