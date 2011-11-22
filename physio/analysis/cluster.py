@@ -33,7 +33,80 @@ def get_adjacent(inputFiles, n = 2):
         adjFiles.append(files)
     return adjFiles
 
+
 def cluster(audioDir, resultsDir, timeRange, options = '', njobs = 8, async = False):
+    """
+    Cluster all audio files for a given session
+    
+    Parameters
+    ----------
+    audioDir : string
+        Path of directory that contains the session audio files
+    resultsDir : string
+        Path of directory to use for results
+    timeRange : tuple
+        Time range (in samples) over which to cluster
+    options : string
+        Additionall command line options to pass to pyc.py
+    njobs : int
+        Number of simultaneous jobs to run
+    async : bool
+        Run clustering asynchronously, will return popen object
+    
+    Results
+    -------
+    stdout : string
+        Standard output of clustering process
+    stderr : string
+        Standard error of clustering process
+    
+    --- OR --- if async == True
+    
+    process : popen object
+        Popen object of clustering process
+            Use .poll() to check (returns NoneType if not)
+            Use .communicate() to wait till done and return (stdout, stderr)
+            see subprocess module for more info
+    
+    Notes
+    -----
+    parallel -j njobs pyc.py <options> -t timeRange[0]:timeRange[1] -pv {} resultsDir/{/.} ::: audioDir/input_*
+    """
+    if not os.path.exists(resultsDir): os.makedirs(resultsDir)
+    assert np.iterable(timeRange), "timeRange[%s] must be iterable" % str(timeRange)
+    assert len(timeRange) == 2, "timeRange length[%i] must be 2" % len(timeRange)
+    
+    # cmd = "parallel -j %i pyc.py %s -t %i:%i -pv {} %s/{/.} :::" %\
+    #             (njobs, options, int(timeRange[0]), int(timeRange[1]), resultsDir)
+    
+    cmd = """parallel --xapply -j %i pycluster.py {1} timerange %i:%i outputdir %s/{1/.} %s :::""" %\
+            (njobs, int(timeRange[0]), int(timeRange[1]), resultsDir, options)
+    
+    inputFiles = glob.glob(audioDir+'/input_*')
+    for inputFile in inputFiles:
+        cmd += " " + os.path.basename(inputFile) + " "
+    
+    #adjFiles = get_adjacent(inputFiles)
+    #cmd += " ::: "
+    #for adjFile in adjFiles:
+    #    cmd += "'" + '"'
+    #    for adj in adjFile:
+    #        cmd += os.path.basename(adj) + " "
+    #    cmd = cmd[:-1] + '"' + "' " # removes last space
+
+    logging.debug("Running: %s" % cmd)
+    splitcmd = shlex.split(cmd)
+    logging.debug("Running: %s" % str(splitcmd))
+    p = subprocess.Popen(splitcmd, stderr = subprocess.PIPE, stdout = subprocess.PIPE, cwd = audioDir)
+    if async:
+        return p
+    else:
+        stdout, stderr = p.communicate()
+        logging.debug("Return code: %i" % p.returncode)
+        if p.returncode != 0: utils.error("Clustering failed:\n\tstdout:%s\n--\nstderr:%s" % (stdout, stderr))
+        return stdout, stderr
+
+def cluster_with_adjacent(audioDir, resultsDir, timeRange, options = '', njobs = 8, async = False, nadjacent = 2):
     """
     Cluster all audio files for a given session
     
@@ -85,7 +158,7 @@ def cluster(audioDir, resultsDir, timeRange, options = '', njobs = 8, async = Fa
     for inputFile in inputFiles:
         cmd += " " + os.path.basename(inputFile) + " "
     
-    adjFiles = get_adjacent(inputFiles)
+    adjFiles = get_adjacent(inputFiles, nadjacent)
     cmd += " ::: "
     for adjFile in adjFiles:
         cmd += "'" + '"'
@@ -116,7 +189,12 @@ def cluster_from_config(config, epoch_audio):
     options = config.get('clustering','options')
     timeRange = [int(e * sf) for e in epoch_audio]
     logging.debug("timeRange %s" % str(timeRange))
-    return cluster(audioDir, resultsDir, timeRange, options = options, njobs = 4, async = False)
+    njobs = config.getint('clustering','njobs')
+    nadj = config.getint('clustering','nadjacent')
+    if nadj == 0:
+        return cluster(audioDir, resultsDir, timeRange, options = options, njobs = njobs, async = False)
+    else:
+        return cluster_with_adjacent(audioDir, resultsDir, timeRange, options = options, njobs = njobs, async = False, nadjacent = nadj)
 
 if __name__ == '__main__':
     test_cluster()
