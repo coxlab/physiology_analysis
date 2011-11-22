@@ -126,4 +126,6 @@ for epochNumber in epochs:
 #         pl.ylim(0,ymaxs[y])
 
     if not os.path.exists(options.outdir): os.makedirs(options.outdir) # TODO move this down
+    
     pl.savefig("%s/raster_%i_%s.png" % (options.outdir, options.channel, options.group))
+    

@@ -21,11 +21,18 @@ parser.add_option("-c", "--channel", dest="channel", default=7,
                     help="Channel to plot", type='int')
 parser.add_option("-o", "--outdir", dest="outdir", default="",
                     help="Output directory", type='str')
+parser.add_option("-t", "--gaze_std_thresh", dest="gaze_std_thresh", 
+                  type='float', default=0.0, 
+                  help="Threshold for trial-wise gaze std for inclusion")
 
 (options, args) = parser.parse_args()
 if len(args) < 1:
     parser.print_usage()
     sys.exit(1)
+
+process_gaze = False
+if options.gaze_std_thresh != 0.0:
+    process_gaze = True
 
 config = physio.cfg.load(args[0])
 
@@ -53,35 +60,16 @@ for epochNumber in epochs:
     for s in stimCounts.keys():
         logging.debug("\t%i presentations of %s" % (stimCounts[s],s))
 
-# get unique positions & sizes
+    # get unique positions & sizes
     values = {}
     for s in uniqueStimuli:
         values[s[options.group]] = 1
     values = sorted(values.keys())
-# pxs = {}
-# pys = {}
-# sizes = {}
-# names = {}
-# for s in uniqueStimuli:
-#     pxs[s['pos_x']] = 1
-#     pys[s['pos_y']] = 1
-#     sizes[s['size_x']] = 1
-#     names[s['name']] = 1
-# names = sorted(names.keys())
-# pxs = sorted(pxs.keys())
-# pys = sorted(pys.keys())
-# sizes = sorted(sizes.keys())
 
-# generate x & y arrays
-# 120 total :-O
-#[name, :], [name, px, py[1], :], [name, px[1], py, :], [name, size, :]
     conditions = []
     for v in values:
         conditions.append({options.group : v})
-# for n in names:
-#     conditions.append({'name' : n})
-# conditions = uniqueStimuli
-# data = [(ch,cl) for ch in depthOrdered for cl in range(1,6)]
+
     nclusters = session.get_n_clusters(options.channel)
     clusters = range(0,nclusters)
     data = [(options.channel, cl) for cl in clusters]
@@ -90,15 +78,35 @@ for epochNumber in epochs:
     subplotsWidth = len(conditions)
     subplotsHeight = len(data)
     pl.figure(figsize=(subplotsWidth*2, subplotsHeight*2))
-# pl.gcf().suptitle('%s %d' % (groupBy, group))
+
     pl.subplot(subplotsHeight, subplotsWidth,1)
     logging.debug("Plotting %i by %i plots(%i)" % (subplotsWidth, subplotsHeight, subplotsWidth * subplotsHeight))
+
+    if process_gaze:
+        ts_gaze, _, h_gaze, _, _ = session.get_gaze()
 
     ymaxs = [0 for i in data]
     for (y, datum) in enumerate(data):
         for (x, condition) in enumerate(conditions):
             logging.debug("\tPlotting[%i, %i]: ch/cl %s : s %s" % (x, y, datum, condition))
             trials, _, _, _ = session.get_trials(condition)
+            
+            if process_gaze:
+                culled_trials = []
+                for t in trials:
+
+                    start = t - options.before
+                    end = t + options.after
+
+                    gaze_vals = h_gaze[np.logical_and(ts_gaze > start, 
+                                                      ts_gaze < end)]
+                    
+                    gaze_std = np.std(np.array(gaze_vals))
+                    if gaze_std < options.gaze_std_thresh:
+                        culled_trials.append(t)
+
+                trials = culled_trials
+            
             spikes = session.get_spike_times(*datum)
             pl.subplot(subplotsHeight, subplotsWidth, subplotsWidth * y + x + 1)
             physio.plotting.psth.plot(trials, spikes, options.before, options.after, options.nbins)
