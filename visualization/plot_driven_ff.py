@@ -191,8 +191,8 @@ for iy in xrange(len(posys)):
         else:
             pl.gcf().add_subplot(sph,spw,len(posxs)*2 + ix + iy * spw + 1, sharex=ax, sharey=ax)
         pl.bar(range(len(rates)), rates, yerr=ses, color=('b','g','r'), ecolor='k')
-        if iy != (len(posys)-1): pl.xticks([])
-        if ix != 0: pl.yticks([])
+        #if iy != (len(posys)-1): pl.xticks([])
+        #if ix != 0: pl.yticks([])
         pl.axhline(brate)
         ymax = max(ymax, pl.ylim()[1])
 for iy in xrange(len(posys)):
