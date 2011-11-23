@@ -14,6 +14,8 @@ import clock
 import events
 import h5
 import utils
+from utils import memoize
+
 
 def get_n_epochs(config):
     return len(get_epochs(config))
@@ -38,7 +40,8 @@ def load(session, epochNumber = 0, config = None):
     # epochDir = '/'.join((config.get('session','outputprefix'), epoch))
     h5files = glob.glob(epochDir+'/*.h5')
     if len(h5files) != 1: utils.error('More than one .h5 file found in output directory: %s' % str(h5files))
-    return Session(h5files[0], config.getint('audio','samprate'))
+    return Session(h5files[0], config.getint('audio','samprate'),
+                   cache_dir=config.get('filesystem','tmp','/tmp'))
     # 
     # outputDir = config.get('session','output')
     # h5files = glob.glob(outputDir+'/*.h5')
@@ -49,7 +52,7 @@ class Session(object):
     """
     Times are always provided in seconds since beginning of epoch in audio units
     """
-    def __init__(self, h5filename, samplingrate = 44100):
+    def __init__(self, h5filename, samplingrate = 44100, cache_dir=None):
         self._file = tables.openFile(h5filename,'r')
         self._filename = h5filename
         
@@ -191,6 +194,7 @@ class Session(object):
         time, _ = self.get_epoch_time_range('mworks')
         return events.cnc.get_channel_locations(cncDict, offset, time)
     
+    @memoize
     def get_gaze(self, start=1, timeRange=None):
         """
         Parameters
@@ -205,6 +209,7 @@ class Session(object):
             vv : vertical gaze
             pv : pupil radius
         """
+        
         ht, hv = self.get_events('gaze_h', timeRange)
         vt, vv = self.get_events('gaze_v', timeRange)
         pt, pv = self.get_events('pupil_radius', timeRange)
@@ -214,14 +219,16 @@ class Session(object):
         if len(good) == 0:
             return [], [], [], [], []
         else:
-            return np.array(tt)[good+1], np.array(tv)[good+1], np.array(hv)[good+1], np.array(vv)[good+1], np.array(pv)[good+1]
+            return (np.array(tt)[good+1], np.array(tv)[good+1], 
+                    np.array(hv)[good+1], np.array(vv)[good+1], 
+                    np.array(pv)[good+1])
     
     def get_gaze_filtered_trials(self, matchDict = None, timeRange = None,
                                  intra_trial_std_threshold=None,
                                  default_gaze_deviation_threshold=None,
                                  pre_time=0.1, post_time=0.5):
         
-        trials, stims, bt, bs  = self.get_trials(self, matchDict, timeRange)
+        trials, stims, bt, bs  = self.get_trials(matchDict, timeRange)
 
         ts_gaze, _, h_gaze, _, _ = self.get_gaze()
         
@@ -246,7 +253,7 @@ class Session(object):
             
             cull = False
             if (intra_trial_std_threshold is not None and 
-                gaze_std > intra_trial_std_treshold):
+                gaze_std > intra_trial_std_threshold):
                 cull = True
             
             if (default_gaze_deviation_threshold is not None and
