@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 # import itertools, glob, sys
-import glob, os
+import glob, logging, os
 
 import numpy as np
 # import pylab as pl
@@ -15,6 +15,40 @@ import events
 import h5
 import utils
 from utils import memoize
+
+import physio
+
+def get_sessions(config):
+    resultsDir = config.get('filesystem','resultsrepo')
+    sessions = [os.path.basename(sd) for sd in utils.regex_glob(resultsDir, r'^[a-zA-Z]+\d+_\d+/?$')[0]]
+    return sessions
+
+def check_session_validity(config, sessionName):
+    # check if session has 1 .h5 file
+    sessionDir = config.get('filesystem','resultsrepo') + '/' + sessionName
+    h5files = glob.glob(sessionDir+'/*/*.h5')
+    if len(h5files) == 0:
+        logging.debug("Session %s contained no h5 files" % sessionName)
+        return False
+    for h5file in h5files:
+        # check if physio version used to generate file matches this one
+        f = tables.openFile(h5file, 'r')
+        if not ('PHYSIO_VERSION' in f.root._v_attrs):
+            logging.debug("Session %s file %s has no physio version string" % \
+                (sessionName, h5file))
+            f.close()
+            return False
+        version = f.root._v_attrs.PHYSIO_VERSION
+        f.close()
+        if version != physio.__version__:
+            logging.debug("Session %s file %s version %s out of date [newest: %s]" %\
+                (sessionName, h5file, version, physio.__version__))
+            return False
+    return True
+
+def get_valid_sessions(config):
+    sessions = get_sessions(config)
+    return [s for s in sessions if check_session_validity(config,s)]
 
 
 def get_n_epochs(config):
@@ -110,15 +144,35 @@ class Session(object):
         return maxI + 1
     
     def get_n_cells(self):
+        raise Exception("The Cells table is incorrect")
         return self._file.root.Cells.nrows
     
     def get_cell(self, i):
+        raise Exception("The Cells table is incorrect")
         ch, cl = self._file.root.Cells[i]
         return ch, cl
     
     def get_cell_spike_times(self, i, timeRange = None):
         ch, cl = self.get_cell(i)
         return self.get_spike_times(ch, cl, timeRange)
+    
+    def get_cell_spike_waveforms(self, i, timeRange = None):
+        ch, cl = self.get_cell(i)
+        return self.get_spike_waveforms(ch, cl, timeRange)
+
+    def get_spike_waveforms(self, channel, cluster, timeRange = None):
+        n = self._file.getNode('/Channels/ch%i' % channel)
+        if timeRange is None:
+            waves = [i['wave'] for i in self._file.getNode('/Channels/ch%i' % channel).\
+                                        where('clu == %i' % cluster)]
+        else:
+            assert len(timeRange) == 2, "timeRange must be length 2: %s" % len(timeRange)
+            samplerange = (int(timeRange[0] * self._samplingrate),
+                            int(timeRange[1] * self._samplingrate))
+            waves = [i['wave'] for i in self._file.getNode('/Channels/ch%i' % channel).\
+                                        where('(clu == %i) & (time > %i) & (time < %i)' \
+                                            % (cluster, samplerange[0], samplerange[1]))]
+        return np.array(waves)
     
     def get_spike_times(self, channel, cluster, timeRange = None):
         n = self._file.getNode('/Channels/ch%i' % channel)
