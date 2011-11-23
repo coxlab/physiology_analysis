@@ -8,13 +8,35 @@ import pylab as pl
 
 import physio
 
-rwin = (0.05,0.15)
-bwin = (-0.1,0)
+parser = optparse.OptionParser(usage="usage: %prog [options] session epochNumber channel cluster")
+parser.add_option("-b", "--baselineStart", dest="baselineStart", default=-0.1,
+                    help="Seconds (relative to stimulus) to start baseline calculation window", type='float')
+parser.add_option("-B", "--baselineEnd", dest="baselineEnd", default=0.,
+                    help="Seconds (relative to stimulus) to end baseline calculation window", type="float")
+parser.add_option("-r", "--responseStart", dest="responseStart", default=0.05,
+                    help="Seconds (relative to stimulus) to start response calculation window", type='float')
+parser.add_option("-R", "--responseEnd", dest="responseEnd", default=0.15,
+                    help="Seconds (relative to stimulus) to end response calculation window", type="float")
+parser.add_option("-o", "--outdir", dest="outdir", default="",
+                    help="Output directory", type="str")
 
-sessionName = 'L2_110927'
-epochNumber = 0
-channel = 6
-cluster = 2
+(options, args) = parser.parse_args()
+if len(args) != 4:
+    parser.print_usage()
+    sys.exit(1)
+
+(sessionName, epochNumber, channel, cluster) = args
+epochNumber = int(epochNumber)
+channel = int(channel)
+cluster = int(cluster)
+
+rwin = (options.responseStart, options.responseEnd)#(0.05,0.15)
+bwin = (options.baselineStart, options.baselineEnd)#(-0.1,0)
+
+#sessionName = 'L2_110927'
+#epochNumber = 0
+#channel = 6
+#cluster = 2
 
 config = physio.cfg.load(sessionName)
 #epochs = []
@@ -169,8 +191,8 @@ for iy in xrange(len(posys)):
         else:
             pl.gcf().add_subplot(sph,spw,len(posxs)*2 + ix + iy * spw + 1, sharex=ax, sharey=ax)
         pl.bar(range(len(rates)), rates, yerr=ses, color=('b','g','r'), ecolor='k')
-        pl.xticks([])
-        pl.yticks([])
+        if iy != (len(posys)-1): pl.xticks([])
+        if ix != 0: pl.yticks([])
         pl.axhline(brate)
         ymax = max(ymax, pl.ylim()[1])
 for iy in xrange(len(posys)):
