@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 # import itertools, glob, sys
-import glob, os
+import glob, logging, os
 
 import numpy as np
 # import pylab as pl
@@ -14,6 +14,39 @@ import clock
 import events
 import h5
 import utils
+import physio
+
+def get_sessions(config):
+    resultsDir = config.get('filesystem','resultsrepo')
+    sessions = [os.path.basename(sd) for sd in utils.regex_glob(resultsDir, r'^[a-zA-Z]+\d+_\d+/?$')[0]]
+    return sessions
+
+def check_session_validity(config, sessionName):
+    # check if session has 1 .h5 file
+    sessionDir = config.get('filesystem','resultsrepo') + '/' + sessionName
+    h5files = glob.glob(sessionDir+'/*/*.h5')
+    if len(h5files) == 0:
+        logging.debug("Session %s contained no h5 files" % sessionName)
+        return False
+    for h5file in h5files:
+        # check if physio version used to generate file matches this one
+        f = tables.openFile(h5file, 'r')
+        if not ('PHYSIO_VERSION' in f.root._v_attrs):
+            logging.debug("Session %s file %s has no physio version string" % \
+                (sessionName, h5file))
+            f.close()
+            return False
+        version = f.root._v_attrs.PHYSIO_VERSION
+        f.close()
+        if version != physio.__version__:
+            logging.debug("Session %s file %s version %s out of date [newest: %s]" %\
+                (sessionName, h5file, version, physio.__version__))
+            return False
+    return True
+
+def get_valid_sessions(config):
+    sessions = get_sessions(config)
+    return [s for s in sessions if check_session_validity(config,s)]
 
 def get_n_epochs(config):
     return len(get_epochs(config))
