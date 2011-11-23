@@ -274,3 +274,6 @@ class Session(object):
     
     def add_blackout(self, beginning, end):
         pass
+
+    def get_md5sum(self):
+        return os.popen('md5sum %s' % self._filename).read().split()[0]
