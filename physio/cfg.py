@@ -14,6 +14,8 @@ atlas: /atlas
 
 [clustering]
 options:
+njobs: 8
+nadjacent: 0
 
 [pixel clock]
 threshold: 0.03

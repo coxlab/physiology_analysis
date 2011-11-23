@@ -287,7 +287,7 @@ def reconstruct_codes(events, nchannels = 4, minCodeTime = 441,\
             codes[:,2] = trigger channel
     offsets : list
         Offset times (in samples) for the onset of the pixel clock patch display relative
-        to the bottom of the screen (the begging of the screen update)
+        to the top of the screen (the beginning of the screen update)
     avgSpeed : float
         Average speed of screen refresh in degrees per sample
     """
@@ -531,7 +531,7 @@ def parse(audioFiles, threshold = 0.03, refractory = 44, minCodeTime = 441,
         These codes are NOT offset for latencies of the triggered channel
     offsets : list
         Offset times (in samples) for the onset of the pixel clock patch display relative
-        to the bottom of the screen (the begging of the screen update)
+        to the top of the screen (the beginning of the screen update)
     avgSpeed : float
         Average speed of screen refresh in degrees per sample
     """

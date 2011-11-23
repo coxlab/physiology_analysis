@@ -8,13 +8,13 @@ import pylab as pl
 
 import physio
 
-rwin = (0.1,0.2)
+rwin = (0.05,0.15)
 bwin = (-0.1,0)
 
 sessionName = 'L2_110927'
 epochNumber = 0
 channel = 6
-cluster = 3
+cluster = 2
 
 config = physio.cfg.load(sessionName)
 #epochs = []
