@@ -117,6 +117,24 @@ class Session(object):
         ch, cl = self.get_cell(i)
         return self.get_spike_times(ch, cl, timeRange)
     
+    def get_cell_spike_waveforms(self, i, timeRange = None):
+        ch, cl = self.get_cell(i)
+        return self.get_spike_waveforms(ch, cl, timeRange)
+
+    def get_spike_waveforms(self, channel, cluster, timeRange = None):
+        n = self._file.getNode('/Channels/ch%i' % channel)
+        if timeRange is None:
+            waves = [i['wave'] for i in self._file.getNode('/Channels/ch%i' % channel).\
+                                        where('clu == %i' % cluster)]
+        else:
+            assert len(timeRange) == 2, "timeRange must be length 2: %s" % len(timeRange)
+            samplerange = (int(timeRange[0] * self._samplingrate),
+                            int(timeRange[1] * self._samplingrate))
+            waves = [i['wave'] for i in self._file.getNode('/Channels/ch%i' % channel).\
+                                        where('(clu == %i) & (time > %i) & (time < %i)' \
+                                            % (cluster, samplerange[0], samplerange[1]))]
+        return np.array(waves)
+    
     def get_spike_times(self, channel, cluster, timeRange = None):
         n = self._file.getNode('/Channels/ch%i' % channel)
         if timeRange is None:
