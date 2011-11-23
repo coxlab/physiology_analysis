@@ -107,9 +107,11 @@ class Session(object):
         return maxI + 1
     
     def get_n_cells(self):
+        raise Exception("The Cells table is incorrect")
         return self._file.root.Cells.nrows
     
     def get_cell(self, i):
+        raise Exception("The Cells table is incorrect")
         ch, cl = self._file.root.Cells[i]
         return ch, cl
     
