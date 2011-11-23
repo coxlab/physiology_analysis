@@ -25,15 +25,18 @@ parser.add_option("-o", "--outdir", dest="outdir", default="",
 parser.add_option("-t", "--gaze_std_thresh", dest="gaze_std_thresh", 
                   type='float', default=0.0, 
                   help="Threshold for trial-wise gaze std for inclusion")
+parser.add_option("-d", "--gaze_default_dev_thresh", dest="gaze_dev_thresh", 
+                  type='float', default=0.0, 
+                  help="Threshold for trial-wise deviation of gaze from the 'default'")
 
 (options, args) = parser.parse_args()
 if len(args) < 1:
     parser.print_usage()
     sys.exit(1)
 
-process_gaze = False
-if options.gaze_std_thresh != 0.0:
-    process_gaze = True
+
+process_gaze = (options.gaze_std_thresh > 0.0 or options.gaze_dev_thresh > 0.0)
+    
 
 config = physio.cfg.load(args[0])
 
@@ -83,8 +86,6 @@ for epochNumber in epochs:
     pl.subplot(subplotsHeight, subplotsWidth,1)
     logging.debug("Plotting %i by %i plots(%i)" % (subplotsWidth, subplotsHeight, subplotsWidth * subplotsHeight))
 
-    if process_gaze:
-        ts_gaze, _, h_gaze, _, _ = session.get_gaze()
 
     ymaxs = [0 for i in data]
     for (y, datum) in enumerate(data):
@@ -94,25 +95,14 @@ for epochNumber in epochs:
             if process_gaze:
                 trials, _, _, _ = session.get_gaze_filtered_trials(
                                           condition,
-                                          intra_trial_std_threshold=options.gaze_std_thresh)
+                                          intra_trial_std_threshold=options.gaze_std_thresh,
+                                          default_gaze_deviation_threshold=options.gaze_dev_thresh)
             else:
                 trials, _, _, _ = session.get_trials(condition)
             
-            # if process_gaze:
-                # culled_trials = []
-                # for t in trials:
-                # 
-                #     start = t - options.before
-                #     end = t + options.after
-                # 
-                #     gaze_vals = h_gaze[np.logical_and(ts_gaze > start, 
-                #                                       ts_gaze < end)]
-                #     
-                #     gaze_std = np.std(np.array(gaze_vals))
-                #     if gaze_std < options.gaze_std_thresh:
-                #         culled_trials.append(t)
-                # 
-                # trials = culled_trials
+            # as a hack / test, just take the second half:
+            # trials = trials[len(trials)/3:]
+            
             
             spikes = session.get_spike_times(*datum)
             pl.subplot(subplotsHeight, subplotsWidth, subplotsWidth * y + x + 1)
