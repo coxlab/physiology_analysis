@@ -241,7 +241,9 @@ class Session(object):
     def get_channel_locations(self):
         cncDict = events.cnc.get_cnc_events(self._file)
         offset = events.cnc.get_tip_offset(self._file)
-        time, _ = self.get_epoch_time_range('mworks')
+        #time, _ = self.get_epoch_time_range('mworks')
+        tr = self.get_epoch_time_range('mworks')
+        time = (tr[1] - tr[0])/2. + tr[0] # middle of epoch
         return events.cnc.get_channel_locations(cncDict, offset, time)
     
     def get_gaze(self, start=1, timeRange=None):

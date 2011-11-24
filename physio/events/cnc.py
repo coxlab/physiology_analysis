@@ -42,10 +42,18 @@ def get_channel_locations(cncDict, offset, time):
     current = {}
     for eventName in eventNames:
         # print cncDict[eventName]
-        for t, v in zip(*cncDict[eventName]):
+        tvs = np.array(cncDict[eventName]) # [time/value, eventindex]
+        # sort tvs by time
+        tvs = tvs[:,tvs[0].argsort()]
+        for t, v in zip(tvs[0], tvs[1]):
             if t >= time:
-                current[eventName] = float(v)
                 break
+            current[eventName] = float(v)
+            logging.warning("cnc matched time %f to %f" % (time, t))
+        #for t, v in zip(*cncDict[eventName]):
+        #    if t >= time:
+        #        current[eventName] = float(v)
+        #        break
     
     if eventName in eventNames:
         if not (eventName in current.keys()):
