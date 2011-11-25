@@ -16,12 +16,21 @@ import h5
 import utils
 import physio
 
-def get_sessions(config):
+def get_sessions(config=None):
+    if config is None:
+        config = physio.cfg.Config()
+        config.read_user_config()
     resultsDir = config.get('filesystem','resultsrepo')
     sessions = [os.path.basename(sd) for sd in utils.regex_glob(resultsDir, r'^[a-zA-Z]+\d+_\d+/?$')[0]]
     return sessions
 
 def check_session_validity(config, sessionName):
+    # check if animal is blacklisted #TODO make this less hacky
+    blacklist = ['fake0','K2']
+    animal = sessionName.split('_')[0]
+    if animal in blacklist:
+        logging.debug("Session %s from blacklisted animal %s" % (sessionName, animal))
+        return False
     # check if session has 1 .h5 file
     sessionDir = config.get('filesystem','resultsrepo') + '/' + sessionName
     h5files = glob.glob(sessionDir+'/*/*.h5')
@@ -44,7 +53,10 @@ def check_session_validity(config, sessionName):
             return False
     return True
 
-def get_valid_sessions(config):
+def get_valid_sessions(config=None):
+    if config is None:
+        config = physio.cfg.Config()
+        config.read_user_config()
     sessions = get_sessions(config)
     return [s for s in sessions if check_session_validity(config,s)]
 
