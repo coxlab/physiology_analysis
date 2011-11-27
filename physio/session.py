@@ -186,6 +186,7 @@ class Session(object):
                                             % (cluster, samplerange[0], samplerange[1]))]
         return np.array(waves)
     
+    @memoize
     def get_spike_times(self, channel, cluster, timeRange = None):
         n = self._file.getNode('/Channels/ch%i' % channel)
         if timeRange is None:
@@ -200,6 +201,7 @@ class Session(object):
                                             % (cluster, samplerange[0], samplerange[1]))]
         return np.array(times) / float(self._samplingrate)
     
+    @memoize
     def get_events(self, name, timeRange = None):
         if timeRange is None:
             timeRange = self.get_epoch_time_range('mworks')
@@ -212,6 +214,7 @@ class Session(object):
     def get_codec(self):
         return h5.events.get_codec(self._file)
     
+    @memoize
     def get_stimuli(self, matchDict = None, timeRange = None, stimType = 'image'):
         """
         Does not look for 'failed' trials
