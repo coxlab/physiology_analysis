@@ -108,8 +108,8 @@ def get_selectivity(session, ch, cl, bwin=(-0.2,0), rwin=(0.05,0.15),
     print all_medians
     print stim_names
     
-    H = F = X = 0
-    p = p2 = p3 = 0
+    H = F = X = np.nan
+    p = p2 = p3 = np.nan
     
     try:
         H, p = scipy.stats.kruskal(*all_rates)
