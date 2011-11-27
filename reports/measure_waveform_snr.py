@@ -94,7 +94,7 @@ def get_selectivity(session, ch, cl, bwin=(-0.2,0), rwin=(0.05,0.15),
         counts = [len(s) for s in trial_spikes]
         rates = [c / (rwin[1]-rwin[0]) for c in counts]
         
-        all_rates.append(rates)
+        all_rates.append(np.array(rates))
         all_sqrt_counts.append(np.sqrt(np.array(counts) + 1))
         all_means.append(np.mean(np.array(rates)))
         all_medians.append(np.median(np.array(rates)))
@@ -102,7 +102,7 @@ def get_selectivity(session, ch, cl, bwin=(-0.2,0), rwin=(0.05,0.15),
     if include_baseline_condition:
         baseline_counts = [len(s) for s in baseline_spikes]
         baseline_rates = [c / (rwin[1]-rwin[0]) for c in baseline_counts]
-        all_rates.append(baseline_rates)
+        all_rates.append(np.array(baseline_rates))
     
     print all_means
     print all_medians
