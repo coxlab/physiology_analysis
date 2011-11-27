@@ -18,12 +18,21 @@ from utils import memoize
 
 import physio
 
-def get_sessions(config):
+def get_sessions(config=None):
+    if config is None:
+        config = physio.cfg.Config()
+        config.read_user_config()
     resultsDir = config.get('filesystem','resultsrepo')
     sessions = [os.path.basename(sd) for sd in utils.regex_glob(resultsDir, r'^[a-zA-Z]+\d+_\d+/?$')[0]]
     return sessions
 
 def check_session_validity(config, sessionName):
+    # check if animal is blacklisted #TODO make this less hacky
+    blacklist = ['fake0','K2']
+    animal = sessionName.split('_')[0]
+    if animal in blacklist:
+        logging.debug("Session %s from blacklisted animal %s" % (sessionName, animal))
+        return False
     # check if session has 1 .h5 file
     sessionDir = config.get('filesystem','resultsrepo') + '/' + sessionName
     h5files = glob.glob(sessionDir+'/*/*.h5')
@@ -46,7 +55,10 @@ def check_session_validity(config, sessionName):
             return False
     return True
 
-def get_valid_sessions(config):
+def get_valid_sessions(config=None):
+    if config is None:
+        config = physio.cfg.Config()
+        config.read_user_config()
     sessions = get_sessions(config)
     return [s for s in sessions if check_session_validity(config,s)]
 
@@ -245,7 +257,9 @@ class Session(object):
     def get_channel_locations(self):
         cncDict = events.cnc.get_cnc_events(self._file)
         offset = events.cnc.get_tip_offset(self._file)
-        time, _ = self.get_epoch_time_range('mworks')
+        #time, _ = self.get_epoch_time_range('mworks')
+        tr = self.get_epoch_time_range('mworks')
+        time = (tr[1] - tr[0])/2. + tr[0] # middle of epoch
         return events.cnc.get_channel_locations(cncDict, offset, time)
     
     @memoize
@@ -328,3 +342,6 @@ class Session(object):
     
     def add_blackout(self, beginning, end):
         pass
+
+    def get_md5sum(self):
+        return os.popen('md5sum %s' % self._filename).read().split()[0]
