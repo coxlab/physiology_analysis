@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import logging, optparse, os, sys
+import logging, optparse, os, sys, time
 logging.basicConfig(level = logging.DEBUG)
 #import matplotlib
 import numpy as np
@@ -65,6 +65,7 @@ for goodSession in goodSessions:
         for ch in xrange(1,33):
             location = locations[ch-1]
             for cl in xrange(session.get_n_clusters(ch)):
+                tic = time.time()
                 waves = session.get_spike_waveforms(ch, cl)
                 snr = physio.spikes.stats.waveforms_snr(waves, snrw)
                 meansnr = snr
@@ -80,6 +81,8 @@ for goodSession in goodSessions:
                     (goodSession, epochNumber, timerange[0], timerange[1], ch, cl, location[0], location[1], location[2], meansnr, stdsnr, nspikes, rate, brate, drate))
                 print goodSession, epochNumber, timerange[0], timerange[1], ch, cl, location[0], location[1], location[2], meansnr, stdsnr, nspikes, rate, brate, drate
                 summaryFile.flush()
+                toc = time.time() - tic
+                logging.debug("%f seconds to compute report metrics" % (toc))
         session.close()
 
 summaryFile.close()

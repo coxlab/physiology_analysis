@@ -201,7 +201,6 @@ class Session(object):
                                             % (cluster, samplerange[0], samplerange[1]))]
         return np.array(times) / float(self._samplingrate)
     
-    @memoize
     def get_events(self, name, timeRange = None):
         if timeRange is None:
             timeRange = self.get_epoch_time_range('mworks')
