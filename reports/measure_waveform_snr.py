@@ -65,7 +65,7 @@ for goodSession in goodSessions:
             location = locations[ch-1]
             for cl in xrange(session.get_n_clusters(ch)):
                 waves = session.get_spike_waveforms(ch, cl)
-                snrs = pl.array([physio.spikes.stats.waveform_snr(w, snrw) for w in waves])
+                snrs = pl.array([physio.spikes.stats.waveform_snr2(w, snrw) for w in waves])
                 meansnr = pl.mean(snrs)
                 stdsnr = pl.std(snrs)
                 nspikes = len(snrs)

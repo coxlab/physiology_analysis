@@ -8,6 +8,9 @@ def waveform_snr(waveform, bounds = (30,70)):
     rms = lambda x: np.sqrt(np.sum(x ** 2.) / len(x))
     return (rms(waveform[bounds[0]:bounds[1]])/rms(waveform[:bounds[0]]))**2.
 
+def waveform_snr2(waveform, bounds = (30,70)):
+    return np.mean(waveform[bounds[0]:bounds[1]]) / np.std(waveform[:bounds[0]])
+
 def xcorr(a, b, margin=44):
     if len(a) == 0 or len(b) == 0: return 0.
     dt = np.array([b[np.abs(b - i).argmin()] - i for i in a])
