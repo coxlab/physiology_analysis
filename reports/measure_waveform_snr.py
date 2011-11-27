@@ -15,8 +15,7 @@ rwin = (0.05, 0.15)
 cfg = physio.cfg.Config()
 cfg.read_user_config()
 
-#goodSessions = physio.session.get_valid_sessions(cfg)
-goodSessions = ['L2_110927']
+goodSessions = physio.session.get_valid_sessions(cfg)
 
 summaryFile = open('summaryfile','w')
 
