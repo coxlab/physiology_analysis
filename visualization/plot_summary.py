@@ -6,9 +6,9 @@ import pylab as pl
 
 from mayavi import mlab
 
-filename = '../reports/summaryfile_111124'
+filename = '../reports/summaryfile_111125'
 
-badSessions = ['fake0_110908',]
+badSessions = ['fake0_110908','L2_111014','L2_110930','L2_110927','L2_111004','L2_110922','L1_111118']
 minspikes = 100
 minrate = 0.001
 minsnr = 1.#3.0
@@ -85,9 +85,12 @@ pdata = d[(d['dv'] < 0.) & (d['ml'] > 0)]
 #fn = "log_snr"
 
 # driven rate 
-xs = pdata['ml']
-ys = pdata['ap']
-zs = pdata['dv']
+#xs = pdata['ml']
+#ys = pdata['ap']
+#zs = pdata['dv']
+xs = pdata['dv']
+ys = pdata['ml']
+zs = pdata['ap']
 ws = pdata['drate'] - pdata['brate']
 title = "driven rate"
 fn = "driven_rate"
@@ -98,7 +101,8 @@ figure.scene.disable_render = True
 #glyphs = mlab.points3d(pdata['ml'],pdata['ap'],pdata['dv'],w)
 glyphs = mlab.points3d(xs,ys,zs,ws)
 mlab.scalarbar(orientation='vertical',title=title)
-mlab.axes(xlabel='ML',ylabel='AP',zlabel='DV',color=(1,1,1))
+#mlab.axes(xlabel='ML',ylabel='AP',zlabel='DV',color=(1,1,1))
+mlab.axes(xlabel='DV',ylabel='ML',zlabel='AP',color=(1,1,1))
 #mlab.view(azimuth=270,reset_roll=True)
 
 loffset = 0.05
