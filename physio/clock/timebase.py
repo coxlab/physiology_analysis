@@ -67,6 +67,7 @@ class TimeBase(object):
         audio : float
             Audio time (in seconds)
         """
+        
         closest = np.where(self.matches[:,0] >= audio)[0]
         if len(closest) == 0:
             logging.warning("audio_time_to_mw matched to last offset")
@@ -82,11 +83,33 @@ class TimeBase(object):
         mw : float
             MWorks time (in seconds)
         """
-        closest = np.where(self.matches[:,1] >= mw)[0]
-        if len(closest) == 0:
-            logging.warning("mw_time_to_audio matched to last offset")
-            return mw + self.offsets[-1]
-        return mw + self.offsets[closest[0]]
+        if getattr(mw, '__iter__', False):
+            audio_times = [None]*len(mw)
+            cursor = 0
+            for (t,m) in enumerate(mw):                
+                matched_time = None
+                
+                while cursor < self.matches.shape[0]:
+                    
+                    current_match_time = self.matches[cursor,1]
+                    
+                    if current_match_time >= m:
+                        matched_time = m + self.offsets[cursor]
+                        break
+                    cursor += 1
+                
+                if matched_time is None:
+                    logging.warning("mw_time_to_audio matched to last offset")
+                    audio_times[t] = m + self.offsets[-1]
+                else:
+                    audio_times[t] = matched_time
+            return audio_times
+        else:
+            closest = np.where(self.matches[:,1] >= mw)[0]
+            if len(closest) == 0:
+                logging.warning("mw_time_to_audio matched to last offset")
+                return mw + self.offsets[-1]
+            return mw + self.offsets[closest[0]]
     
     def old_mw_time_to_audio(self, mw_time, mw_offset = 0):
         """
@@ -137,5 +160,25 @@ def test_timebase():
         d = abs(m - tb.audio_to_mworks(a))
         assert d < 1E-9, "Audio->MW failed: audio: %.6f mw: %.6f Err: %.6f" % (a, m, d)
 
+def test_timebase_batch():
+    audio = np.linspace(0., 100., 10000)
+    mw = audio + 1000. #np.linspace(1000., 1100., 10)
+    matches = np.transpose(np.vstack((np.transpose(audio),np.transpose(mw))))
+    
+    tb = TimeBase(matches)
+    
+    import time
+    tic = time.time()
+    batch_at = tb.mworks_to_audio(matches[:,1])
+    batch_time = time.time()-tic
+    
+    tic = time.time()
+    unbatch_at = [tb.mworks_to_audio(m) for m in matches[:,1]]
+    unbatch_time = time.time()-tic
+    
+    print("Batch time = %f, unbatch time = %f" % (batch_time, unbatch_time))
+    
+    assert(np.allclose(np.array(batch_at), np.array(unbatch_at)))
+
 if __name__ == "__main__":
-    test_timebase()
+    test_timebase_batch()

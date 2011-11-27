@@ -39,6 +39,7 @@ def get_baseline_and_driven_rate(session, ch, cl, bwin = (-0.2,0), rwin = (0.05,
     return brate, drate
 
 def get_rate(session, ch, cl, condition, rwin = (0.05, 0.15)):
+    spikes = session.get_spike_times(ch, cl)
     trials, _, _, _ = session.get_trials(condition)
     if len(trials) == 0:
         raise ValueError("no trials for condition: %s" % str(condition))
