@@ -224,6 +224,7 @@ class Session(object):
         times, stims = events.stimuli.get_stimuli(self._file, timeRange, stimType)
         if not (matchDict is None):
             times, stims = events.stimuli.match(times, stims, matchDict)
+        
         #autimes = [self._timebase.mworks_to_audio(t) for t in times]
         autimes = self._timebase.mworks_to_audio(times)
         return autimes, stims

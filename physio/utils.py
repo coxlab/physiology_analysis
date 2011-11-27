@@ -89,7 +89,7 @@ def get_git_commit_id():
 
 # Poor man's joblib, because rich man's joblib is being a huge pita
 from functools import partial
-
+ 
 class memoize(object):
     """cache the return value of a method
 
@@ -124,7 +124,26 @@ class memoize(object):
             res = cache[key]
         except KeyError:
             res = cache[key] = self.func(*args, **kw)
+        except:
+            res = self.func(*args, **kw)
         return res
+
+import cPickle
+
+class memoize2:
+    def __init__(self, fn):
+        self.fn = fn
+        self.memo = {}
+    def __call__(self, *args, **kwds):
+        import cPickle
+        str = cPickle.dumps(args, 1)+cPickle.dumps(kwds, 1)
+        if not self.memo.has_key(str): 
+            print "miss"  # DEBUG INFO
+            self.memo[str] = self.fn(*args, **kwds)
+        else:
+            print "hit"  # DEBUG INFO
+
+        return self.memo[str]
 
 
 # ----------------------- Old --------------------
