@@ -15,7 +15,8 @@ rwin = (0.05, 0.15)
 cfg = physio.cfg.Config()
 cfg.read_user_config()
 
-goodSessions = physio.session.get_valid_sessions(cfg)
+#goodSessions = physio.session.get_valid_sessions(cfg)
+goodSessions = ['L2_110927']
 
 summaryFile = open('summaryfile','w')
 
@@ -65,10 +66,13 @@ for goodSession in goodSessions:
             location = locations[ch-1]
             for cl in xrange(session.get_n_clusters(ch)):
                 waves = session.get_spike_waveforms(ch, cl)
-                snrs = pl.array([physio.spikes.stats.waveform_snr2(w, snrw) for w in waves])
-                meansnr = pl.mean(snrs)
-                stdsnr = pl.std(snrs)
-                nspikes = len(snrs)
+                snr = physio.spikes.stats.waveforms_snr(waves, snrw)
+                meansnr = snr
+                stdsnr = np.nan
+                #snrs = pl.array([physio.spikes.stats.waveform_snr2(w, snrw) for w in waves])
+                #meansnr = pl.mean(snrs)
+                #stdsnr = pl.std(snrs)
+                nspikes = len(waves)
                 timerange = session.get_epoch_time_range('audio') # tuple (start, end)
                 rate = nspikes/float(timerange[1] - timerange[0])
                 brate, drate = get_baseline_and_driven_rate(session, ch, cl, bwin, rwin)
