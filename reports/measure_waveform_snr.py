@@ -114,14 +114,14 @@ def get_selectivity(session, ch, cl, bwin=(-0.2,0), rwin=(0.05,0.15),
     try:
         H, p = scipy.stats.kruskal(*all_rates)
         print ("kruskal H=%f, p=%f" % (H, p))
-    except:
-        pass
+    except Exception as e:
+        print(e)
     
     try:
         F, p2 = scipy.stats.f_oneway(*all_sqrt_counts)
         print ("anova F=%f, p=%f" % (F, p2))
-    except:
-        pass
+    except Exception as e:
+        print(e)
     
     try:
         lens = [len(r) for r in all_rates]
@@ -177,11 +177,11 @@ for goodSession in goodSessions:
                 rH,rp1,rF,rp2,rX,rp3  = get_responsivity(session, ch, cl, bwin, rwin)
                 H,p1,F,p2,X,p3 = get_selectivity(session, ch, cl, bwin, rwin)
                 
-                summaryFile.write("%s %i %i %i %i %i %f %f %f %f %f %i %f %f %f %f %f %f %f %f %f %f\n" %\
+                summaryFile.write("%s %i %i %i %i %i %f %f %f %f %f %i %f %f %f %f %f %f %f %f %f %f %f %f\n" %\
                     (goodSession, epochNumber, timerange[0], timerange[1], 
                       ch, cl, location[0], location[1], location[2], 
                       meansnr, stdsnr, nspikes, rate, brate, drate,
-                      rp1, H, p1, F, p2, X, p3))
+                      rp1, rp2, rp3, H, p1, F, p2, X, p3))
                 print goodSession, epochNumber, timerange[0], timerange[1], ch, cl, location[0], location[1], location[2], meansnr, stdsnr, nspikes, rate, brate, drate
                 summaryFile.flush()
                 toc = time.time() - tic
