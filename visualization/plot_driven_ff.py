@@ -20,6 +20,17 @@ parser.add_option("-R", "--responseEnd", dest="responseEnd", default=0.15,
 parser.add_option("-o", "--outdir", dest="outdir", default="",
                     help="Output directory", type="str")
 
+parser.add_option("--fixed_pos_x", dest="fixed_pos_x", default=None,
+                    help="Hardcoded x pos", type="float")
+parser.add_option("--fixed_pos_y", dest="fixed_pos_y", default=None,
+                    help="Hardcoded y pos", type="float")
+
+parser.add_option("-f", "--filter_gaze", dest="gaze_filter", action="store_true",
+                    help="Filter by gaze fidelity", default=False)
+
+parser.add_option("-n", "--normalized", dest="normalized", action="store_true",
+                    help="Normalize by peak firing rate", default=False)
+
 (options, args) = parser.parse_args()
 if len(args) != 4:
     parser.print_usage()
@@ -51,7 +62,12 @@ spikes = session.get_spike_times(channel, cluster)
 
 # get baseline firing rate
 
-trialTimes, stimuli, _, _ = session.get_trials()
+if options.gaze_filter:
+    logging.debug("Loading gaze filtered trials")
+    trialTimes, stimuli, _, _ = session.get_gaze_filtered_trials()
+else:
+    trialTimes, stimuli, _, _ = session.get_trials()
+
 targetTimes, blueStimuli = session.get_stimuli(stimType = 'rectangle')
 allStimTimes = trialTimes + targetTimes
 assert len(trialTimes) + len(targetTimes) == len(allStimTimes)
@@ -135,9 +151,17 @@ for i,c in zip((minId, midId, maxId),('b','g','r')):
     rates = []
     ses = []
     for size in sizes:
-        m, s, n = get_rate(spikes, {'name': i, 'size_x': size}, rwin)
+        match_dict = {'name': i, 'size_x': size}
+        
+        if options.fixed_pos_x is not None:
+            match_dict['pos_x'] = options.fixed_pos_x
+        if options.fixed_pos_y is not None:
+            match_dict['pos_y'] = options.fixed_pos_y
+            
+        m, s, n = get_rate(spikes, match_dict, rwin)
         rates.append(m)
         ses.append(s)
+        
     rateBySize.append(rates)
     rateBySizeSE.append(ses)
     #pl.plot(rates, color=c)
@@ -216,4 +240,17 @@ for iy in xrange(len(posys)):
 #        pl.ylabel("Y Position (degrees)")
 
 # save plot
-pl.savefig("test.png")
+extras = ''
+if options.fixed_pos_x is not None:
+    extras += '_pos_x_%d' % options.fixed_pos_x
+
+if options.fixed_pos_y is not None:
+    extras += '_pos_y_%d' % options.fixed_pos_y
+
+if options.gaze_filter:
+    extras += '_gf'
+
+if options.normalized:
+    extras += '_normed'
+
+pl.savefig("%s_ch%dcl%d%s.pdf" % (sessionName, channel, cluster, extras))
