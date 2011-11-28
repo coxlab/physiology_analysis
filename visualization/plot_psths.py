@@ -22,12 +22,21 @@ parser.add_option("-c", "--channel", dest="channel", default=7,
                     help="Channel to plot", type='int')
 parser.add_option("-o", "--outdir", dest="outdir", default="",
                     help="Output directory", type='str')
+                    
+                    
 parser.add_option("-t", "--gaze_std_thresh", dest="gaze_std_thresh", 
                   type='float', default=0.0, 
                   help="Threshold for trial-wise gaze std for inclusion")
 parser.add_option("-d", "--gaze_default_dev_thresh", dest="gaze_dev_thresh", 
                   type='float', default=0.0, 
                   help="Threshold for trial-wise deviation of gaze from the 'default'")
+
+parser.add_option("--subsession_start", dest="subsession_start", 
+                type='float', default=0.0, 
+                help="A simple hack for partitioning a session into subsessions.")
+parser.add_option("--subsession_end", dest="subsession_end", 
+                type='float', default=1.0, 
+                help="A simple hack for partitioning a session into subsessions.")
 
 (options, args) = parser.parse_args()
 if len(args) < 1:
@@ -100,8 +109,10 @@ for epochNumber in epochs:
             else:
                 trials, _, _, _ = session.get_trials(condition)
             
-            # as a hack / test, just take the second half:
-            # trials = trials[len(trials)/3:]
+            # if the user has requested a subportion of the session
+            if options.subsession_start > 0.0 or options.subsession_end < 1.0:
+                nt = len(trials)
+                trials = trials[int(nt*options.subsession_start):int(nt*options.subsession_end)]
             
             
             spikes = session.get_spike_times(*datum)
