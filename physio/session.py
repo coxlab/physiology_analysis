@@ -14,6 +14,8 @@ import clock
 import events
 import h5
 import utils
+from utils import memoize
+
 import physio
 
 def get_sessions(config=None):
@@ -60,6 +62,7 @@ def get_valid_sessions(config=None):
     sessions = get_sessions(config)
     return [s for s in sessions if check_session_validity(config,s)]
 
+
 def get_n_epochs(config):
     return len(get_epochs(config))
 
@@ -83,7 +86,8 @@ def load(session, epochNumber = 0, config = None):
     # epochDir = '/'.join((config.get('session','outputprefix'), epoch))
     h5files = glob.glob(epochDir+'/*.h5')
     if len(h5files) != 1: utils.error('More than one .h5 file found in output directory: %s' % str(h5files))
-    return Session(h5files[0], config.getint('audio','samprate'))
+    return Session(h5files[0], config.getint('audio','samprate'),
+                   cache_dir=config.get('filesystem','tmp','/tmp'))
     # 
     # outputDir = config.get('session','output')
     # h5files = glob.glob(outputDir+'/*.h5')
@@ -94,7 +98,7 @@ class Session(object):
     """
     Times are always provided in seconds since beginning of epoch in audio units
     """
-    def __init__(self, h5filename, samplingrate = 44100):
+    def __init__(self, h5filename, samplingrate = 44100, cache_dir=None):
         self._file = tables.openFile(h5filename,'r')
         self._filename = h5filename
         
@@ -182,6 +186,7 @@ class Session(object):
                                             % (cluster, samplerange[0], samplerange[1]))]
         return np.array(waves)
     
+    @memoize
     def get_spike_times(self, channel, cluster, timeRange = None):
         n = self._file.getNode('/Channels/ch%i' % channel)
         if timeRange is None:
@@ -201,12 +206,14 @@ class Session(object):
             timeRange = self.get_epoch_time_range('mworks')
         
         times, values = h5.events.get_events(self._file, name, timeRange)
-        autimes = [self._timebase.mworks_to_audio(t) for t in times]
+        #autimes = [self._timebase.mworks_to_audio(t) for t in times]
+        autimes = self._timebase.mworks_to_audio(times)
         return autimes, values
     
     def get_codec(self):
         return h5.events.get_codec(self._file)
     
+    @memoize
     def get_stimuli(self, matchDict = None, timeRange = None, stimType = 'image'):
         """
         Does not look for 'failed' trials
@@ -217,7 +224,9 @@ class Session(object):
         times, stims = events.stimuli.get_stimuli(self._file, timeRange, stimType)
         if not (matchDict is None):
             times, stims = events.stimuli.match(times, stims, matchDict)
-        autimes = [self._timebase.mworks_to_audio(t) for t in times]
+        
+        #autimes = [self._timebase.mworks_to_audio(t) for t in times]
+        autimes = self._timebase.mworks_to_audio(times)
         return autimes, stims
     
     def get_trials(self, matchDict = None, timeRange = None):
@@ -258,6 +267,7 @@ class Session(object):
         time = (tr[1] - tr[0])/2. + tr[0] # middle of epoch
         return events.cnc.get_channel_locations(cncDict, offset, time)
     
+    @memoize
     def get_gaze(self, start=1, timeRange=None):
         """
         Parameters
@@ -272,6 +282,7 @@ class Session(object):
             vv : vertical gaze
             pv : pupil radius
         """
+        
         ht, hv = self.get_events('gaze_h', timeRange)
         vt, vv = self.get_events('gaze_v', timeRange)
         pt, pv = self.get_events('pupil_radius', timeRange)
@@ -281,7 +292,55 @@ class Session(object):
         if len(good) == 0:
             return [], [], [], [], []
         else:
-            return np.array(tt)[good+1], np.array(tv)[good+1], np.array(hv)[good+1], np.array(vv)[good+1], np.array(pv)[good+1]
+            return (np.array(tt)[good+1], np.array(tv)[good+1], 
+                    np.array(hv)[good+1], np.array(vv)[good+1], 
+                    np.array(pv)[good+1])
+    
+    def get_gaze_filtered_trials(self, matchDict = None, timeRange = None,
+                                 intra_trial_std_threshold=None,
+                                 default_gaze_deviation_threshold=None,
+                                 pre_time=0.1, post_time=0.5):
+        
+        trials, stims, bt, bs  = self.get_trials(matchDict, timeRange)
+
+        ts_gaze, _, h_gaze, _, _ = self.get_gaze()
+        
+        # try to estimate the "default" gaze
+        # (this is kind of a hack)
+        median_gaze = np.median(h_gaze)
+        
+        culled_trials = []
+        culled_stims = []
+        culled_bad_trials = bt
+        culled_bad_stims = bs
+        for (t,s) in zip(trials, stims):
+
+            start = t - pre_time
+            end = t + post_time
+
+            gaze_vals = np.array(h_gaze[np.logical_and(ts_gaze > start, 
+                                                       ts_gaze < end)])
+            
+            gaze_mean = np.mean(gaze_vals)
+            gaze_std = np.std(gaze_vals)
+            
+            cull = False
+            if (intra_trial_std_threshold is not None and 
+                gaze_std > intra_trial_std_threshold):
+                cull = True
+            
+            if (default_gaze_deviation_threshold is not None and
+                abs(median_gaze - gaze_mean) > default_gaze_deviation_threshold):
+                cull = True
+            
+            if not cull:
+                culled_trials.append(t)
+                culled_stims.append(s)
+            else:
+                culled_bad_trials.append(t)
+                culled_bad_stims.append(s)
+
+        return culled_trials, culled_stims, culled_bad_trials, culled_bad_stims 
     
     def get_blackouts(self):
         pass

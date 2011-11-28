@@ -53,7 +53,12 @@ def get_codec(eventsFile):
     return codec
 
 def parse_value(value):
-    if value == '[null]': return []
+    if value == '[null]': 
+        return []
+    if value == 'Infinity':
+        return np.inf
+    if value == 'NaN':
+        return np.nan
     return ast.literal_eval(value)
 
 def get_events(eventsFile, code, timeRange = None):
