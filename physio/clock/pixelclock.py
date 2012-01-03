@@ -1,9 +1,11 @@
 #!/usr/bin/env python
 
-import ast, copy, logging
+import ast, copy, logging, warnings
 
 import numpy as np
-import scikits.audiolab as al
+with warnings.catch_warnings():
+    warnings.simplefilter("ignore")
+    import scikits.audiolab as al
 # import tables
 
 from .. import h5

@@ -62,6 +62,13 @@ def get_valid_sessions(config=None):
     sessions = get_sessions(config)
     return [s for s in sessions if check_session_validity(config,s)]
 
+def get_invalid_sessions(config=None):
+    if config is None:
+        config = physio.cfg.Config()
+        config.read_user_config()
+    sessions = get_sessions(config)
+    return [s for s in sessions if (not check_session_validity(config,s))]
+
 
 def get_n_epochs(config):
     return len(get_epochs(config))

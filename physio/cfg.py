@@ -5,6 +5,7 @@ import ConfigParser, io, logging, os
 # blank items will be filled in later (in set_session)
 CFGDEFAULTS = """
 [filesystem]
+rawrepo: /data/raw
 datarepo: /data/raw
 tmp: /scratch/tmp
 scratch: /scratch
