@@ -23,6 +23,15 @@ icaarg="441000"
 plotdir="/home/graham/Repositories/coxlab/physiology_analysis/visualization/"
 cd $plotdir
 
+empty () {
+    var=`echo $1 | tr -d ' '`
+    if [ "$var" = "" ]; then
+        return 0 # empty
+    else
+        return 1 # not empty
+    fi
+}
+
 # read config variables with phycfg.py
 rawdir=`phycfg.py filesystem rawrepo`
 echo "Raw directory: $rawdir"
@@ -38,8 +47,9 @@ then
     exit 1
 elif [ "$1" = "new" ]
 then
-    sessions=`diff $resultsdir $rawdir | grep Only | awk '{print $4}' | grep -e "_[1-9]"`
+    sessions=`diff $resultsdir $rawdir | grep Only | awk '{print $4}' | grep -e "_[0-9]"`
     echo "New sessions: $sessions"
+    
 elif [ "$1" = "all" ]
 then
     sessions=`python -c 'import physio; print " ".join(physio.session.get_sessions())'`
@@ -50,6 +60,13 @@ then
     echo "Invalid sessions: $sessions"
 else
     sessions=$@
+fi
+
+# check if sessions variable is blank
+if empty "$sessions"
+then
+    echo "No sessions found: $sessions"
+    exit 1
 fi
 
 # analyze all sessions
@@ -81,17 +98,41 @@ do
         echo "copying over ica matrices"
 
         # safe ica matrices for later use
-        cp $omm $imm
-        cp $oum $ium
+        cp "$oafs/mixingmatrix" $imm
+        cp "$oafs/unmixingmatrix" $ium
     fi
+    
+    # check if icapp worked
+    echo "Check if ica worked"
+    if empty "`ls \"$oafs\"`"
+    then
+        echo "icapp.py failed: `ls \"$oafs\"`"
+        # even though icapp failed, make a result directory and leave a note
+        # this way the icapp failed session won't be considered 'new'
+        mkdir $resultsdir/$session
+        touch $resultsdir/$session/icapp_failed
+        exit 2
+    fi
+    
     # copy over other files
     echo "Copying over auxillary files"
     cp "$iafs"/pixel* "$oafs"
     cp $rawdir/$session/$session.h5 $datadir/$session/
+    if [ -e "$rawdir/$session/physio.ini" ] # copy over custom physio.ini if it exists
+    then
+        cp $rawdir/$session/physio.ini $datadir/$session/
+    fi
     
     # run analysis
     echo "phy.py -f $session"
     phy.py -f $session
+    
+    # check that analysis succeeded: TODO
+    if empty "`ls $resultsdir/$session | grep _[0-9]`"
+    then
+        echo "phy.py failed: `ls $resultsdir/$session | grep _[0-9]`"
+    fi
+    
     #echo "copying over ica matrices"
     #cp /scratch/$session/Audio\ Files/mixingmatrix /data/raw/$session/
     #cp /scratch/$session/Audio\ Files/unmixingmatrix /data/raw/$session/
