@@ -70,7 +70,7 @@ then
 fi
 
 # analyze all sessions
-for session in "$sessions"
+for session in $sessions
 do
     echo "Analyzing $session"
     # ica related files
