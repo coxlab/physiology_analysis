@@ -101,6 +101,20 @@ def load(session, epochNumber = 0, config = None):
     # if len(h5files) != 1: utils.error('More than one .h5 file found in output directory: %s' % str(h5files))
     # return Session(h5files[0], config.getint('audio','samprate'))
 
+def fix_conduit_times(h5file, name, times, values):
+    if name in ['path_origin_x', 'path_origin_y', 'path_origin_z',\
+            'path_slope_x', 'path_slope_y', 'path_slope_z', 'path_depth']:
+        if 'CNC_OFFSET' in h5file.root.Events._v_attrs._v_attrnames:
+            # fix cnc time
+            offset = h5file.root.Events._v_attrs['CNC_OFFSET'] / float (1E6)
+            times -= offset
+    elif name in ['cobra_timestamp', 'pupil_radius', 'gaze_h', 'gaze_v']:
+        if 'EYETRACKER_OFFSET' in h5file.root.Events._v_attrs._v_attrnames:
+            # fix eyetracker time
+            offset = h5file.root.Events._v_attrs['EYETRACKER_OFFSET'] / float (1E6)
+            times -= offset
+    return times, values
+
 class Session(object):
     """
     Times are always provided in seconds since beginning of epoch in audio units
@@ -213,6 +227,10 @@ class Session(object):
             timeRange = self.get_epoch_time_range('mworks')
         
         times, values = h5.events.get_events(self._file, name, timeRange)
+
+        # fix times for cnc and eyetracker events
+        times, values = fix_conduit_times(self._file, name, times, values)
+
         #autimes = [self._timebase.mworks_to_audio(t) for t in times]
         autimes = self._timebase.mworks_to_audio(times)
         return autimes, values
