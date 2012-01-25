@@ -51,8 +51,8 @@ def combine(inputFiles, outputFilename, channelRegex = r'[a-z,A-Z]+_([0-9]+)\#*'
     
     # setup output file
     logging.debug("creating output file groups")
-    channelsgroup = outputFile.createGroup('/', 'Channels', 'SPC results')
-    spcgroup = outputFile.createGroup('/', 'SPC', 'SPC results')
+    channelsgroup = outputFile.createGroup('/', 'Channels', 'Channel data')
+    clusteringgroup = outputFile.createGroup('/', 'Clustering', 'Clustering info')
     outputFile.flush()
     
     # add each input file
@@ -71,12 +71,16 @@ def combine(inputFiles, outputFilename, channelRegex = r'[a-z,A-Z]+_([0-9]+)\#*'
             spiketable.row.append()
         outputFile.flush()
         
-        logging.debug("copying spc results")
+        logging.debug("copying clustering results")
+        if '/Clustering' in infile:
+            cig = outputFile.createGroup(clusteringgroup, 'ch%i' % ch, 'Channel %i clustering info' % ch)
+            for array_node in infile.root.Clustering:
+                outputFile.createArray(cig, array_node.name, np.array(array_node))
         # SPC/<cdata/ctree>
-        spcg = outputFile.createGroup(spcgroup, 'ch%i' % ch, 'Channel %i SPC results' % ch)
-        if '/SPC/cdata' in infile and '/SPC/ctree' in infile:
-            infile.createArray(spcg, 'cdata', np.array(infile.root.SPC.cdata))
-            infile.createArray(spcg, 'ctree', np.array(infile.root.SPC.ctree))
+        #spcg = outputFile.createGroup(spcgroup, 'ch%i' % ch, 'Channel %i SPC results' % ch)
+        #if '/SPC/cdata' in infile and '/SPC/ctree' in infile:
+        #    infile.createArray(spcg, 'cdata', np.array(infile.root.SPC.cdata))
+        #    infile.createArray(spcg, 'ctree', np.array(infile.root.SPC.ctree))
         outputFile.flush()
         
         # meta data
