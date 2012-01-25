@@ -1,58 +1,64 @@
 #!/usr/bin/env python
 
-# add path of physio module
-import sys
-sys.path.append('../')
-
-from physio import caton_utils
-from physio import mw_utils
+import logging
+import argparse
 import os
-import matplotlib.pylab as plt
+import sys
+logging.basicConfig(level = logging.DEBUG)
 
-base_path = "../data/K4_110523/"
-h5_file = os.path.join(base_path, 
-                "processed/session_1_1017_to_4412_a32_batch/session_1_1017_to_4412_a32_batch.h5")
-mw_file = os.path.join(base_path, "K4_110523.mwk")
+import numpy as np
+import pylab as pl
 
-print("Loading from h5")
-(clusters, times, triggers, waveforms) = caton_utils.extract_info_from_h5(h5_file)
+import physio
 
-print("Loading from MW")
-# this offset is the mw time at the start of the clustering analysis
-grouped_stim_times = mw_utils.extract_and_group_stimuli(mw_file, time_offset=2675.8280759999998)
+# parse command line options
+parser = argparse.ArgumentParser()
+parser.add_option("session")
+parser.add_option("epoch", default=None)
 
-aggregated_stim_times = mw_utils.aggregate_stimuli(grouped_stim_times)
+args = parser.parse_args()
 
-spike_trains_by_channel = caton_utils.spikes_by_channel(times, triggers)
+config = physio.cfg.load(args.session)
 
-plt.ioff()
-plt.figure()
+if args.epoch is None:
+    epochs = range(physio.session.get_n_epochs(config))
+else:
+    epochs = [int(args.epoch),]
 
-f = plt.figure()
+session_name = args.session
 
-nchannels = len(spike_trains_by_channel)
-nstim = len(grouped_stim_times.keys())
-stim_keys = grouped_stim_times.keys()
+for epochNumber in epochs:
+    session = physio.session.load(session_name, epochNumber)
+    outdir = physio.session.get_epoch_dir(config, epochNumber) + '/plots'
 
-figure_dir = '../figures'
-if not os.path.exists(figure_dir): os.makedirs(figure_dir)
+    #trialTimes, stims = session.get_stimuli(stimType = 'image')
+    #nTrials = len(trialTimes)
+    time_range = session.get_epoch_time_range('au')
+    pl.figure(1, figsize=(8,8))
+    pl.axvline(time_range[0], color='k')
+    pl.axvline(time_range[1], color='k')
 
-for stim in range(0, len(stim_keys)):
-    stim_key = stim_keys[stim]
-    
-    if stim_key in ['pixel clock', 'background', 'BlankScreenGray']:
-        continue
-    
-    for ch in range(0, len(spike_trains_by_channel)):
-        
-        print("Plotting ch %d, stim %s" % (ch, stim_key))
-        
-        # plt.subplot( nchannels, nstim, ch *nstim + stim)
-        
-        ev_locked = mw_utils.event_lock_spikes( grouped_stim_times[stim_key], 
-                                                spike_trains_by_channel[ch], 0.1, 0.5 )
-        mw_utils.plot_rasters(ev_locked)
-        plt.title("ch %d, stim %s" % (ch, stim_key))
-        plt.savefig("%s/ch%d_stim%s.pdf" % (figure_dir, ch, stim_key))
-        plt.hold(False)
-        plt.clf()
+    max_n_clusters = max([session.get_n_clusters(ch) for\
+            ch in range(1,33)])
+
+    cmap = pl.cm.Paired
+
+    for ch in xrange(1,33):
+        n_clusters = session.get_n_clusters(ch)
+        for cl in xrange(n_clusters):
+
+            dy = cl/float(n_clusters-1)
+            color = cmap(cl/float(max_n_clusters-1))
+
+            spikes = session.get_spike_times(ch, cl)
+
+            dy = cl/float(n_clusters-1)
+            c = cmap(cl/float(max_n_clusters-1))
+            pl.bar(spikes[0], dy, spikes[-1]-spikes[0], ch,\
+                    color = c, linewidth = 0)
+
+    # TODO make sensible axes
+    session.close()
+
+    if not os.path.exists(outdir): os.makedirs(outdir)
+    pl.savefig("%s/spike_ranges.png" % (outdir))
