@@ -1,82 +1,102 @@
 #!/usr/bin/env python
 
-import ast, copy, logging, optparse, os, pickle, sys
+import argparse
+import logging
+import os
+
+import numpy
+#import pylab
+from mayavi import mlab
+
+import physio
+import pywaveclus
+
+
+nfeatures = 6
+
+
 logging.basicConfig(level=logging.DEBUG)
 
-import tables
-import matplotlib
-import numpy as np
-import pylab as plt
+parser = argparse.ArgumentParser(description=\
+        "Plot the clustering results for a single channel")
+parser.add_argument("session", action="store")
+parser.add_argument("channel", action="store", type=int,\
+        choices=range(1,33))
+parser.add_argument("-o","--output", action="store",\
+        default="")
 
-# add path of physio module
-import sys
-sys.path.append('../')
-import physio
+args = parser.parse_args()
 
-parser = optparse.OptionParser(usage="usage: %prog [options] resultsfile")
-parser.add_option("-c", "--cluster", dest="cluster", default=19)
-if sys.platform == 'darwin':
-    parser.add_option("-f", "--file", dest="file", default="../results/K4_110720/K4_110720_597_to_5873.h5")
-else:
-    parser.add_option("-f", "--file", dest="file", default="/data/results/K4_110720/K4_110720_597_to_5873.h5")
-(options, args) = parser.parse_args()
-options.cluster = int(options.cluster)
+session_filename = args.session
+channel = args.channel
 
-timebase, stimtimer, spiketimes, epoch_mw = physio.load.load_cluster(options.file, options.cluster)
+if not (os.path.exists(session_filename)):
+    raise IOError("Session file: %s does not exist" %\
+            session_filename)
 
-# things I need
-# 1. baseline firing rate
-baseline = physio.caton_utils.get_n_spikes(stimtimer.get_all_times(), spiketimes, -0.1, 0, timebase)
-baseline = baseline / float(len(stimtimer.get_all_times())) / 0.1
-print "Baseline firing rate: %.2f" % baseline
+logging.debug("Opening %s" % session_filename)
+session = physio.session.Session(session_filename)
 
-visualResponses = {} # ordered like times in stimtimer
-stimReps = {}
-for st in stimtimer.times:
-    visualResponses[st] = physio.caton_utils.get_n_spikes(stimtimer.times[st], spiketimes, 0.1, 0.2, timebase)
-    stimReps[st] = len(stimtimer.times[st])
-visualResponses = np.array(sorted(visualResponses.iteritems(), key=lambda x: x[0]))[:,1]
-stimReps = np.array(sorted(stimReps.iteritems(), key=lambda x: x[0]))[:,1]
+n_clusters = session.get_n_clusters(channel)
+logging.debug("Channel %i has %i clusters" % (channel, n_clusters))
 
-stimnamelist = stimtimer.get_unique_stim_attr('intName')
-stimnames = np.array(stimtimer.get_stim_attr('intName'))
+spike_times = []
+spike_waveforms = []
+clusters = []
+for cluster in xrange(n_clusters):
+    st = session.get_spike_times(channel, cluster)
+    sw = session.get_spike_waveforms(channel, cluster)
+    if len(st) != len(sw):
+        raise IOError("len(times)[%i] != len(waves)[%i]" % \
+                (len(st), len(sw)))
+    spike_times += list(st)
+    spike_waveforms += list(sw)
+    clusters += [cluster] * len(st)
+    #if len(spike_times) > 10: break # skip out early for testing
 
-def collate_responses(stimname, attr):
-    stimIs = np.where(stimnames == stimname)[0]
-    uniquelist = stimtimer.get_unique_stim_attr(attr)
-    values = np.array(stimtimer.get_stim_attr(attr))
-    resp = []
-    for us in uniquelist:
-        valIs = np.where(values == us)[0]
-        Is = np.union1d(valIs, stimIs)
-        resp.append([us, sum(visualResponses[Is]), sum(stimReps[Is])])
-    return resp
+logging.debug("Found %i spikes" % len(spike_times))
+session.close()
 
-stimresps = {}
-nameresps = []
-for sn in stimnamelist:
-    # stim_name, n_spikes, n_reps
-    nameresps.append([sn, sum(visualResponses[stimnames == sn]), sum(stimReps[stimnames == sn])])
-    # stim_name attr : attr_name, n_spikes, n_reps
-    stimresps[sn] = {}
-    stimresps[sn]['x'] = collate_responses(sn,'pos_x')
-    stimresps[sn]['y'] = collate_responses(sn,'pos_y')
-    stimresps[sn]['s'] = collate_responses(sn,'size_x')
+logging.debug("Running PCA on waveforms")
+features = pywaveclus.dsp.pca.features(spike_waveforms,nfeatures)
+logging.debug("Features: %s" % str(features.shape))
+# features.shape = (nwaves, nfeatures)
 
-print "Response by ID:", nameresps
-f = open('clusters/resp_%i.p' % options.cluster,'wb')
-pickle.dump((baseline, nameresps, stimresps), f)
-f.close()
+spike_times = numpy.array(spike_times)
+spike_waveforms = numpy.array(spike_waveforms)
+clusters = numpy.array(clusters)
 
-# 2. NORMALIZED response to each stimulus collapsed across variation (and corresponding driven firing rate)
-#   stimID ...
-#   [raster] [raster] ....
-#   [psth]  [psth] ...
+if args.output != "":
+    logging.debug("Saving data to output: %s" % args.output)
+    data = numpy.vstack((spike_times,clusters,\
+            features.T,spike_waveforms.T)).T
+    output = args.output
+    if os.path.isdir(output): # if dir, make filename
+        output = '%s/%s_%i.npy' %\
+                (output, session_filename, channel)
+    elif os.path.splitext(output)[1] != '.npy': # if not check ext
+        output += '.npy'
+    numpy.save(output, data)
 
-# 2. normalized histograms for a single id given variation: pos_x/pos_y, size
-# pos:
-#    stimID ...
-# size1  [-y]
-#    [-x]  [+x]
-#       [+y]
-# size2...
+
+figure = mlab.figure(fgcolor=(1,1,1), size=(800,600))
+figure.scene.disable_render = True
+glyphs = mlab.points3d(features[:,0], features[:,1],\
+        features[:,2], clusters, scale_mode='none',\
+        mode='2dvertex', colormap='Paired')
+mlab.scalarbar(glyphs, nb_labels = len(numpy.unique(clusters)),\
+        orientation = 'vertical', label_fmt="%.0f")
+
+figure.scene.disable_render = False
+mlab.show()
+
+#pylab.figure()
+#colors = pylab.cm.jet(clusters/float(n_clusters-1))
+#for x in xrange(nfeatures):
+#    for y in xrange(nfeatures):
+#        if y >= x: continue
+#        pylab.subplot(nfeatures, nfeatures, x + (y*nfeatures) + 1)
+#        fx = features[:,x]
+#        fy = features[:,y]
+#        pylab.scatter(fx, fy, c=colors)
+#pylab.show()
