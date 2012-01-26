@@ -53,15 +53,15 @@ for epochNumber in epochs:
     subplotsHeight = len(clusters)
     pl.figure(figsize=(subplotsWidth*2, subplotsHeight*2))
     # pl.gcf().suptitle('%s %d' % (groupBy, group))
-    pl.subplot(subplotsHeight, subplotsWidth,1)
-    pl.subplots_adjust(left = 0.025, right = 0.975, top = 0.9, bottom = 0.1, wspace = 0.45)
+    #pl.subplot(subplotsHeight, subplotsWidth,1)
+    pl.subplots_adjust(left = 0.025, right = 0.975, top = 0.9, bottom = 0.1, wspace = 0.45, hspace = 0.45)
     logging.debug("Plotting %i by %i plots(%i)" % (subplotsWidth, subplotsHeight, subplotsWidth * subplotsHeight))
 
     for (x, channel) in enumerate(channels):
         for (y, cluster) in enumerate(clusters):
             logging.debug("\tPlotting[%i, %i]: ch %s : cl %s" % (x, y, channel, cluster))
             spikes = session.get_spike_times(channel, cluster)
-            if len(spikes) < 1: continue
+            if len(spikes) < 2: continue
             pl.subplot(subplotsHeight, subplotsWidth, subplotsWidth * y + x + 1)
             #physio.plotting.isi.plot(spikes, options.nbins)
             isi(spikes, options.nbins)
@@ -82,6 +82,14 @@ for epochNumber in epochs:
             else:
             #    pl.xticks([0., .5])
                 pl.xlabel("ISI")
+            # rotate xticks
+            xp, _ = pl.xticks()
+            xl = [str(i) for i in xp]
+            pl.xticks(xp, xl, rotation=90, size='x-small')
+
+            yp, _ = pl.yticks()
+            yl = [str(i) for i in yp]
+            pl.yticks(yp, yl, size='x-small')
 
     session.close()
 
