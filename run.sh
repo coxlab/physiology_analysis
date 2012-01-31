@@ -17,7 +17,8 @@
 icapp="/home/graham/Repositories/braingram/icapp/icapp.py"
 # arguments to icapp.py: python icapp.py -m $icamode -s $icaarg ...
 icamode="random"
-icaarg="441000"
+icaarg="102400" #"441000" # 10240 is 10 x (32 x 32)
+runica="false" # or "true"
 
 # change cwd to visualization directory so calling plot scripts is easier
 plotdir="/home/graham/Repositories/coxlab/physiology_analysis/visualization/"
@@ -83,23 +84,29 @@ do
     oafs="$datadir/$session/Audio Files/" # output audio files
     
     # run icapp.py on audio files
-    if [ -e "$imm" ] & [ -e "$ium" ]; then
-        echo "Using existing ica matrices"
-        # previous ica matrices exist, use them
-        mkdir -p "$oafs"
-        
-        cp $imm $omm 
-        cp $ium $oum
-        
-        python $icapp -M $omm -U $oum -o "$oafs" "$iafs"/input_*
-    else
-        echo "Calculating ica matrices"
-        python $icapp -m $icamode -s $icaarg -o "$oafs" "$iafs"/input_*
-        echo "copying over ica matrices"
+    if [ "$runica" = "true" ]; then
+        if [ -e "$imm" ] & [ -e "$ium" ]; then
+            echo "Using existing ica matrices"
+            # previous ica matrices exist, use them
+            mkdir -p "$oafs"
+            
+            cp $imm $omm 
+            cp $ium $oum
+            
+            python $icapp -M $omm -U $oum -o "$oafs" "$iafs"/input_*
+        else
+            echo "Calculating ica matrices"
+            python $icapp -m $icamode -s $icaarg -o "$oafs" "$iafs"/input_*
+            echo "copying over ica matrices"
 
-        # safe ica matrices for later use
-        cp "$oafs/mixingmatrix" $imm
-        cp "$oafs/unmixingmatrix" $ium
+            # safe ica matrices for later use
+            cp "$oafs/mixingmatrix" $imm
+            cp "$oafs/unmixingmatrix" $ium
+        fi
+    else
+        # don't run ica
+        mkdir -p "$oafs"
+        cp "$iafs"/input_* "$oafs"
     fi
     
     # check if icapp worked
