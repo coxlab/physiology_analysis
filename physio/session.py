@@ -14,7 +14,7 @@ import clock
 import events
 import h5
 import utils
-from utils import memoize
+#from utils import memoize
 
 import physio
 
@@ -210,7 +210,7 @@ class Session(object):
                                             % (cluster, samplerange[0], samplerange[1]))]
         return np.array(waves)
     
-    @memoize
+    @utils.memoize
     def get_spike_times(self, channel, cluster, timeRange = None):
         n = self._file.getNode('/Channels/ch%i' % channel)
         if timeRange is None:
@@ -241,10 +241,15 @@ class Session(object):
     def get_codec(self):
         return h5.events.get_codec(self._file)
     
-    @memoize
+    @utils.memoize
     def get_stimuli(self, matchDict = None, timeRange = None, stimType = 'image'):
         """
-        Does not look for 'failed' trials
+        get all trials that match matchDict and are of type stimType over time range timeRange
+
+        Returns
+        --
+            autimes : list of trial start times (in audio units)
+            stims : list of corresponding stims
         """
         if timeRange is None:
             timeRange = self.get_epoch_time_range('mworks')
@@ -258,6 +263,16 @@ class Session(object):
         return autimes, stims
     
     def get_trials(self, matchDict = None, timeRange = None):
+        """
+        Get a list of non-failed trials that match matchDict over time range timeRange
+
+        Returns
+        --
+            goodTimes : list of non-failed trial START times (in audio units)
+            goodStims : list of corresponding stimuli
+            badTimes  : list of failed trial start times
+            badStims  : list of corresponding stimuli
+        """
         times, stims = self.get_stimuli(matchDict, timeRange)
         tr = self.get_epoch_time_range('mworks')
         tr[0] = 0
@@ -295,7 +310,7 @@ class Session(object):
         time = (tr[1] - tr[0])/2. + tr[0] # middle of epoch
         return events.cnc.get_channel_locations(cncDict, offset, time)
     
-    @memoize
+    @utils.memoize
     def get_gaze(self, start=1, timeRange=None):
         """
         Parameters
@@ -324,6 +339,16 @@ class Session(object):
                     np.array(hv)[good+1], np.array(vv)[good+1], 
                     np.array(pv)[good+1])
     
+    def get_filtered_trials(self, matchDict = None, timeRange = None,
+                                filters = []):
+        
+        # get trials
+        trials, stims, _, _ = self.get_trials(matchDict, timeRange)
+        # trials is a list of times: audio??
+
+        # process filters
+        return trials, stims
+            
     def get_gaze_filtered_trials(self, matchDict = None, timeRange = None,
                                  intra_trial_std_threshold=None,
                                  default_gaze_deviation_threshold=None,
