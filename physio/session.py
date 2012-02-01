@@ -95,28 +95,6 @@ def load(session, epochNumber = 0, config = None):
     if len(h5files) != 1: utils.error('More than one .h5 file found in output directory: %s' % str(h5files))
     return Session(h5files[0], config.getint('audio','samprate'),
                    cache_dir=config.get('filesystem','tmp','/tmp'))
-    # 
-    # outputDir = config.get('session','output')
-    # h5files = glob.glob(outputDir+'/*.h5')
-    # if len(h5files) != 1: utils.error('More than one .h5 file found in output directory: %s' % str(h5files))
-    # return Session(h5files[0], config.getint('audio','samprate'))
-
-#def fix_conduit_times(h5file, name, times, values):
-#    if name in ['path_origin_x', 'path_origin_y', 'path_origin_z',\
-#            'path_slope_x', 'path_slope_y', 'path_slope_z', 'path_depth']:
-#        if 'CNC_OFFSET' in h5file.root.Events._v_attrs._v_attrnames:
-#            # fix cnc time
-#            offset = h5file.root.Events._v_attrs['CNC_OFFSET'] / float (1E6)
-#            print 'found offset:', offset
-#            print 'old times:', times
-#            times -= offset
-#            print 'new times:', times
-#    elif name in ['cobra_timestamp', 'pupil_radius', 'gaze_h', 'gaze_v']:
-#        if 'EYETRACKER_OFFSET' in h5file.root.Events._v_attrs._v_attrnames:
-#            # fix eyetracker time
-#            offset = h5file.root.Events._v_attrs['EYETRACKER_OFFSET'] / float (1E6)
-#            times -= offset
-#    return times, values
 
 class Session(object):
     """
@@ -132,10 +110,6 @@ class Session(object):
     def read_timebase(self):
         matchesNode = self._file.getNode('/TimeMatches')
         self._timebase = clock.timebase.TimeBase(np.array(matchesNode), fitline=False)#fitline=True)
-        #austart = self._file.root._v_attrs['EPOCH_START_AUDIO']
-        #matches = np.array(matchesNode)
-        #matches[:,0] = matches[:,0] + austart
-        #self._timebase = clock.timebase.TimeBase(matches, fitline=False)
     
     def get_epoch_time_range(self, unit):
         """
@@ -197,7 +171,7 @@ class Session(object):
         return self.get_spike_waveforms(ch, cl, timeRange)
 
     def get_spike_waveforms(self, channel, cluster, timeRange = None):
-        n = self._file.getNode('/Channels/ch%i' % channel)
+        #n = self._file.getNode('/Channels/ch%i' % channel)
         if timeRange is None:
             waves = [i['wave'] for i in self._file.getNode('/Channels/ch%i' % channel).\
                                         where('clu == %i' % cluster)]
@@ -212,7 +186,7 @@ class Session(object):
     
     @utils.memoize
     def get_spike_times(self, channel, cluster, timeRange = None):
-        n = self._file.getNode('/Channels/ch%i' % channel)
+        #n = self._file.getNode('/Channels/ch%i' % channel)
         if timeRange is None:
             times = [i['time'] for i in self._file.getNode('/Channels/ch%i' % channel).\
                                         where('clu == %i' % cluster)]
