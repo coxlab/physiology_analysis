@@ -47,7 +47,7 @@ def get_version():
 setup(
     name='physio',
     
-    packages = ['physio','physio/analysis','physio/clock','physio/dsp','physio/events','physio/h5','physio/plotting','physio/reports','physio/spikes','physio/tests'],
+    packages = ['physio','physio/analysis','physio/clock','physio/dsp','physio/events','physio/h5','physio/plotting','physio/reports','physio/spikes','physio/timeseries', 'physio/tests'],
     # package_data={'pywaveclus': ['bin/*']},
     scripts=['scripts/phy.py', 'scripts/phycfg.py'],
     version = get_version(),
