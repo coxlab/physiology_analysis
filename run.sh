@@ -118,7 +118,8 @@ do
         # this way the icapp failed session won't be considered 'new'
         mkdir $resultsdir/$session
         touch $resultsdir/$session/icapp_failed
-        exit 2
+        #exit 2
+        continue
     fi
     
     # copy over other files
@@ -143,8 +144,8 @@ do
     #echo "copying over ica matrices"
     #cp /scratch/$session/Audio\ Files/mixingmatrix /data/raw/$session/
     #cp /scratch/$session/Audio\ Files/unmixingmatrix /data/raw/$session/
-    echo "plot.sh $session"
-    sh plot.sh $session
+    #echo "plot.sh $session"
+    #sh plot.sh $session
     # clean up
     rm -rf /scratch/$session/
 done
