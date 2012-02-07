@@ -48,7 +48,7 @@ then
     exit 1
 elif [ "$1" = "new" ]
 then
-    sessions=`diff $resultsdir $rawdir | grep Only | awk '{print $4}' | grep -e "_[0-9]"`
+    sessions=`diff $resultsdir $rawdir | grep Only | grep $rawdir | awk '{print $4}' | grep -e "_[0-9]"`
     echo "New sessions: $sessions"
     
 elif [ "$1" = "all" ]
