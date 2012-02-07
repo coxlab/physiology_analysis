@@ -16,6 +16,6 @@ import timeseries
 import utils
 
 # Increment this when resulting hdf5 file format is broken
-__version__ = '1.0.3'
+__version__ = '1.0.4'
 
 __all__ = ['analysis', 'cfg', 'channelmapping', 'clock', 'dsp', 'events', 'h5', 'notebook', 'plotting', 'reports', 'spikes', 'session', 'timeseries', 'utils']
