@@ -19,7 +19,7 @@ def summarize_session(session_name):
     for epoch_index in xrange(n_epochs):
         session_object = session.load(session_name, epoch_index)
         fn = '%s/%s/%s_%i.h5' % (c.get('filesystem','resultsrepo'),\
-                session_name, epoch_index)
+                session_name, session_name, epoch_index)
         logging.debug("Saving summary to %s" % fn)
         summarize_session_object(session_object, fn)
 
