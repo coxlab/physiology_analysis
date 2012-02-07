@@ -10,10 +10,13 @@ def summarize_session(session, output_filename):
     """
     summary_file = tables.openFile(output_filename, 'w')
     
-    gtt, gts, btt, bts = session.get_trials() # no bluesquare for now
+    #gtt, gts, btt, bts = session.get_trials()
+    image_times, image_stims = session.get_stimuli()
+    rect_times, rect_stims = session.get_stimuli(stimType = 'rectangle')
+
+    stims = events.stimuli.unique(rect_stims + image_stims) # dicts
 
     # 1) stimuli
-    stims = events.stimuli.unique(gts + bts) # dicts
     class StimDescription(tables.IsDescription):
         name = tables.StringCol(32)
         pos_x  = tables.Float64Col()
@@ -33,46 +36,67 @@ def summarize_session(session, output_filename):
     summary_file.flush()
 
     # 2) trials [stimulus, duration, outcome]
-    tr = session.get_epoch_time_range('mworks')
-    tr[0] = 0
-    dtts, dtvs = session.get_events('Distractor_Time', timeRange = tr)
     class TrialDescription(tables.IsDescription):
         stim_index = tables.UInt32Col()
         duration = tables.UInt64Col() # ms
         time = tables.Float64Col()
         outcome = tables.UInt8Col() # 0 success, 1 failure
+        # for BlueSquare: 0 = success, 1 = ignore
+        # for image: 0 = correctIgnore, 1 = failure
     trial_table = summary_file.createTable('/', 'Trials',\
             TrialDescription)
 
-    for (time, stim) in zip(gtt, gts): # successes
+    tr = session.get_epoch_time_range('mworks')
+    tr[0] = 0
+    image_duration_times, image_duration_values = \
+            session.get_events('Distractor_Time', timeRange = tr)
+    rect_duration_times, rect_duration_values = \
+            session.get_events('StimulusPresentation_time', timeRange = tr)
+    ftimes, _ = session.get_events('failure')
+    stimes, _ = session.get_events('success')
+    #itimes, _ = session.get_events('ignore')
+    # correctIgnore?
+    
+    times = rect_times + image_times
+    stims = rect_stims + image_stims
+    for (time, stim) in zip(times, stims):
         hash = events.stimuli.stimhash(stim)
         stim_index = stim_lookup.index(hash)
-        trial_table.row['stim_index'] = stim_index
-        duration = 500 # ms
-        for dt in dtts:
-            if time >= dt:
-                duration = dt
-            else:
-                break
-        trial_table.row['duration'] = duration
-        trial_table.row['time'] = time
-        trial_table.row['outcome'] = 0
-        trial_table.row.append()
-    summary_file.flush()
+        if stim['type'] == 'image':
+            duration = 500
+            for dt, dv in zip(image_duration_times, image_duration_values):
+                if time >= dt:
+                    duration = dv
+                else:
+                    break
+            # look for failure
+            outcome = 0 # success
+            for ft in ftimes:
+                if (ft > time):
+                    if (ft < (time + duration/1000.)):
+                        outcome = 1 # failure
+                    else:
+                        break
+        else:
+            duration = 1000
+            for dt, dv in zip(rect_duration_times, rect_duration_values):
+                if time >= dt:
+                    duration = dv
+                else:
+                    break
+            # look for 
+            outcome = 1 # ignore
+            for st in stimes:
+                if (st > time):
+                    if (st < (time + duration/1000.)):
+                        outcome = 0 # success
+                    else:
+                        break
 
-    for (time, stim) in zip(btt, bts): # failures
-        hash = events.stimuli.stimhash(stim)
-        stim_index = stim_lookup.index(hash)
         trial_table.row['stim_index'] = stim_index
-        duration = 500 # ms
-        for dt in dtts:
-            if time >= dt:
-                duration = dt
-            else:
-                break
         trial_table.row['duration'] = duration
         trial_table.row['time'] = time
-        trial_table.row['outcome'] = 1
+        trial_table.row['outcome'] = outcome
         trial_table.row.append()
     summary_file.flush()
 
