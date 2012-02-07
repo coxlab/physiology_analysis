@@ -1,10 +1,30 @@
 #!/usr/bin/env python
 
+import logging
+
+import numpy
+
 import tables
 
+from .. import cfg
 from .. import events
+from .. import session
 
-def summarize_session(session, output_filename):
+def summarize_session(session_name):
+    c = cfg.Config()
+    c.read_user_config()
+    c.set_session(session_name)
+    n_epochs = session.get_n_epochs(c)
+    logging.debug("Summarizing %i epochs for session %s" % (n_epochs, session_name))
+    for epoch_index in xrange(n_epochs):
+        session_object = session.load(session_name, epoch_index)
+        fn = '%s/%s/%s_%i.h5' % (c.get('filesystem','resultsrepo'),\
+                session_name, epoch_index)
+        logging.debug("Saving summary to %s" % fn)
+        summarize_session_object(session_object, fn)
+
+
+def summarize_session_object(session, output_filename):
     """
     Generate an intermediate representation for a session
     """
@@ -25,14 +45,15 @@ def summarize_session(session, output_filename):
         size_x = tables.Float64Col()
         size_y = tables.Float64Col()
     stim_table = summary_file.createTable('/', 'Stimuli', StimDescription)
-    stim_lookup = []
-
-    for stim in stims:
+    stim_lookup = {}
+    
+    for (stim_index, stim) in enumerate(stims):
         for key in ['name', 'pos_x', 'pos_y', 'rotation',\
                 'size_x', 'size_y']:
             stim_table.row[key] = stim[key]
         stim_table.row.append()
-        stim_lookup.append(events.stimuli.stimhash(stim))
+        stim_lookup[events.stimuli.stimhash(stim)] = stim_index
+        #stim_lookup.append(events.stimuli.stimhash(stim))
     summary_file.flush()
 
     # 2) trials [stimulus, duration, outcome]
@@ -53,15 +74,16 @@ def summarize_session(session, output_filename):
     rect_duration_times, rect_duration_values = \
             session.get_events('StimulusPresentation_time', timeRange = tr)
     ftimes, _ = session.get_events('failure')
+    ftimes = numpy.array(ftimes)
     stimes, _ = session.get_events('success')
+    stimes = numpy.array(stimes)
     #itimes, _ = session.get_events('ignore')
     # correctIgnore?
     
     times = rect_times + image_times
     stims = rect_stims + image_stims
     for (time, stim) in zip(times, stims):
-        hash = events.stimuli.stimhash(stim)
-        stim_index = stim_lookup.index(hash)
+        stim_index = stim_lookup[events.stimuli.stimhash(stim)]
         if stim['type'] == 'image':
             duration = 500
             for dt, dv in zip(image_duration_times, image_duration_values):
@@ -71,12 +93,10 @@ def summarize_session(session, output_filename):
                     break
             # look for failure
             outcome = 0 # success
-            for ft in ftimes:
-                if (ft > time):
-                    if (ft < (time + duration/1000.)):
-                        outcome = 1 # failure
-                    else:
-                        break
+            f = ftimes[numpy.logical_and(ftimes > time,\
+                    ftimes < (time + duration/1000.))]
+            if len(f):
+                outcome = 1
         else:
             duration = 1000
             for dt, dv in zip(rect_duration_times, rect_duration_values):
@@ -86,12 +106,10 @@ def summarize_session(session, output_filename):
                     break
             # look for 
             outcome = 1 # ignore
-            for st in stimes:
-                if (st > time):
-                    if (st < (time + duration/1000.)):
-                        outcome = 0 # success
-                    else:
-                        break
+            s = stimes[numpy.logical_and(stimes > time,\
+                    stimes < (time + duration/1000.))]
+            if len(s):
+                outcome = 0
 
         trial_table.row['stim_index'] = stim_index
         trial_table.row['duration'] = duration

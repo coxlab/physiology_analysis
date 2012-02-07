@@ -29,5 +29,5 @@ for arg in args:
     except Exception as e:
         logging.error("Analysis of session %s failed with %s" % (session, e))
     
-    # plotting
-    # TODO
+    # summarize
+    physio.summary.summarize.summarize_session(session)
