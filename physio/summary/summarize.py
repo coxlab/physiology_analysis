@@ -57,6 +57,7 @@ def summarize_session(session, output_filename):
         trial_table.row['duration'] = duration
         trial_table.row['time'] = time
         trial_table.row['outcome'] = 0
+        trial_table.row.append()
     summary_file.flush()
 
     for (time, stim) in zip(btt, bts): # failures
@@ -72,18 +73,19 @@ def summarize_session(session, output_filename):
         trial_table.row['duration'] = duration
         trial_table.row['time'] = time
         trial_table.row['outcome'] = 1
+        trial_table.row.append()
     summary_file.flush()
 
     # 3) spikes
-    class SpikeDescription(tables.isDescription):
+    class SpikeDescription(tables.IsDescription):
         ch = tables.UInt8Col()
         cl = tables.UInt8Col()
         time = tables.Float64Col()
-    spike_table = summary_file.creatTable('/', 'Spikes', \
+    spike_table = summary_file.createTable('/', 'Spikes', \
             SpikeDescription)
 
     for ch in xrange(1,33):
-        for cl in session.get_n_clusters(ch):
+        for cl in xrange(session.get_n_clusters(ch)):
             spike_times = session.get_spike_times(ch, cl)
             for spike_time in spike_times:
                 spike_table.row['ch'] = ch
@@ -104,7 +106,7 @@ def summarize_session(session, output_filename):
 
     # 5) location
     locs = session.get_channel_locations()
-    class LocationDescription(tables.isDescription):
+    class LocationDescription(tables.IsDescription):
         ml = tables.Float64Col()
         ap = tables.Float64Col()
         dv = tables.Float64Col()

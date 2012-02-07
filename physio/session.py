@@ -285,12 +285,10 @@ class Session(object):
         return events.cnc.get_channel_locations(cncDict, offset, time)
    
     @utils.memoize
-    def get_gaze(self, start=0, timeRange=None):
+    def get_gaze(self, timeRange=None):
         """
         Parameters
         ----------
-            start : datapoint index to start processing gaze data
-                sample 0 tends to be an error, so this is by default 1
         Returns
         -------
             tt : audio times of culled gaze data points
@@ -305,13 +303,13 @@ class Session(object):
         pt, pv = self.get_events('pupil_radius', timeRange)
         tt, tv = self.get_events('cobra_timestamp', timeRange)
         # find indices of 'good' data points, ones that don't deviate too far from the mean
-        good = events.gaze.find_good_by_deviation(hv[start:], vv[start:])
+        good = events.gaze.find_good_by_deviation(hv, vv)
         if len(good) == 0:
             return [], [], [], [], []
         else:
-            return (np.array(tt)[good+1], np.array(tv)[good+1], 
-                    np.array(hv)[good+1], np.array(vv)[good+1], 
-                    np.array(pv)[good+1])
+            return (np.array(tt)[good], np.array(tv)[good], 
+                    np.array(hv)[good], np.array(vv)[good], 
+                    np.array(pv)[good])
     
     def get_filtered_trials(self, matchDict = None, timeRange = None,
                                 filters = []):
