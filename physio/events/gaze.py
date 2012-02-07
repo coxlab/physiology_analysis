@@ -103,6 +103,7 @@ def clean_gaze(tt, tv, hv, vv):
 def get_clean_gaze(mwkf):
     return clean_gaze(*get_gaze(mwkf))
 
+
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)
     

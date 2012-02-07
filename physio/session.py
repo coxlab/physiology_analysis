@@ -283,9 +283,9 @@ class Session(object):
         tr = self.get_epoch_time_range('mworks')
         time = (tr[1] - tr[0])/2. + tr[0] # middle of epoch
         return events.cnc.get_channel_locations(cncDict, offset, time)
-    
+   
     @utils.memoize
-    def get_gaze(self, start=1, timeRange=None):
+    def get_gaze(self, start=0, timeRange=None):
         """
         Parameters
         ----------

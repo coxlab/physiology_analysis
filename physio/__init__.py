@@ -12,10 +12,11 @@ import plotting
 import reports
 import spikes
 import session
+import summary
 import timeseries
 import utils
 
 # Increment this when resulting hdf5 file format is broken
 __version__ = '1.0.4'
 
-__all__ = ['analysis', 'cfg', 'channelmapping', 'clock', 'dsp', 'events', 'h5', 'notebook', 'plotting', 'reports', 'spikes', 'session', 'timeseries', 'utils']
+__all__ = ['analysis', 'cfg', 'channelmapping', 'clock', 'dsp', 'events', 'h5', 'notebook', 'plotting', 'reports', 'spikes', 'session', 'summary', 'timeseries', 'utils']
