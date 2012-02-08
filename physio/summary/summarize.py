@@ -126,8 +126,11 @@ def summarize_session_object(session, output_filename):
     spike_table = summary_file.createTable('/', 'Spikes', \
             SpikeDescription)
 
-    for ch in xrange(1,33):
-        for cl in xrange(session.get_n_clusters(ch)):
+    nclusters = {} # TODO save this later
+
+    for ch in xrange(1,33): # tdt numbering
+        nclusters[ch] = session.get_n_clusters(ch)
+        for cl in xrange(nclusters[ch]):
             spike_times = session.get_spike_times(ch, cl)
             for spike_time in spike_times:
                 spike_table.row['ch'] = ch
@@ -136,15 +139,34 @@ def summarize_session_object(session, output_filename):
                 spike_table.row.append()
     summary_file.flush()
 
+    # TODO tables for spike ch info (nclusters, signal to noise, etc)
+
     # 4) gaze
     tt, tv, hv, vv, pv = session.get_gaze()
-    gaze_group = summary_file.createGroup('/', 'Gaze', 'Gaze')
-    summary_file.createArray(gaze_group, 'times', tt)
-    summary_file.createArray(gaze_group, 'cobra_timestamps', tv)
-    summary_file.createArray(gaze_group, 'gaze_h', hv)
-    summary_file.createArray(gaze_group, 'gaze_v', vv)
-    summary_file.createArray(gaze_group, 'pupil_radius', pv)
-    summary_file.flush()
+    class GazeDescription(tables.IsDescription):
+        time = tables.Float64Col()
+        h = tables.Float64Col()
+        v = tables.Float64Col()
+        pupil_radius = tables.Float64Col()
+        cobra_timestamp = tables.Float64Col()
+    gaze_table = summary_file.createTable('/', 'Gaze', \
+            GazeDescription)
+    for i in xrange(len(tt)):
+        # TODO handle inf/nan ?
+        gaze_table.row['time'] = tt[i]
+        gaze_table.row['cobra_timestamp'] = tv[i]
+        gaze_table.row['h'] = hv[i]
+        gaze_table.row['v'] = vv[i]
+        gaze_table.row['pupil_radius'] = pv[i]
+        gaze_table.row.append()
+
+    #gaze_group = summary_file.createGroup('/', 'Gaze', 'Gaze')
+    #summary_file.createArray(gaze_group, 'times', tt)
+    #summary_file.createArray(gaze_group, 'cobra_timestamps', tv)
+    #summary_file.createArray(gaze_group, 'gaze_h', hv)
+    #summary_file.createArray(gaze_group, 'gaze_v', vv)
+    #summary_file.createArray(gaze_group, 'pupil_radius', pv)
+    #summary_file.flush()
 
     # 5) location
     locs = session.get_channel_locations()
@@ -162,5 +184,6 @@ def summarize_session_object(session, output_filename):
     summary_file.flush()
 
     # TODO  Meta information (session data, probe data, epoch, etc...)
+    # - version, epoch time range, etc...
 
     summary_file.close()
