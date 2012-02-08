@@ -41,18 +41,18 @@ class Summary(object):
         pass
     
     def get_n_channels(self):
-        return self._file.root.Spikes.read(field = 'ch').max() + 1
+        return self._file.root.SpikeInfo.read(field = 'ch').max() + 1
 
     def get_channel_indices(self):
-        return numpy.unique(self._file.root.Spikes.read(\
+        return numpy.unique(self._file.root.SpikeInfo.read( \
                 field = 'ch'))
 
     def get_n_clusters(self, channel):
-        return self._file.root.Spikes.readWhere(\
+        return self._file.root.SpikeInfo.readWhere( \
                 'ch == %i' % channel, field = 'cl').max() + 1
 
     def get_cluster_indices(self, channel):
-        return numpy.unique(self._file.root.Spikes.readWhere( \
+        return numpy.unique(self._file.root.SpikeInfo.readWhere( \
                 'ch == %i' % channel, field = 'cl'))
 
     def get_spike_times(self, channel, cluster, timeRange = None):
@@ -62,6 +62,11 @@ class Summary(object):
                     (timeRange[0], timeRange[1])
         return self._file.root.Spikes.readWhere( \
                 match_string, field = 'time')
+
+    def get_waveform(self, channel, cluster):
+        w = self._file.root.SpikeInfo.readWhere( \
+                '(ch == %i) & (cl == %i)' % (channel, cluster))
+        return w['wave_mean'], w['wave_std']
 
     def get_trials(self, matchDict = None, timeRange = None):
         stimulus_indices = self.get_stimulus_indices(matchDict)
@@ -96,3 +101,10 @@ class Summary(object):
         return self._file.root.Gaze.readWhere(\
                 '(time > %f) & (time < %f)' %\
                 (timeRange[0], timeRange[1]))
+
+    def get_epoch_range(self):
+        return self._file.root._v_attrs['au_start'], \
+                self._file.root._v_attrs['au_end']
+
+    def get_source_md5sum(self):
+        return self._file.root._v_attrs['src_md5']

@@ -38,6 +38,7 @@ def summarize_session_object(session, output_filename):
     stims = events.stimuli.unique(rect_stims + image_stims) # dicts
 
     # 1) stimuli
+    logging.debug("Adding stimuli to summary")
     class StimDescription(tables.IsDescription):
         name = tables.StringCol(32)
         pos_x  = tables.Float64Col()
@@ -58,6 +59,7 @@ def summarize_session_object(session, output_filename):
     summary_file.flush()
 
     # 2) trials [stimulus, duration, outcome]
+    logging.debug("Adding trials to summary")
     class TrialDescription(tables.IsDescription):
         stim_index = tables.UInt32Col()
         duration = tables.UInt64Col() # ms
@@ -78,8 +80,6 @@ def summarize_session_object(session, output_filename):
     ftimes = numpy.array(ftimes)
     stimes, _ = session.get_events('success')
     stimes = numpy.array(stimes)
-    #itimes, _ = session.get_events('ignore')
-    # correctIgnore?
     
     times = rect_times + image_times
     stims = rect_stims + image_stims
@@ -120,6 +120,7 @@ def summarize_session_object(session, output_filename):
     summary_file.flush()
 
     # 3) spikes
+    logging.debug("Adding spikes to summary")
     class SpikeDescription(tables.IsDescription):
         ch = tables.UInt8Col()
         cl = tables.UInt8Col()
@@ -127,11 +128,12 @@ def summarize_session_object(session, output_filename):
     spike_table = summary_file.createTable('/', 'Spikes', \
             SpikeDescription)
 
-    nclusters = {} # TODO save this later
+    #nclusters = {} # TODO save this later
 
     for ch in xrange(1,33): # tdt numbering
-        nclusters[ch] = session.get_n_clusters(ch)
-        for cl in xrange(nclusters[ch]):
+        #nclusters[ch] = session.get_n_clusters(ch)
+        #for cl in xrange(nclusters[ch]):
+        for cl in xrange(session.get_n_clusters(ch)):
             spike_times = session.get_spike_times(ch, cl)
             for spike_time in spike_times:
                 spike_table.row['ch'] = ch
@@ -140,9 +142,33 @@ def summarize_session_object(session, output_filename):
                 spike_table.row.append()
     summary_file.flush()
 
-    # TODO tables for spike ch info (nclusters, signal to noise, etc)
+    # find waveform length
+    wfs = session._file.root.Channels.ch1.coldtypes['wave'].shape
+    # tables for spike ch info (nclusters, signal to noise, etc)
+    class SpikeInfoDescription(tables.IsDescription):
+        ch = tables.UInt8Col()
+        cl = tables.UInt8Col()
+        #snr = tables.Float64Col()
+        wave_mean = tables.Float64Col(shape=wfs)
+        wave_std = tables.Float64Col(shape=wfs)
+    spike_info_table = summary_file.createTable('/', 'SpikeInfo', \
+            SpikeInfoDescription)
+
+    for ch in xrange(1,33): # tdt numbering
+        for cl in xrange(session.get_n_clusters(ch)):
+            waves = numpy.array(session.get_spike_waveforms(ch, cl))
+            if len(waves) == 0: continue
+            wave_mean = numpy.mean(waves, 0)
+            wave_std = numpy.std(waves, 0)
+            spike_info_table.row['ch'] = ch
+            spike_info_table.row['cl'] = cl
+            spike_info_table.row['wave_mean'] = wave_mean
+            spike_info_table.row['wave_std'] = wave_std
+            spike_info_table.row.append()
+    summary_file.flush()
 
     # 4) gaze
+    logging.debug("Adding gaze to summary")
     tt, tv, hv, vv, pv = session.get_gaze()
     class GazeDescription(tables.IsDescription):
         time = tables.Float64Col()
@@ -170,6 +196,7 @@ def summarize_session_object(session, output_filename):
     #summary_file.flush()
 
     # 5) location
+    logging.debug("Adding locations to summary")
     locs = session.get_channel_locations()
     class LocationDescription(tables.IsDescription):
         ml = tables.Float64Col()
@@ -185,6 +212,19 @@ def summarize_session_object(session, output_filename):
     summary_file.flush()
 
     # TODO  Meta information (session data, probe data, epoch, etc...)
-    # - version, epoch time range, etc...
+    logging.debug("Adding meta info to summary")
+    # physio version TODO how do I do this?
+    #version = __version__
+    #logging.debug("Found version %s" % version)
+
+    # datafile md5sum
+    md5sum = session.get_md5sum()
+    logging.debug("Found md5sum %s" % str(md5sum))
+    summary_file.root._v_attrs['src_md5'] = md5sum
+
+    # epoch time range
+    au_time_range = session.get_epoch_time_range('au')
+    summary_file.root._v_attrs['au_start'] = au_time_range[0]
+    summary_file.root._v_attrs['au_end'] = au_time_range[1]
 
     summary_file.close()
