@@ -149,7 +149,8 @@ for goodSession in goodSessions:
     cfg.read_user_config()
     cfg.read_session_config(goodSession)
     cfg.set_session(goodSession)
-    for epochNumber in xrange(physio.session.get_n_epochs(cfg)):
+    #for epochNumber in xrange(physio.session.get_n_epochs(cfg)):
+    for epochNumber in xrange(physio.session.get_n_epochs(goodSession)):
         session = physio.session.load(goodSession, epochNumber)
         try:
             locations = session.get_channel_locations()
