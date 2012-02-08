@@ -25,7 +25,7 @@ epochs = []
 if len(args) == 2:
     epochs = [int(args[1]),]
 else:
-    epochs = range(physio.session.get_n_epochs(config))
+    epochs = range(physio.session.get_n_epochs(args[0]))#config))
 
 def isi(spikes, nbins):
     isis = spikes[1:] - spikes[:-1]

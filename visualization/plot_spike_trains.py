@@ -24,7 +24,7 @@ session_name = sys.argv[1]
 config = physio.cfg.load(session_name)
 
 if len(sys.argv) < 3:
-    epochs = range(physio.session.get_n_epochs(config))
+    epochs = range(physio.session.get_n_epochs(session_name))#config))
 else:
     epochs = [int(sys.argv[2]),]
 

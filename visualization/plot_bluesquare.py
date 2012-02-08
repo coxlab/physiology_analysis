@@ -31,7 +31,7 @@ if len(args) == 2:
     #epochNumber = int(args[1])
     epochs = [int(args[1]),]
 else:
-    epochs = range(physio.session.get_n_epochs(config))
+    epochs = range(physio.session.get_n_epochs(args[0]))#config))
 
 for epochNumber in epochs:
     session = physio.session.load(args[0], epochNumber)

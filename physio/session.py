@@ -70,7 +70,8 @@ def get_invalid_sessions(config=None):
     return [s for s in sessions if (not check_session_validity(config,s))]
 
 
-def get_n_epochs(config):
+def get_n_epochs(session):
+    config = cfg.load(session)
     return len(get_epochs(config))
 
 def get_epochs(config):

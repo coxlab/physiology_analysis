@@ -11,14 +11,15 @@ from .. import events
 from .. import session
 
 def summarize_session(session_name):
-    c = cfg.Config()
-    c.read_user_config()
-    c.set_session(session_name)
-    n_epochs = session.get_n_epochs(c)
+    #c = cfg.Config()
+    #c.read_user_config()
+    #c.set_session(session_name)
+    config = cfg.load(session_name)
+    n_epochs = session.get_n_epochs(session_name)
     logging.debug("Summarizing %i epochs for session %s" % (n_epochs, session_name))
     for epoch_index in xrange(n_epochs):
         session_object = session.load(session_name, epoch_index)
-        fn = '%s/%s/%s_%i.h5' % (c.get('filesystem','resultsrepo'),\
+        fn = '%s/%s/%s_%i.h5' % (config.get('filesystem','resultsrepo'),\
                 session_name, session_name, epoch_index)
         logging.debug("Saving summary to %s" % fn)
         summarize_session_object(session_object, fn)
