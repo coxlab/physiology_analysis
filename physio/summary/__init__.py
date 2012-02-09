@@ -19,7 +19,7 @@ def key_value_to_match(key, value, joiner='|'):
         return '(%s == %f)' % (key, value)
     elif vt in (int, numpy.int8, numpy.int16, numpy.int32, numpy.int64):
         return '(%s == %i)' % (key, value)
-    elif vt == str:
+    elif vt in (str, numpy.string_):
         return '(%s == "%s")' % (key, value)
     else:
         raise TypeError('Unknown type(%s) for value(%s)' % \
