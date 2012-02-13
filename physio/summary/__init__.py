@@ -2,9 +2,9 @@ import summarize
 
 __all__ = ['summarize']
 
+import os
 
 import numpy
-
 import tables
 
 def load_summary(session_name, epoch):
@@ -108,3 +108,6 @@ class Summary(object):
 
     def get_source_md5sum(self):
         return self._file.root._v_attrs['src_md5']
+
+    def get_md5sum(self):
+        return os.popen('md5sum %s' % self._filename).read().split()[0]
