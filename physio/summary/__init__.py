@@ -68,8 +68,8 @@ class Summary(object):
                 '(ch == %i) & (cl == %i)' % (channel, cluster))
         return w['wave_mean'], w['wave_std']
 
-    def get_trials(self, matchDict = None, timeRange = None):
-        stimulus_indices = self.get_stimulus_indices(matchDict)
+    def get_trials(self, match = None, timeRange = None):
+        stimulus_indices = self.get_stimulus_indices(match)
         if len(stimulus_indices) == 0:
             return numpy.array([])
         if timeRange is not None:
@@ -80,16 +80,22 @@ class Summary(object):
             trials = self._file.root.Trials.read()
         return trials[numpy.in1d(trials['stim_index'], stimulus_indices)]
 
-    def get_stimuli(self, matchDict = None):
-        if matchDict is None:
+    def get_stimuli(self, match = None):
+        if match is None:
             return self._file.root.Stimuli.read()
-        match_string = match_dict_to_match_string(matchDict)
+        elif type(match) is dict:
+            match_string = match_dict_to_match_string(match)
+        elif type(match) is str:
+            match_string = match
         return self._file.root.Stimuli.readWhere(match_string)
 
-    def get_stimulus_indices(self, matchDict = None):
-        if matchDict is None:
+    def get_stimulus_indices(self, match = None):
+        if match is None:
             return range(self._file.root.Stimuli.nrows)
-        match_string = match_dict_to_match_string(matchDict)
+        elif type(match) is dict:
+            match_string = match_dict_to_match_string(match)
+        elif type(match) is str:
+            match_string = match
         return self._file.root.Stimuli.getWhereList(match_string)
 
     def get_channel_locations(self):
