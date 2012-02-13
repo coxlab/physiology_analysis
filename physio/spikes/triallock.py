@@ -30,7 +30,7 @@ def bin_response(spikes, trials, prew, duration, binw, raw = False):
         return m, s, M
     return m, s
 
-def find_significant_bins(spikes, trials, duration, binw):
-    _, _, M = bin_response(spikes, trials, duration, duration, binw, raw = True)
+def find_significant_bins(spikes, trials, duration, binw, alpha = 0.001):
+    _, _, M = bin_response(spikes, trials, binw, duration, binw, raw = True)
     # add 1 to offset for baseline bin
-    return latency.measure_binned_latency(M[:,0], M[:,1:]) + 1
+    return latency.measure_binned_latency(M[:,0], M[:,1:], alpha) + 1
