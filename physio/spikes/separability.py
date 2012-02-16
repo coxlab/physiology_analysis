@@ -39,16 +39,39 @@ def separability_correlation(M):
 
 def separability_permutation(M, alpha = 0.05, N = None, full = False):
     """
+    Parameters
+    ----------
+    M       : 2d array  : response matrix
+    alpha   : float     : probability of type 1 error (false positive)
+                            (default = 0.05)
+    N       : int       : number of scrambled permutations to test
+                            (default = 1 / alpha * 250)
+    full    : bool      : return full output (default = False)
+
+    Returns
+    -------
+    sep : bool : response is/isn't separable
+    spi : float : separability index
+    (p0, p1) : 2 tuple of floats : p values for singular value
+            0 and 1 permutation tests
+    
+    Returns if full
+    ------
+    svs : singular values
+    v0s : first singular value for all tested permutations
+    v1s : second singular value for all tested permutations
+
+    Notes
+    -----
      From: Grunewald and Skoumbourdis (2004) 
       The Integration of Multiple Stimulus Features by V1 Neurons
       Journal of Neuroscience 24(41)
     """
-    raise NotImplementedError
-    svs = numpy.linalg.svd(M, compute_uv = 0)
-    v0 = svs[0]
-    v1 = svs[1]
+    svs0 = numpy.linalg.svd(M, compute_uv = 0)
+    v0 = svs0[0]
+    v1 = svs0[1]
 
-    spi = svs[0] ** 2. / numpy.sum(svs[1:]**2.)
+    spi = svs0[0] ** 2. / numpy.sum(svs0[1:]**2.)
 
     # run permutation test
     v0s = []
@@ -65,9 +88,11 @@ def separability_permutation(M, alpha = 0.05, N = None, full = False):
         v1s.append(svs[1])
 
     # given v0 and v1, and distributions v0s, v1s, how likely are each
-    p0 = 1.
-    p1 = 1.
+    p0 = sum(v0s > v0) / float(N)
+    p1 = sum(v1s > v1) / float(N)
+    
+    sep = (p0 < alpha) and (p1 > alpha)
 
     if full:
-        return p0, p1, spi, svs, v0s, v1s
-    return p0, p1, spi
+        return sep, spi, (p0, p1), svs0, v0s, v1s
+    return sep, spi, (p0, p1)
