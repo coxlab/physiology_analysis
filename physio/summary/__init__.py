@@ -7,10 +7,47 @@ import os
 import numpy
 import tables
 
+from .. import cfg
+from .. import session
 
-def load_summary(session_name, epoch):
 
-    pass
+def make_summary_filename(config, session_name, epoch_index):
+    return '%s/%s/%s_%i.h5' % (config.get('filesystem', 'resultsrepo'), \
+            session_name, session_name, epoch_index)
+
+
+def get_summary_filenames(config=None):
+    if config is None:
+        config = cfg.Config()
+        config.read_user_config()
+    session_names = session.get_sessions(config)
+    summary_filenames = []
+    for session_name in session_names:
+        n_epochs = get_n_epochs(session_name)
+        if len(n_epochs) == 0:
+            continue
+        for epoch_index in xrange(n_epochs):
+            summary_filename = make_summary_filename(config, session_name, \
+                    epoch_index)
+            # check that summary exists
+            if os.path.exists(summary_filename):
+                summary_filenames.append(summary_filename)
+    return summary_filenames
+
+
+def get_summary_objects(config=None):
+    return [Summary(f) for f in get_summary_filenames(config)]
+
+
+def get_n_epochs(session_name):
+    return session.get_n_epochs(session_name)
+
+
+def load_summary(session_name, epoch_index, config=None):
+    if config is None:
+        config = cfg.load(session_name)
+    summary_filename = make_summary_filename(config, session_name, epoch_index)
+    return Summary(summary_filename)
 
 
 def key_value_to_match(key, value, joiner='|'):
