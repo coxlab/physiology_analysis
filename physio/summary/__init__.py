@@ -24,7 +24,7 @@ def get_summary_filenames(config=None):
     summary_filenames = []
     for session_name in session_names:
         n_epochs = get_n_epochs(session_name)
-        if len(n_epochs) == 0:
+        if n_epochs == 0:
             continue
         for epoch_index in xrange(n_epochs):
             summary_filename = make_summary_filename(config, session_name, \
