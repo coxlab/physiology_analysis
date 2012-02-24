@@ -10,16 +10,18 @@ from .. import cfg
 from .. import events
 from .. import session
 
+
 def summarize_session(session_name):
     #c = cfg.Config()
     #c.read_user_config()
     #c.set_session(session_name)
     config = cfg.load(session_name)
     n_epochs = session.get_n_epochs(session_name)
-    logging.debug("Summarizing %i epochs for session %s" % (n_epochs, session_name))
+    logging.debug("Summarizing %i epochs for session %s" % \
+            (n_epochs, session_name))
     for epoch_index in xrange(n_epochs):
         session_object = session.load(session_name, epoch_index)
-        fn = '%s/%s/%s_%i.h5' % (config.get('filesystem','resultsrepo'),\
+        fn = '%s/%s/%s_%i.h5' % (config.get('filesystem', 'resultsrepo'), \
                 session_name, session_name, epoch_index)
         logging.debug("Saving summary to %s" % fn)
         summarize_session_object(session_object, fn)
@@ -30,25 +32,26 @@ def summarize_session_object(session, output_filename):
     Generate an intermediate representation for a session
     """
     summary_file = tables.openFile(output_filename, 'w')
-    
+
     #gtt, gts, btt, bts = session.get_trials()
     image_times, image_stims = session.get_stimuli()
-    rect_times, rect_stims = session.get_stimuli(stimType = 'rectangle')
+    rect_times, rect_stims = session.get_stimuli(stimType='rectangle')
 
-    stims = events.stimuli.unique(rect_stims + image_stims) # dicts
+    stims = events.stimuli.unique(rect_stims + image_stims)  # dicts
 
     # 1) stimuli
     logging.debug("Adding stimuli to summary")
+
     class StimDescription(tables.IsDescription):
         name = tables.StringCol(32)
-        pos_x  = tables.Float64Col()
-        pos_y  = tables.Float64Col()
+        pos_x = tables.Float64Col()
+        pos_y = tables.Float64Col()
         rotation = tables.Float64Col()
         size_x = tables.Float64Col()
         size_y = tables.Float64Col()
     stim_table = summary_file.createTable('/', 'Stimuli', StimDescription)
     stim_lookup = {}
-    
+
     for (stim_index, stim) in enumerate(stims):
         for key in ['name', 'pos_x', 'pos_y', 'rotation',\
                 'size_x', 'size_y']:
@@ -60,11 +63,12 @@ def summarize_session_object(session, output_filename):
 
     # 2) trials [stimulus, duration, outcome]
     logging.debug("Adding trials to summary")
+
     class TrialDescription(tables.IsDescription):
         stim_index = tables.UInt32Col()
-        duration = tables.UInt64Col() # ms
+        duration = tables.UInt64Col()  # ms
         time = tables.Float64Col()
-        outcome = tables.UInt8Col() # 0 success, 1 failure
+        outcome = tables.UInt8Col()  # 0 success, 1 failure
         # for BlueSquare: 0 = success, 1 = ignore
         # for image: 0 = correctIgnore, 1 = failure
     trial_table = summary_file.createTable('/', 'Trials',\
@@ -73,14 +77,14 @@ def summarize_session_object(session, output_filename):
     tr = session.get_epoch_time_range('mworks')
     tr[0] = 0
     image_duration_times, image_duration_values = \
-            session.get_events('Distractor_Time', timeRange = tr)
+            session.get_events('Distractor_Time', timeRange=tr)
     rect_duration_times, rect_duration_values = \
-            session.get_events('StimulusPresentation_time', timeRange = tr)
+            session.get_events('StimulusPresentation_time', timeRange=tr)
     ftimes, _ = session.get_events('failure')
     ftimes = numpy.array(ftimes)
     stimes, _ = session.get_events('success')
     stimes = numpy.array(stimes)
-    
+
     times = rect_times + image_times
     stims = rect_stims + image_stims
     for (time, stim) in zip(times, stims):
@@ -93,9 +97,9 @@ def summarize_session_object(session, output_filename):
                 else:
                     break
             # look for failure
-            outcome = 0 # success
+            outcome = 0  # success
             f = ftimes[numpy.logical_and(ftimes > time,\
-                    ftimes < (time + duration/1000.))]
+                    ftimes < (time + duration / 1000.))]
             if len(f):
                 outcome = 1
         else:
@@ -105,10 +109,10 @@ def summarize_session_object(session, output_filename):
                     duration = dv
                 else:
                     break
-            # look for 
-            outcome = 1 # ignore
+            # look for
+            outcome = 1  # ignore
             s = stimes[numpy.logical_and(stimes > time,\
-                    stimes < (time + duration/1000.))]
+                    stimes < (time + duration / 1000.))]
             if len(s):
                 outcome = 0
 
@@ -121,6 +125,7 @@ def summarize_session_object(session, output_filename):
 
     # 3) spikes
     logging.debug("Adding spikes to summary")
+
     class SpikeDescription(tables.IsDescription):
         ch = tables.UInt8Col()
         cl = tables.UInt8Col()
@@ -130,7 +135,7 @@ def summarize_session_object(session, output_filename):
 
     #nclusters = {} # TODO save this later
 
-    for ch in xrange(1,33): # tdt numbering
+    for ch in xrange(1, 33):  # tdt numbering
         #nclusters[ch] = session.get_n_clusters(ch)
         #for cl in xrange(nclusters[ch]):
         for cl in xrange(session.get_n_clusters(ch)):
@@ -145,6 +150,7 @@ def summarize_session_object(session, output_filename):
     # find waveform length
     wfs = session._file.root.Channels.ch1.coldtypes['wave'].shape
     # tables for spike ch info (nclusters, signal to noise, etc)
+
     class SpikeInfoDescription(tables.IsDescription):
         ch = tables.UInt8Col()
         cl = tables.UInt8Col()
@@ -154,10 +160,11 @@ def summarize_session_object(session, output_filename):
     spike_info_table = summary_file.createTable('/', 'SpikeInfo', \
             SpikeInfoDescription)
 
-    for ch in xrange(1,33): # tdt numbering
+    for ch in xrange(1, 33):  # tdt numbering
         for cl in xrange(session.get_n_clusters(ch)):
             waves = numpy.array(session.get_spike_waveforms(ch, cl))
-            if len(waves) == 0: continue
+            if len(waves) == 0:
+                continue
             wave_mean = numpy.mean(waves, 0)
             wave_std = numpy.std(waves, 0)
             spike_info_table.row['ch'] = ch
@@ -170,6 +177,7 @@ def summarize_session_object(session, output_filename):
     # 4) gaze
     logging.debug("Adding gaze to summary")
     tt, tv, hv, vv, pv = session.get_gaze()
+
     class GazeDescription(tables.IsDescription):
         time = tables.Float64Col()
         h = tables.Float64Col()
@@ -198,6 +206,7 @@ def summarize_session_object(session, output_filename):
     # 5) location
     logging.debug("Adding locations to summary")
     locs = session.get_channel_locations()
+
     class LocationDescription(tables.IsDescription):
         ml = tables.Float64Col()
         ap = tables.Float64Col()

@@ -83,7 +83,10 @@ class Summary(object):
         pass
 
     def get_n_channels(self):
-        return self._file.root.SpikeInfo.read(field='ch').max() + 1
+        ch_info = self._file.root.SpikeInfo.read(field='ch')
+        min_channel = ch_info.min()
+        max_channel = ch_info.max()
+        return max_channel - min_channel + 1
 
     def get_channel_indices(self):
         return numpy.unique(self._file.root.SpikeInfo.read( \
@@ -111,6 +114,9 @@ class Summary(object):
         return w['wave_mean'], w['wave_std']
 
     def get_trials(self, match=None, timeRange=None):
+        """
+        outcome : 0 = success, 1 = failure
+        """
         stimulus_indices = self.get_stimulus_indices(match)
         if len(stimulus_indices) == 0:
             return numpy.array([])
