@@ -246,4 +246,5 @@ def summarize_session_object(session, output_filename):
     summary_file.root._v_attrs['au_start'] = au_time_range[0]
     summary_file.root._v_attrs['au_end'] = au_time_range[1]
 
+    summary_file.flush()
     summary_file.close()
