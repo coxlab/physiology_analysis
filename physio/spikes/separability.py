@@ -1,14 +1,16 @@
 #!/usr/bin/env python
 
 import numpy
-import scipy.stats
+#import scipy.stats
+
 
 def reconstruct_from_svd(i, U, vs, V):
-    return vs[i] * numpy.outer(U[:,i], V[i])
+    return vs[i] * numpy.outer(U[:, i], V[i])
+
 
 def separability_correlation(M):
     """
-    Test if a response matrix M for feature 1 vs feature 2 is 
+    Test if a response matrix M for feature 1 vs feature 2 is
     separable by...
         1. computing the svd(M) -> U, values, V
         2. attempt to reconstruct M with only values[0] # first singular value
@@ -33,11 +35,12 @@ def separability_correlation(M):
     U, vs, V = numpy.linalg.svd(M)
     p0 = reconstruct_from_svd(0, U, vs, V)
     p1 = reconstruct_from_svd(1, U, vs, V)
-    r0 = numpy.corrcoef(p0.flatten(), M.flatten())[0,1]
-    r1 = numpy.corrcoef(p1.flatten(), M.flatten())[0,1]
+    r0 = numpy.corrcoef(p0.flatten(), M.flatten())[0, 1]
+    r1 = numpy.corrcoef(p1.flatten(), M.flatten())[0, 1]
     return r0, r1
 
-def separability_permutation(M, alpha = 0.05, N = None, full = False):
+
+def separability_permutation(M, alpha=0.05, N=None, full=False):
     """
     Parameters
     ----------
@@ -54,7 +57,7 @@ def separability_permutation(M, alpha = 0.05, N = None, full = False):
     spi : float : separability index
     (p0, p1) : 2 tuple of floats : p values for singular value
             0 and 1 permutation tests
-    
+
     Returns if full
     ------
     svs : singular values
@@ -63,15 +66,15 @@ def separability_permutation(M, alpha = 0.05, N = None, full = False):
 
     Notes
     -----
-     From: Grunewald and Skoumbourdis (2004) 
+     From: Grunewald and Skoumbourdis (2004)
       The Integration of Multiple Stimulus Features by V1 Neurons
       Journal of Neuroscience 24(41)
     """
-    svs0 = numpy.linalg.svd(M, compute_uv = 0)
+    svs0 = numpy.linalg.svd(M, compute_uv=0)
     v0 = svs0[0]
     v1 = svs0[1]
 
-    spi = svs0[0] ** 2. / numpy.sum(svs0[1:]**2.)
+    spi = svs0[0] ** 2. / numpy.sum(svs0[1:] ** 2.)
 
     # run permutation test
     v0s = []
@@ -83,14 +86,14 @@ def separability_permutation(M, alpha = 0.05, N = None, full = False):
         # svd
         svs = numpy.linalg.svd( \
                 numpy.random.permutation(M.flat).reshape(M.shape), \
-                compute_uv = 0)
+                compute_uv=0)
         v0s.append(svs[0])
         v1s.append(svs[1])
 
     # given v0 and v1, and distributions v0s, v1s, how likely are each
     p0 = sum(v0s > v0) / float(N)
     p1 = sum(v1s > v1) / float(N)
-    
+
     sep = (p0 < alpha) and (p1 > alpha)
 
     if full:
