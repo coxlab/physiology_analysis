@@ -218,7 +218,7 @@ class Summary(object):
         if spike_times is None:
             spike_times = self.get_spike_times(ch, cl)
         if bins is None:
-            self.get_significant_bins(ch, cl, binw, attr=attr, \
+            bins = self.get_significant_bins(ch, cl, binw, attr=attr, \
                     blacklist=blacklist, spike_times=spike_times)
         if len(bins) == 0:
             logging.warning("Tried to bin with 0 bins")
