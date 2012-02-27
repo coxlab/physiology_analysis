@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+import logging
+
 import numpy
 #import scipy.stats
 
@@ -70,6 +72,12 @@ def separability_permutation(M, alpha=0.05, N=None, full=False):
       The Integration of Multiple Stimulus Features by V1 Neurons
       Journal of Neuroscience 24(41)
     """
+    if numpy.any(numpy.isnan(M)):
+        logging.error("Cannot compute selectivity for matrix with nan")
+        if full:
+            return False, numpy.nan, (numpy.nan, numpy.nan), \
+                    numpy.array([]), numpy.array([]), numpy.array([])
+        return False, numpy.nan, (numpy.nan, numpy.nan)
     svs0 = numpy.linalg.svd(M, compute_uv=0)
     v0 = svs0[0]
     v1 = svs0[1]
