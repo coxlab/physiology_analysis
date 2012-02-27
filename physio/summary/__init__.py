@@ -50,25 +50,41 @@ def load_summary(session_name, epoch_index, config=None):
     return Summary(summary_filename)
 
 
-def key_value_to_match(key, value, joiner='|'):
+def key_value_to_match(key, value, joiner='|', op='=='):
     vt = type(value)
     if vt in (numpy.ndarray, list, tuple):  # iterables
-        return '(%s)' % joiner.join([key_value_to_match(key, i, '|') \
+        return '(%s)' % joiner.join([key_value_to_match(key, i, joiner, op) \
                 for i in value])
     elif vt in (float, numpy.float32, numpy.float64, numpy.float128):
-        return '(%s == %f)' % (key, value)
+        return '(%s %s %f)' % (key, op, value)
     elif vt in (int, numpy.int8, numpy.int16, numpy.int32, numpy.int64):
-        return '(%s == %i)' % (key, value)
+        return '(%s %s %i)' % (key, op, value)
     elif vt in (str, numpy.string_):
-        return '(%s == "%s")' % (key, value)
+        return '(%s %s "%s")' % (key, op, value)
     else:
         raise TypeError('Unknown type(%s) for value(%s)' % \
                 (str(vt), str(value)))
 
 
 def match_dict_to_match_string(matchDict):
-    return '&'.join([key_value_to_match(k, v) \
-            for k, v in matchDict.iteritems()])
+    """
+    construct a match string for use with a hdf5 query (readWhere, etc...)
+    keys should be various attributes of the table
+    values can be of any type
+    if value is a dict than it is passed on to key_value_to_match as kwargs
+    so
+    {'name': {'value': 'BlueSquare', 'op': '!=}} will yield
+    key_value_to_match(name, 'BlueSquare', op='!=')
+    """
+    matches = []
+    for k, v in matchDict.iteritems():
+        if type(v) is dict:
+            vcopy = v.copy()
+            value = vcopy.pop('value')
+            matches.append(key_value_to_match(k, value, **vcopy))
+        else:
+            matches.append(key_value_to_match(k, v))
+    return '&'.join(matches)
 
 
 class Summary(object):
