@@ -76,10 +76,20 @@ def summarize_session_object(session, output_filename):
 
     tr = session.get_epoch_time_range('mworks')
     tr[0] = 0
-    image_duration_times, image_duration_values = \
-            session.get_events('Distractor_Time', timeRange=tr)
-    rect_duration_times, rect_duration_values = \
-            session.get_events('StimulusPresentation_time', timeRange=tr)
+    codec = session.get_codec()
+    if 'Distractor_Time' in codec.values():
+        image_duration_times, image_duration_values = \
+                session.get_events('Distractor_Time', timeRange=tr)
+    elif 'DistractorPresentation_Time' in codec.values():
+        image_duration_times, image_duration_values = \
+                session.get_events('DistractorPresentation_Time', timeRange=tr)
+    else:
+        raise ValueError('Could not find distractor time in: %s' % str(codec))
+    if 'StimulusPresentation_time' in codec.values():
+        rect_duration_times, rect_duration_values = \
+                session.get_events('StimulusPresentation_time', timeRange=tr)
+    else:
+        raise ValueError('Count not find stimulus time in: %s' % str(codec))
     ftimes, _ = session.get_events('failure')
     ftimes = numpy.array(ftimes)
     stimes, _ = session.get_events('success')
