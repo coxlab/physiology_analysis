@@ -242,7 +242,7 @@ class Summary(object):
             stds[unique] = s
             ns[unique] = len(trials)
             responses[unique] = (numpy.sum(m[bins]) / float(len(bins)) - \
-                    m[0]) / ns[unique]
+                    m[0])
         return responses, means, stds, ns
 
     def get_response_matrix(self, ch, cl, attr1, attr2, bins=None, \
