@@ -87,19 +87,26 @@ do
     if [ "$runica" = "true" ]; then
         if [ -e "$imm" ] & [ -e "$ium" ]; then
             echo "Using existing ica matrices"
-            # previous ica matrices exist, use them
-            mkdir -p "$oafs"
+            nafs=`ls "$oafs" | wc -l`
+            if [ "$nafs" == "36" ]; then
+                # previously converted audio files exist
+                echo "Previously converted audio files exist"
+                echo "Not running icapp"
+            else
+                # previous ica matrices exist, use them
+                mkdir -p "$oafs"
             
-            cp $imm $omm 
-            cp $ium $oum
+                cp $imm $omm 
+                cp $ium $oum
             
-            python $icapp -M $omm -U $oum -o "$oafs" "$iafs"/input_*
+                python $icapp -M $omm -U $oum -o "$oafs" "$iafs"/input_*
+            fi
         else
             echo "Calculating ica matrices"
             python $icapp -m $icamode -s $icaarg -o "$oafs" "$iafs"/input_*
             echo "copying over ica matrices"
 
-            # safe ica matrices for later use
+            # save ica matrices for later use
             cp "$oafs/mixingmatrix" $imm
             cp "$oafs/unmixingmatrix" $ium
         fi
