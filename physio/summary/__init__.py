@@ -167,6 +167,20 @@ class Summary(object):
     def get_channel_locations(self):
         return self._file.root.Locations.read()
 
+    def get_location(self, ch):
+        """
+        Channel index in tdt indices
+        so tip is channel 7, then 10, then 1... then 29
+
+        Returns
+        -------
+            ap, dv, ml
+        """
+        # saved indices are in audio not tdt so take tdt -1 to get audio
+        if ch < 1 or ch > 32:
+            raise ValueError("Incorrect index [not in 1 to 32]: %i" % ch)
+        return self._file.root.Locations.read()[ch - 1]
+
     def get_gaze(self, timeRange=None):
         if timeRange is None:
             return self._file.root.Gaze.read()
