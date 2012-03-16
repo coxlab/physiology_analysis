@@ -25,6 +25,12 @@ resultsdir = 'summary_results'
 
 
 def process_summary(summary_filename):
+    if ('fake' in summary_filename) or \
+            ('H3' in summary_filename) or \
+            ('H4' in summary_filename) or \
+            ('H7' in summary_filename) or \
+            ('H8' in summary_filename):
+        logging.debug("Skipping %s" % summary_filename)
     summary = physio.summary.Summary(summary_filename)
     logging.debug("Processing %s" % summary._filename)
     for ch in xrange(1, 33):
@@ -37,6 +43,12 @@ def process_summary(summary_filename):
             logging.debug("ch: %i, cl: %i" % (ch, cl))
             # rate
             spike_times = summary.get_spike_times(ch, cl)
+
+            # find start of isolation
+            isolation_start = physio.spikes.times.\
+                    find_isolation_start_by_isi(spike_times)
+            spike_times = spike_times[spike_times >= isolation_start]
+
             nspikes = len(spike_times)
             info_dict['nspikes'] = nspikes
             if nspikes < min_spikes:
@@ -63,13 +75,14 @@ def process_summary(summary_filename):
 
             # significant bins
             bins = summary.get_significant_bins(ch, cl, attr="name", \
-                    blacklist="BlueSquare", spike_times=spike_times)
+                    blacklist="BlueSquare", spike_times=spike_times, \
+                    timeRange=trange)
             info_dict['bins'] = bins
 
             # selectivity
             resps, means, stds, ns = summary.get_binned_response( \
                     ch, cl, 'name', bins=bins, spike_times=spike_times, \
-                    blacklist="BlueSquare")
+                    blacklist="BlueSquare", timeRange=trange)
             if len(resps) == 0:
                 logging.warning("No responses")
                 continue
@@ -111,15 +124,16 @@ def process_summary(summary_filename):
                     {'value': 'BlueSquare', 'op': '!='}})
             attr_combinations = {}
             sep_info = {}
-            for attr1 in attrs:
+            for (ai, attr1) in enumerate(attrs[:-1]):
                 uniques1 = numpy.unique(stims[attr1])
-                for attr2 in attrs:
+                for attr2 in attrs[ai + 1:]:
                     uniques2 = numpy.unique(stims[attr2])
                     if attr1 == attr2:
                         continue
                     M = summary.get_response_matrix(ch, cl, attr1, attr2, \
                             bins=bins, spike_times=spike_times, stims=stims, \
-                            uniques1=uniques1, uniques2=uniques2)
+                            uniques1=uniques1, uniques2=uniques2, \
+                            timeRange=trange)
                     if M.shape[0] == 1 or M.shape[1] == 1:
                         logging.warning("M.shape %s, skipping" % \
                                 str(M.shape))
@@ -153,9 +167,9 @@ def process_summary(summary_filename):
             name_sep_info = {}
             for name in sorted_names:
                 stims = summary.get_stimuli({'name': name})
-                for attr1 in attrs:
+                for (ai, attr1) in enumerate(attrs[:-1]):
                     uniques1 = numpy.unique(stims[attr1])
-                    for attr2 in attrs:
+                    for attr2 in attrs[ai + 1:]:
                         uniques2 = numpy.unique(stims[attr2])
                         if attr1 == attr2 or \
                                 attr1 == 'name' or attr2 == 'name':
@@ -163,7 +177,7 @@ def process_summary(summary_filename):
                         M = summary.get_response_matrix(ch, cl, attr1, \
                                 attr2, bins=bins, spike_times=spike_times,\
                                 stims=stims, uniques1=uniques1, \
-                                uniques2=uniques2)
+                                uniques2=uniques2, timeRange=trange)
                         if M.shape[0] == 1 or M.shape[1] == 1:
                             logging.debug("M.shape incompatible" \
                                     " with separability: %s" % \
