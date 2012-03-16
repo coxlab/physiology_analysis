@@ -200,16 +200,16 @@ class Summary(object):
 
     def get_significant_bins(self, ch, cl, binw=0.05, bin_alpha=0.001, \
             trials=None, attr="name", blacklist="BlueSquare", \
-            spike_times=None):
+            spike_times=None, timeRange=None):
         if spike_times is None:
-            spike_times = self.get_spike_times(ch, cl)
+            spike_times = self.get_spike_times(ch, cl, timeRange)
         if trials is None:
             if len(blacklist):
                 match_dict = {attr: {'value': blacklist, 'op': '!=', \
                         'joiner': '&'}}
             else:
                 match_dict = {}
-            trials = self.get_trials(match_dict)
+            trials = self.get_trials(match_dict, timeRange)
             if len(trials) == 0:
                 logging.warning("No trials found")
                 return []
@@ -218,7 +218,7 @@ class Summary(object):
                 trials['time'], duration, binw, bin_alpha)
 
     def get_binned_response(self, ch, cl, attr, bins=None, binw=0.05, \
-            blacklist="BlueSquare", spike_times=None):
+            blacklist="BlueSquare", spike_times=None, timeRange=None):
         # get unique stimuli
         if len(blacklist):
             match_dict = {attr: {'value': blacklist, 'op': '!=', \
@@ -230,10 +230,11 @@ class Summary(object):
             logging.warning("No stimuli found")
             return {}, {}, {}, {}
         if spike_times is None:
-            spike_times = self.get_spike_times(ch, cl)
+            spike_times = self.get_spike_times(ch, cl, timeRange)
         if bins is None:
             bins = self.get_significant_bins(ch, cl, binw, attr=attr, \
-                    blacklist=blacklist, spike_times=spike_times)
+                    blacklist=blacklist, spike_times=spike_times, \
+                    timeRange=timeRange)
         if len(bins) == 0:
             logging.warning("Tried to bin with 0 bins")
             return {}, {}, {}, {}
@@ -242,7 +243,7 @@ class Summary(object):
         ns = {}
         responses = {}
         for unique in uniques:
-            trials = self.get_trials({attr: unique})
+            trials = self.get_trials({attr: unique}, timeRange)
             if len(trials) == 0:
                 means[unique] = numpy.nan
                 stds[unique] = numpy.nan
@@ -261,14 +262,14 @@ class Summary(object):
 
     def get_response_matrix(self, ch, cl, attr1, attr2, bins=None, \
             binw=0.05, spike_times=None, stims=None, uniques1=None, \
-            uniques2=None):
+            uniques2=None, timeRange=None):
         if stims is None:
             stims = self.get_stimuli()
         if spike_times is None:
-            spike_times = self.get_spike_times(ch, cl)
+            spike_times = self.get_spike_times(ch, cl, timeRange)
         if bins is None:
             bins = self.get_significant_bins(ch, cl, binw, \
-                    spike_times=spike_times)
+                    spike_times=spike_times, timeRange=timeRange)
         if uniques1 is None:
             uniques1 = numpy.unique(stims[attr1])
             uniques1.sort()
@@ -279,7 +280,7 @@ class Summary(object):
         for (i1, u1) in enumerate(uniques1):
             for (i2, u2) in enumerate(uniques2):
                 trials = self.get_trials({attr1: u1, \
-                        attr2: u2})
+                        attr2: u2}, timeRange)
                 if len(trials) == 0:
                     logging.warning("No trials for %s by %s" % \
                             (u1, u2))
