@@ -7,19 +7,25 @@ import pickle
 logging.basicConfig(level=logging.DEBUG)
 
 import pylab
+import numpy
+
+from joblib import Parallel, delayed
 
 import physio
 
-summaries = physio.summary.get_summary_objects()
+#summaries = physio.summary.get_summary_objects()
+summary_filenames = physio.summary.get_summary_filenames()
 
 min_spikes = 10
-min_rate = 0.1  # hz
+min_rate = 0.01  # hz
 
 attrs = ['name', 'pos_x', 'pos_y', 'size_x', 'rotation']
 
 resultsdir = 'summary_results'
 
-for summary in summaries:
+
+def process_summary(summary_filename):
+    summary = physio.summary.Summary(summary_filename)
     logging.debug("Processing %s" % summary._filename)
     for ch in xrange(1, 33):
         for cl in summary.get_cluster_indices(ch):
@@ -91,7 +97,9 @@ for summary in summaries:
                 e[i] = (pylab.sum(stds[n][bins]) / float(len(bins))) / \
                         pylab.sqrt(ns[n])
             pylab.errorbar(x, y, e)
+            xl = pylab.xlim()
             pylab.xticks(x, sorted_names)
+            pylab.xlim(xl)
             pylab.ylabel('average binned response')
             pylab.title('Selectivity: %.2f' % sel_index)
             pylab.savefig(outdir + '/by_name.png')
@@ -104,11 +112,14 @@ for summary in summaries:
             attr_combinations = {}
             sep_info = {}
             for attr1 in attrs:
+                uniques1 = numpy.unique(stims[attr1])
                 for attr2 in attrs:
+                    uniques2 = numpy.unique(stims[attr2])
                     if attr1 == attr2:
                         continue
                     M = summary.get_response_matrix(ch, cl, attr1, attr2, \
-                            bins=bins, spike_times=spike_times, stims=stims)
+                            bins=bins, spike_times=spike_times, stims=stims, \
+                            uniques1=uniques1, uniques2=uniques2)
                     if M.shape[0] == 1 or M.shape[1] == 1:
                         logging.warning("M.shape %s, skipping" % \
                                 str(M.shape))
@@ -120,7 +131,13 @@ for summary in summaries:
                         pylab.imshow(M, interpolation='nearest')
                         pylab.colorbar()
                         pylab.xlabel(attr2)
+                        xl = pylab.xlim()
+                        yl = pylab.ylim()
+                        pylab.xticks(range(len(uniques2)), uniques2)
                         pylab.ylabel(attr1)
+                        pylab.yticks(range(len(uniques1)), uniques1)
+                        pylab.xlim(xl)
+                        pylab.ylim(yl)
                         pylab.title('Sep: %s, %.4f, (%.3f, %.3f)' % \
                                 (str(sep), spi, ps[0], ps[1]))
                         pylab.savefig(outdir + '/%s_%s.png' % \
@@ -137,13 +154,16 @@ for summary in summaries:
             for name in sorted_names:
                 stims = summary.get_stimuli({'name': name})
                 for attr1 in attrs:
+                    uniques1 = numpy.unique(stims[attr1])
                     for attr2 in attrs:
+                        uniques2 = numpy.unique(stims[attr2])
                         if attr1 == attr2 or \
                                 attr1 == 'name' or attr2 == 'name':
                             continue
                         M = summary.get_response_matrix(ch, cl, attr1, \
                                 attr2, bins=bins, spike_times=spike_times,\
-                                stims=stims)
+                                stims=stims, uniques1=uniques1, \
+                                uniques2=uniques2)
                         if M.shape[0] == 1 or M.shape[1] == 1:
                             logging.debug("M.shape incompatible" \
                                     " with separability: %s" % \
@@ -157,7 +177,13 @@ for summary in summaries:
                                 pylab.imshow(M, interpolation='nearest')
                                 pylab.colorbar()
                                 pylab.xlabel(attr2)
+                                xl = pylab.xlim()
+                                yl = pylab.ylim()
+                                pylab.xticks(range(len(uniques2)), uniques2)
                                 pylab.ylabel(attr1)
+                                pylab.yticks(range(len(uniques1)), uniques1)
+                                pylab.xlim(xl)
+                                pylab.ylim(yl)
                                 pylab.title('Sep: %s, %.4f, (%.3f, %.3f)' \
                                         % (str(sep), spi, ps[0], ps[1]))
                                 pylab.savefig(outdir + '/%s_%s_%s.png' % \
@@ -168,3 +194,6 @@ for summary in summaries:
 
             with open(outdir + '/name_sep_info.p', 'w') as f:
                 pickle.dump(name_sep_info, f, 2)
+
+
+Parallel(n_jobs=-1)(delayed(process_summary)(s) for s in summary_filenames)
