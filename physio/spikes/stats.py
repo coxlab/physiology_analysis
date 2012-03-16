@@ -27,6 +27,21 @@ def waveforms_snr(waveforms, bounds=(30, 70)):
     return sig / np.std(wf_arr[:, 0:bounds[0]])
 
 
+def waveforms_snr_ptp(waveforms, pre=20):
+    """
+    Measure signal to noise with equation from
+        Edward A Branchard's thesis
+        A control system for positioning recording electrodes to
+            isolate neurons in extracellular recordings
+        http://thesis.library.caltech.edu/2445/
+
+    snr(i) = ptp(i) / rms(noise)
+    """
+    noise = np.sqrt(np.sum(waveforms[:, :20].flatten() ** 2) / len(waveforms))
+    ptp = np.max(waveforms, 1) - np.min(waveforms, 1)
+    return ptp / noise
+
+
 def xcorr(a, b, margin=44):
     if len(a) == 0 or len(b) == 0:
         return 0.
