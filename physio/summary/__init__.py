@@ -209,7 +209,7 @@ class Summary(object):
                         'joiner': '&'}}
             else:
                 match_dict = {}
-            trials = self.get_trials(match_dict, timeRange)
+            trials = self.get_trials(match_dict, timeRange=timeRange)
             if len(trials) == 0:
                 logging.warning("No trials found")
                 return []
@@ -243,7 +243,7 @@ class Summary(object):
         ns = {}
         responses = {}
         for unique in uniques:
-            trials = self.get_trials({attr: unique}, timeRange)
+            trials = self.get_trials({attr: unique}, timeRange=timeRange)
             if len(trials) == 0:
                 means[unique] = numpy.nan
                 stds[unique] = numpy.nan
@@ -280,7 +280,7 @@ class Summary(object):
         for (i1, u1) in enumerate(uniques1):
             for (i2, u2) in enumerate(uniques2):
                 trials = self.get_trials({attr1: u1, \
-                        attr2: u2}, timeRange)
+                        attr2: u2}, timeRange=timeRange)
                 if len(trials) == 0:
                     logging.warning("No trials for %s by %s" % \
                             (u1, u2))
