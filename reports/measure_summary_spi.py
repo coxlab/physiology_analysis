@@ -31,6 +31,7 @@ def process_summary(summary_filename):
             ('H7' in summary_filename) or \
             ('H8' in summary_filename):
         logging.debug("Skipping %s" % summary_filename)
+        return
     summary = physio.summary.Summary(summary_filename)
     logging.debug("Processing %s" % summary._filename)
     for ch in xrange(1, 33):
@@ -69,8 +70,9 @@ def process_summary(summary_filename):
             # location
             try:
                 location = summary.get_location(ch)
-            except:
+            except Exception as E:
                 location = (0, 0, 0)
+                print "Attempt to get location failed: %s" % str(E)
             info_dict['location'] = location
 
             # significant bins
@@ -210,4 +212,5 @@ def process_summary(summary_filename):
                 pickle.dump(name_sep_info, f, 2)
 
 
+#Parallel(n_jobs=1)(delayed(process_summary)(s) for s in summary_filenames)
 Parallel(n_jobs=-1)(delayed(process_summary)(s) for s in summary_filenames)
