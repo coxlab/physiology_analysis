@@ -306,6 +306,6 @@ class Summary(object):
             return numpy.array([])
         trials = trials[numpy.in1d(trials['stim_index'], sis)]
         if timeRange is not None:
-            trials = numpy.union1d(trials['time'] > timeRange[0], \
-                    trials['time'] < timeRange[1])
+            trials = trials[numpy.union1d(trials['time'] > timeRange[0], \
+                    trials['time'] < timeRange[1])]
         return trials
