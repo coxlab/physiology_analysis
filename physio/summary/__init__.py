@@ -300,6 +300,24 @@ class Summary(object):
                 M[i1, i2] = numpy.sum(m[bins]) / float(len(bins)) - m[0]
         return M
 
+    def get_baseline(self, ch, cl, prew, trials=None, spike_times=None, \
+            timeRange=None, raw=False):
+        if trials is None:
+            trials = self.get_trials({}, timeRange=timeRange)
+        if spike_times is None:
+            spike_times = self.get_spike_times(ch, cl, timeRange)
+        per_trial = numpy.zeros(len(trials))
+        for (i, tt) in enumerate(trials['time']):
+            n = numpy.sum(numpy.logical_and(spike_times > (tt - prew), \
+                    spike_times < tt))
+            per_trial[i] = n
+        if raw:
+            return per_trial
+        total = numpy.sum(per_trial)
+        if total == 0:
+            return 0
+        return total / (len(trials) * prew)
+
     def filter_trials(self, trials, match=None, timeRange=None):
         sis = self.get_stimulus_indices(match)
         if len(sis) == 0:

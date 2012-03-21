@@ -22,7 +22,9 @@ min_spikes = 10
 min_rate = 0.01  # hz
 #rwin = (0.05, 0.2)
 # default_bins = None
-default_bins = [1, 2, 3]  # corresponds to 0.05 to 0.2 with binw 0.05
+default_bins = [2, 3, 4]  # corresponds to 0.05 to 0.20 with binw 0.05
+# bin[0] is baseline
+prew = 0.1  # for baseline calculation
 
 attrs = ['name', 'pos_x', 'pos_y', 'size_x', 'rotation']
 
@@ -94,7 +96,7 @@ def get_responsivity():
     pass
 
 
-def get_selectivity():
+def get_selectivity(resps, means, ns):
     pass
 
 
@@ -188,6 +190,10 @@ def process_summary(summary_filename):
             else:
                 bins = default_bins
             info_dict['bins'] = bins
+
+            baseline = summary.get_baseline(ch, cl, prew, trials=trials, \
+                    spike_times=spike_times)
+            info_dict['baseline'] = baseline
 
             # selectivity
             #resps, means, stds, ns = summary.get_binned_response( \
