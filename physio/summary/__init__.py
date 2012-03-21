@@ -218,7 +218,8 @@ class Summary(object):
                 trials['time'], duration, binw, bin_alpha)
 
     def get_binned_response(self, ch, cl, attr, bins=None, binw=0.05, \
-            blacklist="BlueSquare", spike_times=None, timeRange=None):
+            blacklist="BlueSquare", spike_times=None, timeRange=None, \
+            trials=None):
         # get unique stimuli
         if len(blacklist):
             match_dict = {attr: {'value': blacklist, 'op': '!=', \
@@ -238,31 +239,34 @@ class Summary(object):
         if len(bins) == 0:
             logging.warning("Tried to bin with 0 bins")
             return {}, {}, {}, {}
+        if trials is None:
+            trials = self.get_trials(match_dict, timeRange=timeRange)
         means = {}
         stds = {}
         ns = {}
         responses = {}
         for unique in uniques:
-            trials = self.get_trials({attr: unique}, timeRange=timeRange)
-            if len(trials) == 0:
+            utrials = self.filter_trials(trials, {attr: unique})
+            #trials = self.get_trials({attr: unique}, timeRange=timeRange)
+            if len(utrials) == 0:
                 means[unique] = numpy.nan
                 stds[unique] = numpy.nan
                 ns[unique] = 0
                 responses[unique] = numpy.nan
                 continue
-            duration = trials[0]['duration'] / 1000.
-            m, s = spikes.triallock.bin_response(spike_times, trials['time'], \
+            duration = utrials[0]['duration'] / 1000.
+            m, s = spikes.triallock.bin_response(spike_times, utrials['time'],\
                     binw, duration, binw)
             means[unique] = m
             stds[unique] = s
-            ns[unique] = len(trials)
+            ns[unique] = len(utrials)
             responses[unique] = (numpy.sum(m[bins]) / float(len(bins)) - \
                     m[0])
         return responses, means, stds, ns
 
     def get_response_matrix(self, ch, cl, attr1, attr2, bins=None, \
             binw=0.05, spike_times=None, stims=None, uniques1=None, \
-            uniques2=None, timeRange=None):
+            uniques2=None, timeRange=None, trials=None):
         if stims is None:
             stims = self.get_stimuli()
         if spike_times is None:
@@ -276,18 +280,32 @@ class Summary(object):
         if uniques2 is None:
             uniques2 = numpy.unique(stims[attr2])
             uniques2.sort()
+        if trials is None:
+            trials.get_trials({}, timeRange=timeRange)
         M = numpy.empty((len(uniques1), len(uniques2)))
         for (i1, u1) in enumerate(uniques1):
             for (i2, u2) in enumerate(uniques2):
-                trials = self.get_trials({attr1: u1, \
-                        attr2: u2}, timeRange=timeRange)
-                if len(trials) == 0:
+                utrials = self.filter_trials(trials, {attr1: u1, \
+                        attr2: u2})
+                #trials = self.get_trials({attr1: u1, \
+                #        attr2: u2}, timeRange=timeRange)
+                if len(utrials) == 0:
                     logging.warning("No trials for %s by %s" % \
                             (u1, u2))
                     M[i1, i2] = numpy.nan
                     continue
-                duration = trials[0]['duration'] / 1000.
+                duration = utrials[0]['duration'] / 1000.
                 m, s = spikes.triallock.bin_response(spike_times, \
-                        trials['time'], binw, duration, binw)
+                        utrials['time'], binw, duration, binw)
                 M[i1, i2] = numpy.sum(m[bins]) / float(len(bins)) - m[0]
         return M
+
+    def filter_trials(self, trials, match=None, timeRange=None):
+        sis = self.get_stimulus_indices(match)
+        if len(sis) == 0:
+            return numpy.array([])
+        trials = trials[numpy.in1d(trials['stim_index'], sis)]
+        if timeRange is not None:
+            trials = numpy.union1d(trials['time'] > timeRange[0], \
+                    trials['time'] < timeRange[1])
+        return trials

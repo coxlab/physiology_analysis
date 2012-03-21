@@ -14,16 +14,95 @@ from joblib import Parallel, delayed
 import physio
 
 #summaries = physio.summary.get_summary_objects()
-summary_filenames = physio.summary.get_summary_filenames()
+summary_filenames = [sf for sf in physio.summary.get_summary_filenames() \
+        if not (('fake' in sf) or ('H3' in sf) or ('H4' in sf) or \
+        ('H7' in sf) or ('H8' in sf))]
 
 min_spikes = 10
 min_rate = 0.01  # hz
+#rwin = (0.05, 0.2)
+# default_bins = None
+default_bins = [1, 2, 3]  # corresponds to 0.05 to 0.2 with binw 0.05
 
 attrs = ['name', 'pos_x', 'pos_y', 'size_x', 'rotation']
 
 resultsdir = 'summary_results'
 
+mongo_server = 'soma2.rowland.org'
+mongo_db = 'physiology'
+mongo_collection = 'cells'
 
+
+def calc_velocity(signal, time):
+    return (signal[1:] - signal[:-1]) / (time[1:] - time[:-1])
+
+
+def clean_gaze(gaze, acc_thresh=1000, dev_thresh=30):
+    # acceleration
+    hvel = calc_velocity(gaze['h'], gaze['cobra_timestamp'])
+    vvel = calc_velocity(gaze['v'], gaze['cobra_timestamp'])
+    hacc = calc_velocity(hvel, gaze['cobra_timestamp'][1:])
+    vacc = calc_velocity(vvel, gaze['cobra_timestamp'][1:])
+
+    hbad = numpy.where(abs(hacc) > acc_thresh)[0]
+    vbad = numpy.where(abs(vacc) > acc_thresh)[0]
+
+    bad = numpy.union1d(hbad, vbad) + 1
+    bad = numpy.union1d(bad, bad + 1)
+
+    gaze = numpy.delete(gaze, bad)
+
+    # deviation
+    hm = numpy.mean(gaze['h'])
+    vm = numpy.mean(gaze['v'])
+
+    bad = numpy.union1d( \
+            numpy.where(abs(gaze['h'] - hm) > dev_thresh)[0],
+            numpy.where(abs(gaze['v'] - vm) > dev_thresh)[0])
+
+    gaze = numpy.delete(gaze, bad)
+    return gaze
+
+
+def cull_trials_by_gaze(trials, gaze, deviation_threshold,
+        std_thresh=numpy.inf, dev_thresh=2):
+    median_h = numpy.median(gaze['h'])
+    cull = numpy.zeros(len(trials)).astype(bool)
+    for (i, trial) in enumerate(trials):
+        start, end = trial['time'], trial['time'] + trial['duration']
+        trial_gaze = gaze[numpy.logical_and(gaze['time'] > start, \
+                gaze['time'] < end)]
+
+        trial_mean_h = numpy.mean(trial_gaze['h'])
+        trial_std_h = numpy.std(trial_gaze['h'])
+
+        if (trial_std_h > std_thresh):
+            cull[i] = True
+            continue
+
+        if (abs(trial_mean_h - median_h) > dev_thresh):
+            cull[i] = True
+            continue
+    return trials[cull]
+
+
+def get_driven_rate():
+    pass
+
+
+def get_responsivity():
+    pass
+
+
+def get_selectivity():
+    pass
+
+
+def get_tolerance():
+    pass
+
+
+# have this dump directly to mongo (remove plotting)
 def process_summary(summary_filename):
     if ('fake' in summary_filename) or \
             ('H3' in summary_filename) or \
@@ -34,6 +113,17 @@ def process_summary(summary_filename):
         return
     summary = physio.summary.Summary(summary_filename)
     logging.debug("Processing %s" % summary._filename)
+
+    # cull trials by success
+    trials = summary.get_trials()
+    trials = trials[trials['outcome'] == 0]
+    # and gaze
+    gaze = clean_gaze(summary.get_gaze())
+
+    logging.debug("N Trials before gaze culling: %i" % len(trials))
+    trials = cull_trials_by_gaze(trials, gaze)
+    logging.debug("N Trials after gaze culling: %i" % len(trials))
+
     for ch in xrange(1, 33):
         for cl in summary.get_cluster_indices(ch):
             outdir = '%s/%s_%i_%i' % \
@@ -65,6 +155,15 @@ def process_summary(summary_filename):
                         (rate, min_rate))
                 continue
 
+            # filter trials
+            dtrials = summary.filter_trials(trials, \
+                    {'name': {'value': 'BlueSquare', 'op': '!='}}, \
+                    timeRange=trange)
+            if len(dtrials) == 0:
+                logging.error("Zero trials for %i %i %s" % \
+                        (ch, cl, summary._filename))
+                continue
+
             # snr TODO
 
             # location
@@ -76,15 +175,23 @@ def process_summary(summary_filename):
             info_dict['location'] = list(location)
 
             # significant bins
-            bins = summary.get_significant_bins(ch, cl, attr="name", \
-                    blacklist="BlueSquare", spike_times=spike_times, \
-                    timeRange=trange)
+            #bins = summary.get_significant_bins(ch, cl, attr="name", \
+            #        blacklist="BlueSquare", spike_times=spike_times, \
+            #        timeRange=trange)
+            if default_bins is None:
+                bins = summary.get_significant_bins(ch, cl, trials=dtrials, \
+                        spike_times=spike_times)
+            else:
+                bins = default_bins
             info_dict['bins'] = bins
 
             # selectivity
+            #resps, means, stds, ns = summary.get_binned_response( \
+            #        ch, cl, 'name', bins=bins, spike_times=spike_times, \
+            #        blacklist="BlueSquare", timeRange=trange)
             resps, means, stds, ns = summary.get_binned_response( \
                     ch, cl, 'name', bins=bins, spike_times=spike_times, \
-                    blacklist="BlueSquare", timeRange=trange)
+                    trials=dtrials, timeRange=trange)
             if len(resps) == 0:
                 logging.warning("No responses")
                 continue
@@ -135,7 +242,7 @@ def process_summary(summary_filename):
                     M = summary.get_response_matrix(ch, cl, attr1, attr2, \
                             bins=bins, spike_times=spike_times, stims=stims, \
                             uniques1=uniques1, uniques2=uniques2, \
-                            timeRange=trange)
+                            timeRange=trange, trials=dtrials)
                     if M.shape[0] == 1 or M.shape[1] == 1:
                         logging.warning("M.shape %s, skipping" % \
                                 str(M.shape))
@@ -179,7 +286,8 @@ def process_summary(summary_filename):
                         M = summary.get_response_matrix(ch, cl, attr1, \
                                 attr2, bins=bins, spike_times=spike_times,\
                                 stims=stims, uniques1=uniques1, \
-                                uniques2=uniques2, timeRange=trange)
+                                uniques2=uniques2, timeRange=trange, \
+                                trials=dtrials)
                         if M.shape[0] == 1 or M.shape[1] == 1:
                             logging.debug("M.shape incompatible" \
                                     " with separability: %s" % \
