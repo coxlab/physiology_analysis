@@ -73,7 +73,7 @@ def process_summary(summary_filename):
             except Exception as E:
                 location = (0, 0, 0)
                 print "Attempt to get location failed: %s" % str(E)
-            info_dict['location'] = location
+            info_dict['location'] = list(location)
 
             # significant bins
             bins = summary.get_significant_bins(ch, cl, attr="name", \
