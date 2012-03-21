@@ -64,10 +64,10 @@ def clean_gaze(gaze, acc_thresh=1000, dev_thresh=30):
     return gaze
 
 
-def cull_trials_by_gaze(trials, gaze, deviation_threshold,
-        std_thresh=numpy.inf, dev_thresh=2):
+def cull_trials_by_gaze(trials, gaze, \
+        std_thresh=numpy.inf, dev_thresh=5):
     median_h = numpy.median(gaze['h'])
-    cull = numpy.zeros(len(trials)).astype(bool)
+    keep = numpy.ones(len(trials)).astype(bool)
     for (i, trial) in enumerate(trials):
         start, end = trial['time'], trial['time'] + trial['duration']
         trial_gaze = gaze[numpy.logical_and(gaze['time'] > start, \
@@ -77,13 +77,13 @@ def cull_trials_by_gaze(trials, gaze, deviation_threshold,
         trial_std_h = numpy.std(trial_gaze['h'])
 
         if (trial_std_h > std_thresh):
-            cull[i] = True
+            keep[i] = False
             continue
 
         if (abs(trial_mean_h - median_h) > dev_thresh):
-            cull[i] = True
+            keep[i] = False
             continue
-    return trials[cull]
+    return trials[keep]
 
 
 def get_driven_rate():
@@ -116,13 +116,17 @@ def process_summary(summary_filename):
 
     # cull trials by success
     trials = summary.get_trials()
+    if len(trials) == 0:
+        logging.error("No trails for %s" % summary._filename)
+        return
     trials = trials[trials['outcome'] == 0]
     # and gaze
     gaze = clean_gaze(summary.get_gaze())
 
-    logging.debug("N Trials before gaze culling: %i" % len(trials))
-    trials = cull_trials_by_gaze(trials, gaze)
-    logging.debug("N Trials after gaze culling: %i" % len(trials))
+    if len(gaze) > 0:
+        logging.debug("N Trials before gaze culling: %i" % len(trials))
+        trials = cull_trials_by_gaze(trials, gaze)
+        logging.debug("N Trials after gaze culling: %i" % len(trials))
 
     for ch in xrange(1, 33):
         for cl in summary.get_cluster_indices(ch):
@@ -196,6 +200,8 @@ def process_summary(summary_filename):
                 logging.warning("No responses")
                 continue
             sel_index = physio.spikes.selectivity.selectivity(resps.values())
+            #if numpy.isnan(sel_index):
+            #    raise Exception("Selectivity is nan")
             sorted_names = sorted(resps, key=lambda k: resps[k])
             info_dict['selectivity'] = sel_index
             info_dict['sorted_names'] = sorted_names
@@ -211,14 +217,15 @@ def process_summary(summary_filename):
 
             x = pylab.arange(len(resps))
             y = pylab.zeros(len(resps))
-            e = pylab.zeros(len(resps))
+            err = pylab.zeros(len(resps))
             pylab.figure(1)
-            for (i, n) in enumerate(sorted_names):
-                y[i] = resps[n]
+            for (i, name) in enumerate(sorted_names):
+                y[i] = resps[name]
                 # TODO fix this to be something reasonable
-                e[i] = (pylab.sum(stds[n][bins]) / float(len(bins))) / \
-                        pylab.sqrt(ns[n])
-            pylab.errorbar(x, y, e)
+                #err[i] = (pylab.sum(stds[name][bins]) / float(len(bins))) / \
+                #        pylab.sqrt(ns[name])
+                err[i] = 0
+            pylab.errorbar(x, y, err)
             xl = pylab.xlim()
             pylab.xticks(x, sorted_names)
             pylab.xlim(xl)

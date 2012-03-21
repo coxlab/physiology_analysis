@@ -304,8 +304,9 @@ class Summary(object):
         sis = self.get_stimulus_indices(match)
         if len(sis) == 0:
             return numpy.array([])
-        trials = trials[numpy.in1d(trials['stim_index'], sis)]
+        ftrials = trials[numpy.in1d(trials['stim_index'], sis)]
         if timeRange is not None:
-            trials = trials[numpy.union1d(trials['time'] > timeRange[0], \
-                    trials['time'] < timeRange[1])]
-        return trials
+            ftrials = ftrials[numpy.logical_and( \
+                    ftrials['time'] > timeRange[0], \
+                    ftrials['time'] < timeRange[1])]
+        return ftrials
