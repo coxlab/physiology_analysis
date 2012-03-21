@@ -328,3 +328,7 @@ class Summary(object):
                     ftrials['time'] > timeRange[0], \
                     ftrials['time'] < timeRange[1])]
         return ftrials
+
+    def fill_trials(self, trials):
+        """ fill in stimulus characteristics for an array of trials """
+        raise NotImplementedError

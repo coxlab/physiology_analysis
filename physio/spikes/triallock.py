@@ -32,6 +32,43 @@ def bin_response(spikes, trials, prew, duration, binw, raw=False):
     return m, s
 
 
+def window_response(spike_times, trial_times, windows, raw_counts=False):
+    """
+    spike_times : array of floats
+    trial_times : array of floats
+    windows : list of 2 tuples of (start, stop) times [non-inclusive]
+    raw : bool
+        return raw counts of type ndarray, shape(len(windows), len(trials)
+
+    returns
+    -----
+    rates : array of floats
+        spike rates per window
+    """
+    assert(type(spike_times) == numpy.ndarray)
+    counts = numpy.empty((len(windows), len(trial_times)))
+    for (ti, tt) in enumerate(trial_times):
+        for (wi, w) in enumerate(windows):
+            start = tt + w[0]
+            end = tt + w[1]
+            counts[wi, ti] = numpy.sum( \
+                    numpy.logical_and(spike_times > start, \
+                    spike_times < end))
+    if raw_counts:
+        return counts
+    # convert to rates
+    wls = numpy.array([1. / (w[1] - w[0]) for w in windows])
+    return numpy.mean(counts, 1) * wls
+
+
+def rate_per_trial(spike_times, trial_times, windows):
+    counts = window_response(spike_times, trial_times, \
+            windows, raw_counts=True)
+    wls = numpy.array([1. / (w[1] - w[0]) for w in windows])
+    wls = wls.reshape(len(windows), 1)
+    return wls * counts
+
+
 def find_significant_bins(spikes, trials, duration, binw, alpha=0.001):
     _, _, M = bin_response(spikes, trials, binw, duration, binw, raw=True)
     # add 1 to offset for baseline bin
