@@ -9,6 +9,7 @@ import tables
 from .. import cfg
 from .. import events
 from .. import session
+from .. import spikes
 
 
 def summarize_session(session_name):
@@ -140,6 +141,7 @@ def summarize_session_object(session, output_filename):
         ch = tables.UInt8Col()
         cl = tables.UInt8Col()
         time = tables.Float64Col()
+        snr = tables.Float64Col()
     spike_table = summary_file.createTable('/', 'Spikes', \
             SpikeDescription)
 
@@ -150,10 +152,16 @@ def summarize_session_object(session, output_filename):
         #for cl in xrange(nclusters[ch]):
         for cl in xrange(session.get_n_clusters(ch)):
             spike_times = session.get_spike_times(ch, cl)
-            for spike_time in spike_times:
+            if len(spike_times):
+                snrs = spikes.stats.waveforms_snr_ptp( \
+                        session.get_spike_waveforms(ch, cl))
+            else:
+                snrs = []
+            for (snr, spike_time) in zip(snrs, spike_times):
                 spike_table.row['ch'] = ch
                 spike_table.row['cl'] = cl
                 spike_table.row['time'] = spike_time
+                spike_table.row['snr'] = snr
                 spike_table.row.append()
     summary_file.flush()
 
@@ -164,23 +172,28 @@ def summarize_session_object(session, output_filename):
     class SpikeInfoDescription(tables.IsDescription):
         ch = tables.UInt8Col()
         cl = tables.UInt8Col()
-        #snr = tables.Float64Col()
+        snr_mean = tables.Float64Col()
+        snr_std = tables.Float64Col()
         wave_mean = tables.Float64Col(shape=wfs)
         wave_std = tables.Float64Col(shape=wfs)
     spike_info_table = summary_file.createTable('/', 'SpikeInfo', \
             SpikeInfoDescription)
 
+    # TODO combine these for loops with the previous
     for ch in xrange(1, 33):  # tdt numbering
         for cl in xrange(session.get_n_clusters(ch)):
             waves = numpy.array(session.get_spike_waveforms(ch, cl))
             if len(waves) == 0:
                 continue
+            snrs = spikes.stats.waveforms_snr_ptp(waves)
             wave_mean = numpy.mean(waves, 0)
             wave_std = numpy.std(waves, 0)
             spike_info_table.row['ch'] = ch
             spike_info_table.row['cl'] = cl
             spike_info_table.row['wave_mean'] = wave_mean
             spike_info_table.row['wave_std'] = wave_std
+            spike_info_table.row['snr_mean'] = numpy.mean(snr)
+            spike_info_table.row['snr_std'] = numpy.std(snr)
             spike_info_table.row.append()
     summary_file.flush()
 
