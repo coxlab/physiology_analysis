@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import logging
+import os
 import pickle
 
 logging.basicConfig(level=logging.DEBUG)
@@ -195,6 +196,9 @@ def process_summary(summary_filename):
     summary = physio.summary.Summary(summary_filename)
     logging.debug("Processing %s" % summary._filename)
 
+    fn = os.path.basename(summary_filename)
+    animal = fn.split('_')[0]
+    date = fn.split('_')[1]
     # cull trials by success
     trials = summary.get_trials()
     if len(trials) == 0:
@@ -203,7 +207,11 @@ def process_summary(summary_filename):
     trials = trials[trials['outcome'] == 0]
 
     # and gaze
-    gaze = clean_gaze(summary.get_gaze())
+    try:
+        gaze = clean_gaze(summary.get_gaze())
+    except Exception as E:
+        print "Fetching gaze failed: %s" % E
+        gaze = []
 
     if len(gaze) > 0:
         logging.debug("N Trials before gaze culling: %i" % len(trials))
@@ -216,6 +224,8 @@ def process_summary(summary_filename):
             cell = {}
             cell['ch'] = ch
             cell['cl'] = cl
+            cell['animal'] = animal
+            cell['date'] = date
 
             logging.debug("ch: %i, cl: %i" % (ch, cl))
             # rate
@@ -231,7 +241,7 @@ def process_summary(summary_filename):
             if nspikes < min_spikes:
                 logging.warning("\t%i < min_spikes[%i]" % \
                         (nspikes, min_spikes))
-                write_cell(cell)
+                #write_cell(cell)
                 continue
 
             trange = (spike_times.min(), spike_times.max())
