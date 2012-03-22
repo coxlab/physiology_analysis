@@ -17,7 +17,7 @@ import physio
 
 blacklist_animals = ['fake', 'H3', 'H4', 'H7', 'H8']
 
-min_spikes = 10
+min_spikes = 100
 min_rate = 0.01  # hz
 rwin = (0.05, 0.2)
 bwin = (-0.15, 0.0)
@@ -26,7 +26,7 @@ attrs = ['name', 'pos_x', 'pos_y', 'size_x', 'rotation']
 
 mongo_server = 'soma2.rowland.org'
 mongo_db = 'physiology'
-mongo_collection = 'cells'
+mongo_collection = 'cells_sel'
 
 
 def make_mongo_safe(d):
@@ -176,7 +176,14 @@ def test_selectivity(responses):
     except Exception as e:
         print "friedman failed with: %s" % str(e)
 
-    return {'H': H, 'Hp': p, 'F': F, 'Fp': p2, 'X': X, 'Xp': p3}
+    try:
+        mr = [numpy.mean(r) for r in responses]
+        sel_index = physio.spikes.selectivity.selectivity(mr)
+    except Exception as e:
+        print "selectivity failed with: %s" % str(e)
+
+    return {'H': H, 'Hp': p, 'F': F, 'Fp': p2, 'X': X, 'Xp': p3, \
+            'sel': sel_index}
 
 
 def get_tolerance():
@@ -236,8 +243,15 @@ def process_summary(summary_filename):
                         (rate, min_rate))
                 write_cell(cell)
                 continue
+            cell['trange'] = trange
 
             # snr TODO
+            try:
+                snrs = summary.get_spike_snrs(ch, cl, timeRange=trange)
+                cell['snr_mean'] = numpy.mean(snrs)
+                cell['snr_std'] = numpy.std(snrs)
+            except Exception as E:
+                print "Snr measure failed: %s" % str(E)
 
             # location
             try:
@@ -410,5 +424,5 @@ if __name__ == '__main__':
     print "processing [%i] summary files" % len(sfns)
     print sfns
 
-    Parallel(n_jobs=1)(delayed(process_summary)(s) for s in sfns)
-    #Parallel(n_jobs=-1)(delayed(process_summary)(s) for s in sfns)
+    #Parallel(n_jobs=1)(delayed(process_summary)(s) for s in sfns)
+    Parallel(n_jobs=-1)(delayed(process_summary)(s) for s in sfns)

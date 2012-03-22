@@ -126,6 +126,14 @@ class Summary(object):
         return self._file.root.Spikes.readWhere( \
                 match_string, field='time')
 
+    def get_spike_snrs(self, channel, cluster, timeRange=None):
+        match_string = '(ch == %i) & (cl == %i)' % (channel, cluster)
+        if timeRange is not None:
+            match_string += ' & (time > %f) & (time < %f)' % \
+                    (timeRange[0], timeRange[1])
+        return self._file.root.Spikes.readWhere( \
+                match_string, field='snr')
+
     def get_waveform(self, channel, cluster):
         w = self._file.root.SpikeInfo.readWhere( \
                 '(ch == %i) & (cl == %i)' % (channel, cluster))
