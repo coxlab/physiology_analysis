@@ -1,9 +1,7 @@
 #!/usr/bin/env python
 
 import logging
-import os
 import pickle
-import sys
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -36,7 +34,9 @@ def make_mongo_safe(d):
     if t == dict:
         nd = {}
         for k in d.keys():
-            nd[str(k)] = make_mongo_safe(d[k])
+            nk = str(k)
+            nk = nk.replace('.', ',')
+            nd[nk] = make_mongo_safe(d[k])
             #d[k] = make_mongo_safe(d[k])
         return nd
         #return d
@@ -49,6 +49,9 @@ def make_mongo_safe(d):
     elif t in (bool, numpy.bool_):
         return bool(d)
     elif numpy.issubdtype(t, int):
+        return int(d)
+    elif t in [numpy.uint, numpy.uint8, numpy.uint16, numpy.uint32,\
+            numpy.uint64]:
         return int(d)
     elif numpy.issubdtype(t, float):
         return float(d)
@@ -64,7 +67,7 @@ def write_cell(cell):
 
 def clear_mongo():
     db = pymongo.Connection(mongo_server)[mongo_db]
-    if mongo_collection in db:
+    if mongo_collection in db.collection_names():
         db.drop_collection(mongo_collection)
 
 
@@ -141,7 +144,7 @@ def get_selectivity(summary, trials, stims, attr):
     conditions = {}
     for unique in uniques:
         ftrials = summary.filter_trials(trials, {attr: unique})
-        if len(ftrials):
+        if len(ftrials) == 0:
             continue
         conditions[unique] = ftrials['response']
 
@@ -256,8 +259,8 @@ def process_summary(summary_filename):
             cell['ntrials'] = len(ctrials)
             cell['responsivity'] = stat
 
-            pylab.rec_append_fields(ctrials, ['baseline', 'response'], \
-                    [baseline, response])
+            ctrials = pylab.rec_append_fields(ctrials, \
+                    ['baseline', 'response'], [baseline, response])
 
             # find all distractor trials
             dtrials = summary.filter_trials(ctrials, \
@@ -273,7 +276,8 @@ def process_summary(summary_filename):
             # --------- selectivity --------------
             cell['selectivity'] = {}
             for attr in attrs:
-                conditions, stats = get_selectivity(dtrials, dstims, attr)
+                conditions, stats = get_selectivity(summary, \
+                        dtrials, dstims, attr)
                 cell['selectivity'][attr] = {'conditions': conditions, \
                         'stats': stats}
 
@@ -397,15 +401,14 @@ if __name__ == '__main__':
     for sfn in physio.summary.get_summary_filenames():
         blacklist = False
         for animal in blacklist_animals:
-            blacklist = True
-            break
+            if animal in sfn:
+                blacklist = True
+                break
         if not blacklist:
             sfns.append(sfn)
 
     print "processing [%i] summary files" % len(sfns)
     print sfns
 
-    if len(sys.argv) > 1:  # for debugging
-        Parallel(n_jobs=1)(delayed(process_summary)(s) for s in sfns)
-    else:
-        Parallel(n_jobs=-1)(delayed(process_summary)(s) for s in sfns)
+    Parallel(n_jobs=1)(delayed(process_summary)(s) for s in sfns)
+    #Parallel(n_jobs=-1)(delayed(process_summary)(s) for s in sfns)
