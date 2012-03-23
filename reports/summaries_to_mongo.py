@@ -219,7 +219,12 @@ def process_summary(summary_filename):
         logging.debug("N Trials after gaze culling: %i" % len(trials))
 
     for ch in xrange(1, 33):
-        for cl in summary.get_cluster_indices(ch):
+        try:
+            cis = summary.get_cluster_indices(ch)
+        except Exception as E:
+            print "Getting cluster_indices failed: %s" % E
+            continue
+        for cl in cis:
             ctrials = trials.copy()
             cell = {}
             cell['ch'] = ch
@@ -302,8 +307,52 @@ def process_summary(summary_filename):
             for attr in attrs:
                 conditions, stats = get_selectivity(summary, \
                         dtrials, dstims, attr)
-                cell['selectivity'][attr] = {'conditions': conditions, \
-                        'stats': stats}
+                mv = {}
+                for k, v in conditions.iteritems():
+                    mv[k] = numpy.mean(v)
+                mv = sorted(mv.iteritems(), key=lambda i: i[1])
+                sorted_keys = [i[0] for i in mv[::-1]]
+                max_key = sorted_keys[0]
+                means = []
+                stds = []
+                ns = []
+                for k in sorted_keys:
+                    v = conditions[k]
+                    ns.append(len(v))
+                    stds.append(numpy.std(v))
+                    means.append(numpy.mean(v))
+                #cell['selectivity'][attr] = {'conditions': conditions, \
+                #        'stats': stats, 'sorted': sorted_keys}
+                cell['selectivity'][attr] = { \
+                        'means': means, 'stds': stds, 'ns': ns,
+                        'stats': stats, 'sorted': sorted_keys}
+
+                atrials = summary.filter_trials(dtrials, {attr: max_key})
+                for attr2 in attrs:
+                    if attr == attr2:
+                        continue
+                    conditions, stats = get_selectivity(summary, \
+                            atrials, dstims, attr2)
+                    mv = {}
+                    for k, v in conditions.iteritems():
+                        mv[k] = numpy.mean(v)
+                    mv = sorted(mv.iteritems(), key=lambda i: i[1])
+                    sorted_keys = [i[0] for i in mv[::-1]]
+                    max_key = sorted_keys[0]
+                    means = []
+                    stds = []
+                    ns = []
+                    for k in sorted_keys:
+                        v = conditions[k]
+                        ns.append(len(v))
+                        stds.append(numpy.std(v))
+                        means.append(numpy.mean(v))
+                    #cell['selectivity'][attr][attr2] = \
+                    #        {'conditions': conditions, \
+                    #        'stats': stats, 'sorted': sorted_keys}
+                    cell['selectivity'][attr][attr2] = { \
+                            'means': means, 'stds': stds, 'ns': ns,
+                            'stats': stats, 'sorted': sorted_keys}
 
             # --------- tolerance ------------
 
