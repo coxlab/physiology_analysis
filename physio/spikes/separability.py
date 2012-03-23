@@ -82,7 +82,7 @@ def separability_permutation(M, alpha=0.05, N=None, full=False):
     v0 = svs0[0]
     v1 = svs0[1]
 
-    spi = svs0[0] ** 2. / numpy.sum(svs0[1:] ** 2.)
+    spi = svs0[0] ** 2. / numpy.sum(svs0 ** 2.)
 
     # run permutation test
     v0s = []

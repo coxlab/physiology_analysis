@@ -375,6 +375,8 @@ def process_summary(summary_filename):
                 for attr2 in attrs:
                     if attr == attr2:
                         continue
+
+                    # this is only for the MAX
                     sorted_keys, means, stds, ns, stats = \
                             get_selectivity(summary, atrials, dstims, attr2)
                     max_key = sorted_keys[0]
@@ -383,6 +385,7 @@ def process_summary(summary_filename):
                             'stats': stats, 'sorted': sorted_keys}
 
                     # ----------- separability --------------
+                    # this is for all
                     M, S, N, L, stats = get_separability(summary, dtrials, \
                             dstims, attr, attr2)
                     cell['separability'][attr][attr2] = \
