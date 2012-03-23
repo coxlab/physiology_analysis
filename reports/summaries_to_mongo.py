@@ -27,7 +27,7 @@ attrs = ['name', 'pos_x', 'pos_y', 'size_x', 'rotation']
 
 mongo_server = 'coxlabanalysis1.rowland.org'
 mongo_db = 'physiology'
-mongo_collection = 'cells_sel'
+mongo_collection = 'cells_sep'
 
 
 def make_mongo_safe(d, pchar=','):
