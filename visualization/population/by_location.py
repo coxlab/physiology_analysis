@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import logging
+import sys
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -8,7 +9,39 @@ import numpy
 import pylab
 import pymongo
 
+key = 'selectivity.name.stats.F'
+#key = 'vrate'
+
+# This can also be called like: by_location.py <key>
+if len(sys.argv) > 1:
+    key = sys.argv[1]
+
 query = {}
+
+attrs = { \
+        'ap': { \
+                'getter': lambda c, k, d: try_get(c, [d] * 3, 'location')[0],
+                'default': numpy.nan,
+                },
+        'dv': { \
+                'getter': lambda c, k, d: try_get(c, [d] * 3, 'location')[1],
+                'default': numpy.nan,
+                },
+        'ml': { \
+                'getter': lambda c, k, d: try_get(c, [d] * 3, 'location')[2],
+                'default': numpy.nan,
+                },
+        'selectivity.name.stats.F': { \
+                'default': numpy.nan,
+                },
+        'vrate': { \
+                'getter': lambda c, k, d: try_get(c, numpy.nan, 'driven_mean')\
+                / try_get(c, numpy.nan, 'baseline_mean'),
+                }
+        }
+
+if key not in attrs.keys():
+    attrs[key] = {}
 
 query['nspikes'] = {'$gt': 1000}
 query['responsivity.p'] = {'$lt': 0.1}
@@ -67,42 +100,56 @@ def test_try_get():
     ap(try_get(d, 'none', 'b', '2', 'A'), 1)
     ap(try_get(d, 'none', 'b', '2', 'B'), 'none')
 
-data = []
+
+def setup_attrs(attrs):
+    for k in attrs:
+        if 'getter' not in attrs[k].keys():
+            attrs[k]['getter'] = lambda c, k, d: try_get(c, d, *k.split('.'))
+        if 'default' not in attrs[k].keys():
+            attrs[k]['default'] = numpy.nan
+        attrs[k]['values'] = []
+
+setup_attrs(attrs)
+
+types = []
 
 for cell in cursor:
-    rate = cell.get('driven_mean', numpy.nan)
-    base = cell.get('baseline_mean', numpy.nan)
-    ap, dv, ml = cell.get('location', [numpy.nan] * 3)
-    Fp = try_get(cell, numpy.nan, 'selectivity', 'name', 'stats', 'Fp')
-    F = try_get(cell, numpy.nan, 'selectivity', 'name', 'stats', 'F')
-    sel = try_get(cell, numpy.nan, 'selectivity', 'name', 'stats', 'sel')
-    spi = try_get(cell, 0, 'separability', 'name', 'pos_x', 'stats', \
-            'spi')
-    if base != 0:
-        vrate = rate / base
-    else:
-        vrate = numpy.nan
+    for k in attrs:
+        attrs[k]['values'].append( \
+                attrs[k]['getter'](cell, k, attrs[k]['default']))
 
-    data.append((ap, dv, ml, base, rate, vrate, F, Fp, sel, spi))
+
+def parse_data(attrs):
+    keys = attrs.keys()
+    dtype = []
+    N = -1
+    for k in keys:
+        if len(attrs[k]['values']) == 0:
+            raise Exception("No data for %s" % k)
+        if (N != -1) and (len(attrs[k]['values']) != N):
+            raise ValueError("Unequal lengths: %i, %i" % \
+                    (len(attrs[k]['values']), N))
+        N = len(attrs[k]['values'])
+        dtype.append((k, type(attrs[k]['values'][0])))
+    data = pylab.recarray(N, dtype=dtype)
+
+    for k in keys:
+        for (i, v) in enumerate(attrs[k]['values']):
+            data[k][i] = v
+
+    return data
+
+data = parse_data(attrs)
 
 if len(data) == 0:
     print "No data found"
     raise Exception("No data found")
-data = pylab.array(data, dtype=[('ap', float), ('dv', float), ('ml', float), \
-        ('base', float), ('rate', float), ('vrate', float), ('F', float), \
-        ('Fp', float), \
-        ('sel', float), ('spi', float)])
 
 print "Prior to position culling: %i" % len(data)
 data = data[data['dv'] < 0]
 data = data[data['ap'] < -3]
 print "After to position culling: %i" % len(data)
 
-
-#key = 'sel'
-#key = 'vrate'
-key = 'F'
-#key = 'spi'
 
 pylab.figure()
 pylab.subplot(131)
@@ -111,9 +158,9 @@ tey1 = [-3.8, -2.2]
 tey2 = [-5.6, -4.4]
 pylab.fill_between(tex, tey1, tey2, alpha=0.1, color='k')
 pylab.scatter(data['ap'], data['dv'], s=data[key] * 25, \
-        c=(data['Fp'] < 0.05).astype(int), \
+#        c=(data['Fp'] < 0.05).astype(int), \
         edgecolors='none', alpha=0.3)
-pylab.title("Red = selective(alpha=0.05)")
+#pylab.title("Red = selective(alpha=0.05)")
 pylab.xlabel('AP (mm)')
 pylab.ylabel('DV (mm)')
 xt, _ = pylab.xticks()
