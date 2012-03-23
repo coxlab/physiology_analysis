@@ -27,7 +27,7 @@ bwin = (-0.15, 0.0)
 
 attrs = ['name', 'pos_x', 'pos_y', 'size_x', 'rotation']
 
-mongo_server = 'soma2.rowland.org'
+mongo_server = 'coxlabanalysis1.rowland.org'
 mongo_db = 'physiology'
 mongo_collection = 'cells_sel'
 
@@ -149,7 +149,21 @@ def get_selectivity(summary, trials, stims, attr):
         conditions[unique] = ftrials['response']
 
     stat = test_selectivity(conditions.values())
-    return conditions, stat
+    mv = {}
+    for k, v in conditions.iteritems():
+        mv[k] = numpy.mean(v)
+    mv = sorted(mv.iteritems(), key=lambda i: i[1])
+    sorted_keys = [i[0] for i in mv[::-1]]
+    means = []
+    stds = []
+    ns = []
+    for k in sorted_keys:
+        v = conditions[k]
+        ns.append(len(v))
+        stds.append(numpy.std(v))
+        means.append(numpy.mean(v))
+
+    return sorted_keys, means, stds, ns, stat
 
 
 def test_selectivity(responses):
@@ -184,6 +198,48 @@ def test_selectivity(responses):
 
     return {'H': H, 'Hp': p, 'F': F, 'Fp': p2, 'X': X, 'Xp': p3, \
             'sel': sel_index}
+
+
+def make_response_matrix(summary, trials, stims, attr1, attr2, key='response'):
+    # M, S, N, L
+    u1 = sorted(numpy.unique(stims[attr1]))
+    u2 = sorted(numpy.unique(stims[attr2]))
+    n1 = len(u1)
+    n2 = len(u2)
+    M = numpy.zeros((n1, n2))
+    S = numpy.zeros((n1, n2))
+    N = numpy.zeros((n1, n2))
+    L = [u1, u2]
+    for (i1, l1) in enumerate(u1):
+        for (i2, l2) in enumerate(u2):
+            ftrials = summary.filter_trials(trials, {attr1: l1, attr2: l2})
+            N[i1, i2] = len(ftrials)
+            if N[i1, i2] == 0:
+                M[i1, i2] = numpy.nan
+                S[i1, i2] = numpy.nan
+            else:
+                M[i1, i2] = numpy.mean(ftrials[key])
+                S[i1, i2] = numpy.std(ftrials[key])
+    return M, S, N, L
+
+
+def get_separability(summary, trials, stims, attr1, attr2):
+    M, S, N, L = make_response_matrix(summary, trials, attr1, attr2)
+    if M.shape[0] == 1 or M.shape[1] == 1:
+        return M, S, N, L, {}
+    else:
+        return M, S, N, L, test_separability(M)
+
+
+def test_separability(M):
+    sep, spi, ps = physio.spikes.separability.\
+            separability_permutation(M)
+    if len(ps) == 2:
+        p0 = ps[0]
+        p1 = ps[1]
+    else:
+        p0 = p1 = None
+    return {'sep': sep, 'spi': spi, 'p0': p0, 'p1': p1}
 
 
 def get_tolerance():
@@ -303,168 +359,37 @@ def process_summary(summary_filename):
 
             # --------- selectivity --------------
             cell['selectivity'] = {}
+            cell['separability'] = {}
             for attr in attrs:
-                conditions, stats = get_selectivity(summary, \
-                        dtrials, dstims, attr)
-                mv = {}
-                for k, v in conditions.iteritems():
-                    mv[k] = numpy.mean(v)
-                mv = sorted(mv.iteritems(), key=lambda i: i[1])
-                sorted_keys = [i[0] for i in mv[::-1]]
+                sorted_keys, means, stds, ns, stats = \
+                        get_selectivity(summary, dtrials, dstims, attr)
                 max_key = sorted_keys[0]
-                means = []
-                stds = []
-                ns = []
-                for k in sorted_keys:
-                    v = conditions[k]
-                    ns.append(len(v))
-                    stds.append(numpy.std(v))
-                    means.append(numpy.mean(v))
-                #cell['selectivity'][attr] = {'conditions': conditions, \
-                #        'stats': stats, 'sorted': sorted_keys}
                 cell['selectivity'][attr] = { \
                         'means': means, 'stds': stds, 'ns': ns,
                         'stats': stats, 'sorted': sorted_keys}
+                cell['separability'][attr] = {}
 
                 atrials = summary.filter_trials(dtrials, {attr: max_key})
                 for attr2 in attrs:
                     if attr == attr2:
                         continue
-                    conditions, stats = get_selectivity(summary, \
-                            atrials, dstims, attr2)
-                    mv = {}
-                    for k, v in conditions.iteritems():
-                        mv[k] = numpy.mean(v)
-                    mv = sorted(mv.iteritems(), key=lambda i: i[1])
-                    sorted_keys = [i[0] for i in mv[::-1]]
+                    sorted_keys, means, stds, ns, stats = \
+                            get_selectivity(summary, atrials, dstims, attr2)
                     max_key = sorted_keys[0]
-                    means = []
-                    stds = []
-                    ns = []
-                    for k in sorted_keys:
-                        v = conditions[k]
-                        ns.append(len(v))
-                        stds.append(numpy.std(v))
-                        means.append(numpy.mean(v))
-                    #cell['selectivity'][attr][attr2] = \
-                    #        {'conditions': conditions, \
-                    #        'stats': stats, 'sorted': sorted_keys}
                     cell['selectivity'][attr][attr2] = { \
                             'means': means, 'stds': stds, 'ns': ns,
                             'stats': stats, 'sorted': sorted_keys}
+
+                    # ----------- separability --------------
+                    M, S, N, L, stats = get_separability(summary, dtrials, \
+                            dstims, attr, attr2)
+                    cell['separability'][attr][attr2] = \
+                            {'M': M, 'S': S, 'N': N, 'stats': stats}
 
             # --------- tolerance ------------
 
             write_cell(cell)
             continue
-
-            # selectivity
-            #resps, means, stds, ns = summary.get_binned_response( \
-            #        ch, cl, 'name', bins=bins, spike_times=spike_times, \
-            #        blacklist="BlueSquare", timeRange=trange)
-            resps, means, stds, ns = summary.get_binned_response( \
-                    ch, cl, 'name', bins=bins, spike_times=spike_times, \
-                    trials=dtrials, timeRange=trange)
-            if len(resps) == 0:
-                logging.warning("No responses")
-                continue
-            sel_index = physio.spikes.selectivity.selectivity(resps.values())
-            #if numpy.isnan(sel_index):
-            #    raise Exception("Selectivity is nan")
-            sorted_names = sorted(resps, key=lambda k: resps[k])
-            info_dict['selectivity'] = sel_index
-            info_dict['sorted_names'] = sorted_names
-
-            # separability
-            # get stims without bluesquare
-            stims = summary.get_stimuli({'name': \
-                    {'value': 'BlueSquare', 'op': '!='}})
-            sep_info = {}
-            for (ai, attr1) in enumerate(attrs[:-1]):
-                uniques1 = numpy.unique(stims[attr1])
-                for attr2 in attrs[ai + 1:]:
-                    uniques2 = numpy.unique(stims[attr2])
-                    if attr1 == attr2:
-                        continue
-                    M = summary.get_response_matrix(ch, cl, attr1, attr2, \
-                            bins=bins, spike_times=spike_times, stims=stims, \
-                            uniques1=uniques1, uniques2=uniques2, \
-                            timeRange=trange, trials=dtrials)
-                    if M.shape[0] == 1 or M.shape[1] == 1:
-                        logging.warning("M.shape %s, skipping" % \
-                                str(M.shape))
-                        continue
-                    sep, spi, ps = physio.spikes.separability.\
-                            separability_permutation(M)
-                    if not pylab.any(pylab.isnan(M)):
-                        pylab.figure(1)
-                        pylab.imshow(M, interpolation='nearest')
-                        pylab.colorbar()
-                        pylab.xlabel(attr2)
-                        xl = pylab.xlim()
-                        yl = pylab.ylim()
-                        pylab.xticks(range(len(uniques2)), uniques2)
-                        pylab.ylabel(attr1)
-                        pylab.yticks(range(len(uniques1)), uniques1)
-                        pylab.xlim(xl)
-                        pylab.ylim(yl)
-                        pylab.title('Sep: %s, %.4f, (%.3f, %.3f)' % \
-                                (str(sep), spi, ps[0], ps[1]))
-                        pylab.savefig(outdir + '/%s_%s.png' % \
-                                (attr1, attr2))
-                        pylab.close(1)
-                    sep_info['_'.join((attr1, attr2))] = { \
-                            'sep': sep, 'spi': spi, 'ps': ps}
-
-            with open(outdir + '/sep_info.p', 'w') as f:
-                pickle.dump(sep_info, f, 2)
-
-            # compute separability at each name
-            name_sep_info = {}
-            for name in sorted_names:
-                stims = summary.get_stimuli({'name': name})
-                for (ai, attr1) in enumerate(attrs[:-1]):
-                    uniques1 = numpy.unique(stims[attr1])
-                    for attr2 in attrs[ai + 1:]:
-                        uniques2 = numpy.unique(stims[attr2])
-                        if attr1 == attr2 or \
-                                attr1 == 'name' or attr2 == 'name':
-                            continue
-                        M = summary.get_response_matrix(ch, cl, attr1, \
-                                attr2, bins=bins, spike_times=spike_times,\
-                                stims=stims, uniques1=uniques1, \
-                                uniques2=uniques2, timeRange=trange, \
-                                trials=dtrials)
-                        if M.shape[0] == 1 or M.shape[1] == 1:
-                            logging.debug("M.shape incompatible" \
-                                    " with separability: %s" % \
-                                    str(M.shape))
-                            continue
-                        else:
-                            sep, spi, ps = physio.spikes.separability.\
-                                    separability_permutation(M)
-                            if not pylab.any(pylab.isnan(M)):
-                                pylab.figure(1)
-                                pylab.imshow(M, interpolation='nearest')
-                                pylab.colorbar()
-                                pylab.xlabel(attr2)
-                                xl = pylab.xlim()
-                                yl = pylab.ylim()
-                                pylab.xticks(range(len(uniques2)), uniques2)
-                                pylab.ylabel(attr1)
-                                pylab.yticks(range(len(uniques1)), uniques1)
-                                pylab.xlim(xl)
-                                pylab.ylim(yl)
-                                pylab.title('Sep: %s, %.4f, (%.3f, %.3f)' \
-                                        % (str(sep), spi, ps[0], ps[1]))
-                                pylab.savefig(outdir + '/%s_%s_%s.png' % \
-                                        (name, attr1, attr2))
-                                pylab.close(1)
-                            name_sep_info['_'.join((name, attr1, attr2))] \
-                                    = {'sep': sep, 'spi': spi, 'ps': ps}
-
-            with open(outdir + '/name_sep_info.p', 'w') as f:
-                pickle.dump(name_sep_info, f, 2)
 
 
 if __name__ == '__main__':
