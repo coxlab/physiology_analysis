@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import datetime
 import logging
 import os
 import pickle
@@ -9,6 +10,7 @@ logging.basicConfig(level=logging.DEBUG)
 import pylab
 import numpy
 import pymongo
+import bson
 import scipy.stats
 
 from joblib import Parallel, delayed
@@ -30,31 +32,28 @@ mongo_db = 'physiology'
 mongo_collection = 'cells_sel'
 
 
-def make_mongo_safe(d):
-    t = type(d)
-    if t == dict:
+def make_mongo_safe(d, pchar=','):
+    """
+    Some 'inspiration' (e.g. liberal copying) from:
+        https://github.com/jaberg/hyperopt/blob/master/hyperopt/base.py
+        SONify
+    """
+    if isinstance(d, dict):
         nd = {}
         for k in d.keys():
             nk = str(k)
-            nk = nk.replace('.', ',')
+            nk = nk.replace('.', pchar)
             nd[nk] = make_mongo_safe(d[k])
-            #d[k] = make_mongo_safe(d[k])
         return nd
-        #return d
-    elif t == list:
-        return [make_mongo_safe(i) for i in d]
-    elif t == tuple:
-        return tuple(make_mongo_safe(list(d)))
-    elif t == numpy.ndarray:
+    elif isinstance(d, (list, tuple)):
+        return type(d)([make_mongo_safe(i) for i in d])
+    elif isinstance(d, numpy.ndarray):
         return make_mongo_safe(list(d))
-    elif t in (bool, numpy.bool_):
+    elif isinstance(d, numpy.bool_):
         return bool(d)
-    elif numpy.issubdtype(t, int):
+    elif isinstance(d, numpy.integer):
         return int(d)
-    elif t in [numpy.uint, numpy.uint8, numpy.uint16, numpy.uint32,\
-            numpy.uint64]:
-        return int(d)
-    elif numpy.issubdtype(t, float):
+    elif isinstance(d, numpy.floating):
         return float(d)
     return d
 
