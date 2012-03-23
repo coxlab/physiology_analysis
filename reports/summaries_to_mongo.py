@@ -3,14 +3,12 @@
 import datetime
 import logging
 import os
-import pickle
 
 logging.basicConfig(level=logging.DEBUG)
 
 import pylab
 import numpy
 import pymongo
-import bson
 import scipy.stats
 
 from joblib import Parallel, delayed
@@ -224,7 +222,7 @@ def make_response_matrix(summary, trials, stims, attr1, attr2, key='response'):
 
 
 def get_separability(summary, trials, stims, attr1, attr2):
-    M, S, N, L = make_response_matrix(summary, trials, attr1, attr2)
+    M, S, N, L = make_response_matrix(summary, trials, stims, attr1, attr2)
     if M.shape[0] == 1 or M.shape[1] == 1:
         return M, S, N, L, {}
     else:
@@ -254,6 +252,9 @@ def process_summary(summary_filename):
     fn = os.path.basename(summary_filename)
     animal = fn.split('_')[0]
     date = fn.split('_')[1]
+    # convert to datetime
+    dt = datetime.datetime(int('20' + date[:2]), int(date[2:4]), int(date[4:]))
+
     # cull trials by success
     trials = summary.get_trials()
     if len(trials) == 0:
@@ -286,6 +287,7 @@ def process_summary(summary_filename):
             cell['cl'] = cl
             cell['animal'] = animal
             cell['date'] = date
+            cell['datetime'] = dt
 
             logging.debug("ch: %i, cl: %i" % (ch, cl))
             # rate
