@@ -101,8 +101,8 @@ print "After to position culling: %i" % len(data)
 
 #key = 'sel'
 #key = 'vrate'
-#key = 'F'
-key = 'spi'
+key = 'F'
+#key = 'spi'
 
 pylab.figure()
 pylab.subplot(131)
@@ -110,7 +110,7 @@ tex = [-7, -8.5]
 tey1 = [-3.8, -2.2]
 tey2 = [-5.6, -4.4]
 pylab.fill_between(tex, tey1, tey2, alpha=0.1, color='k')
-pylab.scatter(data['ap'], data['dv'], s=data[key], \
+pylab.scatter(data['ap'], data['dv'], s=data[key] * 25, \
         c=(data['Fp'] < 0.05).astype(int), \
         edgecolors='none', alpha=0.3)
 pylab.title("Red = selective(alpha=0.05)")
