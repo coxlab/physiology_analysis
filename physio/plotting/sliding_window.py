@@ -33,8 +33,11 @@ def sliding_window_apply_1D(fun, xs, ys, window_size, mesh=None, n_points=None):
     if mesh is None and n_points is None:
         raise ValueError('Either mesh or n_points must be specified')
 
+    auto_mesh = False
+
     if mesh is None:
         mesh = linspace(min(xs), max(xs), n_points)
+        auto_mesh = True
 
     output = []
 
@@ -46,7 +49,10 @@ def sliding_window_apply_1D(fun, xs, ys, window_size, mesh=None, n_points=None):
 
         output.append(fun(vals))
 
-    return output
+    if auto_mesh:
+        return output, mesh
+    else:
+        return output
 
 
 def sliding_window_apply_2D(fun, xs, ys, window_size, mesh=None, n_points=None):
@@ -54,10 +60,13 @@ def sliding_window_apply_2D(fun, xs, ys, window_size, mesh=None, n_points=None):
     if mesh is None and n_points is None:
         raise ValueError('Either mesh or n_points must be specified')
 
+    auto_mesh = False
+
     if mesh is None:
         arr_xs = array(xs)
         mesh = meshgrid(linspace(min(arr_xs[:, 0]), max(arr_xs[:, 0]), n_points[0]),
                         linspace(min(arr_xs[:, 1]), max(arr_xs[:, 1]), n_points[1]))
+        auto_mesh = True
 
     M1, M2 = mesh
 
@@ -74,7 +83,12 @@ def sliding_window_apply_2D(fun, xs, ys, window_size, mesh=None, n_points=None):
 
     v_apply = vectorize(apply_window_fun_at_pt)
 
-    return v_apply(M1, M2)
+    result = v_apply(M1, M2)
+
+    if auto_mesh:
+        return result, mesh
+    else:
+        return result
 
 
 def test_sliding_window():
@@ -85,21 +99,21 @@ def test_sliding_window():
     xs = [1, 2, 5, 6, 10]
     ys = [1, 1, 1, 1, 1]
 
-    res = sliding_window_apply(sum, xs, ys, 1.0, n_points=10)
+    res, _ = sliding_window_apply(sum, xs, ys, 1.0, n_points=10)
 
     assert_equal(res, [1, 1, 0, 0, 1, 1, 0, 0, 0, 1])
 
     xs = [1, 1.25, 3, 5, 5.25]
     ys = [1, 2, 1, 1, 1]
 
-    res = sliding_window_apply(sum, xs, ys, 1.0, n_points=5)
+    res, _ = sliding_window_apply(sum, xs, ys, 1.0, n_points=5)
 
     assert_equal(res, [3, 0, 1, 0, 2])
 
     xs = [(1, 1), (2, 2), (3, 3)]
     ys = [1, 1, 1]
 
-    res = sliding_window_apply(sum, xs, ys, 1.0, n_points=(3, 3))
+    res, _ = sliding_window_apply(sum, xs, ys, 1.0, n_points=(3, 3))
 
     assert_almost_equal(array(res), array([[1, 0, 0], [0, 1, 0], [0, 0, 1]]))
 
