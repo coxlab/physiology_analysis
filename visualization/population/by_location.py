@@ -9,6 +9,7 @@ import numpy
 import pylab
 import pymongo
 
+save = False
 key = 'selectivity.name.stats.F'
 #key = 'vrate'
 
@@ -200,4 +201,7 @@ pylab.plot(cx, d)
 pylab.xlabel('AP')
 pylab.ylabel(key)
 
-pylab.show()
+if save:
+    pylab.savefig('%s_by_location.svg' % key)
+else:
+    pylab.show()
