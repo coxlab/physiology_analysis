@@ -21,8 +21,8 @@ parser = argparse.ArgumentParser(description=\
         "Plot the clustering results for a single channel")
 parser.add_argument("session", action="store")
 parser.add_argument("channel", action="store", type=int,\
-        choices=range(1,33))
-parser.add_argument("-o","--output", action="store",\
+        choices=range(1, 33))
+parser.add_argument("-o", "--output", action="store",\
         default="")
 
 args = parser.parse_args()
@@ -58,7 +58,7 @@ logging.debug("Found %i spikes" % len(spike_times))
 session.close()
 
 logging.debug("Running PCA on waveforms")
-features = pywaveclus.dsp.pca.features(spike_waveforms,nfeatures)
+features = pywaveclus.dsp.pca.features(spike_waveforms, nfeatures)
 logging.debug("Features: %s" % str(features.shape))
 # features.shape = (nwaves, nfeatures)
 

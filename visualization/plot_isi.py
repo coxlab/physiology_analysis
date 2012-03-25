@@ -1,7 +1,10 @@
 #!/usr/bin/env python
 
-import logging, optparse, os, sys
-logging.basicConfig(level = logging.DEBUG)
+import logging
+import optparse
+import os
+import sys
+logging.basicConfig(level=logging.DEBUG)
 
 import numpy as np
 import pylab as pl
@@ -23,14 +26,15 @@ config = physio.cfg.load(args[0])
 
 epochs = []
 if len(args) == 2:
-    epochs = [int(args[1]),]
+    epochs = [int(args[1]), ]
 else:
-    epochs = range(physio.session.get_n_epochs(args[0]))#config))
+    epochs = range(physio.session.get_n_epochs(args[0]))  # config))
+
 
 def isi(spikes, nbins):
     isis = spikes[1:] - spikes[:-1]
     pl.hist(isis, nbins)
-    pl.xlim([min(0,pl.xlim()[0]), pl.xlim()[1]])
+    pl.xlim([min(0, pl.xlim()[0]), pl.xlim()[1]])
 
 for epochNumber in epochs:
     session = physio.session.load(args[0], epochNumber)
@@ -45,17 +49,20 @@ for epochNumber in epochs:
     #nTrials = len(trialTimes)
     #logging.debug("N Trials: %i" % nTrials)
 
-    channels = range(1,33)
+    channels = range(1, 33)
     nclusters = [session.get_n_clusters(ch) for ch in channels]
-    clusters = range(0,max(nclusters))
+    nclusters = min(10, max(nclusters))
+    clusters = range(0, nclusters)
 
     subplotsWidth = len(channels)
     subplotsHeight = len(clusters)
-    pl.figure(figsize=(subplotsWidth*2, subplotsHeight*2))
+    pl.figure(figsize=(subplotsWidth * 2, subplotsHeight * 2))
     # pl.gcf().suptitle('%s %d' % (groupBy, group))
     #pl.subplot(subplotsHeight, subplotsWidth,1)
-    pl.subplots_adjust(left = 0.025, right = 0.975, top = 0.9, bottom = 0.1, wspace = 0.45, hspace = 0.45)
-    logging.debug("Plotting %i by %i plots(%i)" % (subplotsWidth, subplotsHeight, subplotsWidth * subplotsHeight))
+    pl.subplots_adjust(left=0.025, right=0.975, top=0.9, bottom=0.1, \
+            wspace=0.45, hspace=0.45)
+    logging.debug("Plotting %i by %i plots(%i)" % \
+    (subplotsWidth, subplotsHeight, subplotsWidth * subplotsHeight))
 
     for (x, channel) in enumerate(channels):
         for (y, cluster) in enumerate(clusters):

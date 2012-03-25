@@ -1,7 +1,10 @@
 #!/usr/bin/env python
 
-import logging, optparse, os, sys
-logging.basicConfig(level = logging.DEBUG)
+import logging
+import optparse
+import os
+import sys
+logging.basicConfig(level=logging.DEBUG)
 
 import physio
 
@@ -11,7 +14,8 @@ import pylab as pl
 
 parser = optparse.OptionParser(usage="usage: %prog [options] session")
 parser.add_option("-g", "--group", dest="group", default="name",
-                    help="Group stimuli by this variable: name, pos_x, pos_y, size_x...", type='str')
+                    help="Group stimuli by this variable: name, " \
+                            "pos_x, pos_y, size_x...", type='str')
 parser.add_option("-b", "--before", dest="before", default=-0.25,
                     help="Seconds before stimulus onset to plot", type='float')
 parser.add_option("-a", "--after", dest="after", default=0.75,
@@ -22,21 +26,24 @@ parser.add_option("-c", "--channel", dest="channel", default=7,
                     help="Channel to plot", type='int')
 parser.add_option("-o", "--outdir", dest="outdir", default="",
                     help="Output directory", type='str')
-                    
-                    
-parser.add_option("-t", "--gaze_std_thresh", dest="gaze_std_thresh", 
-                  type='float', default=0.0, 
-                  help="Threshold for trial-wise gaze std for inclusion")
-parser.add_option("-d", "--gaze_default_dev_thresh", dest="gaze_dev_thresh", 
-                  type='float', default=0.0, 
-                  help="Threshold for trial-wise deviation of gaze from the 'default'")
 
-parser.add_option("--subsession_start", dest="subsession_start", 
-                type='float', default=0.0, 
-                help="A simple hack for partitioning a session into subsessions.")
-parser.add_option("--subsession_end", dest="subsession_end", 
-                type='float', default=1.0, 
-                help="A simple hack for partitioning a session into subsessions.")
+
+parser.add_option("-t", "--gaze_std_thresh", dest="gaze_std_thresh",
+                  type='float', default=0.0,
+                  help="Threshold for trial-wise gaze std for inclusion")
+parser.add_option("-d", "--gaze_default_dev_thresh", dest="gaze_dev_thresh",
+                  type='float', default=0.0,
+                  help="Threshold for trial-wise deviation of gaze "
+                  "from the 'default'")
+
+parser.add_option("--subsession_start", dest="subsession_start",
+                type='float', default=0.0,
+                help="A simple hack for partitioning a session "
+                "into subsessions.")
+parser.add_option("--subsession_end", dest="subsession_end",
+                type='float', default=1.0,
+                help="A simple hack for partitioning a session "
+                "into subsessions.")
 
 (options, args) = parser.parse_args()
 if len(args) < 1:
@@ -45,7 +52,7 @@ if len(args) < 1:
 
 
 process_gaze = (options.gaze_std_thresh > 0.0 or options.gaze_dev_thresh > 0.0)
-    
+
 
 config = physio.cfg.load(args[0])
 
@@ -53,7 +60,7 @@ epochs = []
 if len(args) == 2:
     epochs = [int(args[1])]
 else:
-    epochs =  range(physio.session.get_n_epochs(args[0]))#config))
+    epochs = range(physio.session.get_n_epochs(args[0]))  # config))
 
 for epochNumber in epochs:
     session = physio.session.load(args[0], epochNumber)
@@ -71,7 +78,8 @@ for epochNumber in epochs:
     stimCounts = physio.events.stimuli.count(stimuli)
     uniqueStimuli = physio.events.stimuli.unique(stimuli)
     for s in stimCounts.keys():
-        logging.debug("\t%i presentations of %s" % (stimCounts[s],s))
+        logging.debug("\t%i presentations of %s" % \
+                (stimCounts[s], s))
 
     # get unique positions & sizes
     values = {}
@@ -81,40 +89,41 @@ for epochNumber in epochs:
 
     conditions = []
     for v in values:
-        conditions.append({options.group : v})
+        conditions.append({options.group: v})
 
     nclusters = session.get_n_clusters(options.channel)
-    clusters = range(0,nclusters)
+    nclusters = min(10, nclusters)
+    clusters = range(0, nclusters)
     data = [(options.channel, cl) for cl in clusters]
-
 
     subplotsWidth = len(conditions)
     subplotsHeight = len(data)
-    pl.figure(figsize=(subplotsWidth*2, subplotsHeight*2))
+    pl.figure(figsize=(subplotsWidth * 2, subplotsHeight * 2))
 
-    pl.subplot(subplotsHeight, subplotsWidth,1)
-    logging.debug("Plotting %i by %i plots(%i)" % (subplotsWidth, subplotsHeight, subplotsWidth * subplotsHeight))
-
+    pl.subplot(subplotsHeight, subplotsWidth, 1)
+    logging.debug("Plotting %i by %i plots(%i)" % \
+            (subplotsWidth, subplotsHeight, subplotsWidth * subplotsHeight))
 
     ymaxs = [0 for i in data]
     for (y, datum) in enumerate(data):
         for (x, condition) in enumerate(conditions):
-            logging.debug("\tPlotting[%i, %i]: ch/cl %s : s %s" % (x, y, datum, condition))
-            
+            logging.debug("\tPlotting[%i, %i]: ch/cl %s : s %s" % \
+                    (x, y, datum, condition))
+
             if process_gaze:
                 trials, _, _, _ = session.get_gaze_filtered_trials(
-                                          condition,
-                                          intra_trial_std_threshold=options.gaze_std_thresh,
-                                          default_gaze_deviation_threshold=options.gaze_dev_thresh)
+                      condition,
+                      intra_trial_std_threshold=options.gaze_std_thresh,
+                      default_gaze_deviation_threshold=options.gaze_dev_thresh)
             else:
                 trials, _, _, _ = session.get_trials(condition)
-            
+
             # if the user has requested a subportion of the session
             if options.subsession_start > 0.0 or options.subsession_end < 1.0:
                 nt = len(trials)
-                trials = trials[int(nt*options.subsession_start):int(nt*options.subsession_end)]
-            
-            
+                trials = trials[int(nt * options.subsession_start):int(nt * options.subsession_end)]
+
+
             spikes = session.get_spike_times(*datum)
             pl.subplot(subplotsHeight, subplotsWidth, subplotsWidth * y + x + 1)
             physio.plotting.psth.plot(trials, spikes, options.before, options.after, options.nbins)

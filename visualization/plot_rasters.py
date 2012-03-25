@@ -83,6 +83,7 @@ for epochNumber in epochs:
 # conditions = uniqueStimuli
 # data = [(ch,cl) for ch in depthOrdered for cl in range(1,6)]
     nclusters = session.get_n_clusters(options.channel)
+    nclusters = min(10, nclusters)
     clusters = range(0,nclusters)
     data = [(options.channel, cl) for cl in clusters]
 

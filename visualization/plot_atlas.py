@@ -1,7 +1,10 @@
 #!/usr/bin/env python
 
-import logging, optparse, os, sys
-logging.basicConfig(level = logging.DEBUG)
+import logging
+import optparse
+import os
+import sys
+logging.basicConfig(level=logging.DEBUG)
 
 import numpy as np
 import pylab as pl
@@ -9,7 +12,7 @@ import pylab as pl
 import physio
 
 # AP coordinates with P = -
-sliceBounds = {   70: -4.36,
+sliceBounds = {70: -4.36,
     71: -4.56,
     72: -4.68,
     73: -4.80,
@@ -61,9 +64,9 @@ config = physio.cfg.load(args[0])
 
 epochs = []
 if len(args) == 2:
-    epochs = [int(args[1]),]
+    epochs = [int(args[1]), ]
 else:
-    epochs = range(physio.session.get_n_epochs(args[0]))#config))
+    epochs = range(physio.session.get_n_epochs(args[0]))  # config))
 
 
 for epochNumber in epochs:
@@ -75,7 +78,8 @@ for epochNumber in epochs:
         outdir += '/plots'
         options.outdir = outdir
 
-    if not os.path.exists(options.outdir): os.makedirs(options.outdir)
+    if not os.path.exists(options.outdir):
+        os.makedirs(options.outdir)
 
     locations = session.get_channel_locations()
     logging.debug("Locations: %s" % str(locations))
@@ -83,12 +87,13 @@ for epochNumber in epochs:
     def skull_to_pixel(ml, dv, sliceIndex, imShape):
         if sliceIndex > 102:
             dv = dv + 1.
-        #return x * self.imageSize[0]/16.0 + self.imageSize[0]/2., self.imageSize[1] + self.imageSize[1]/11.0 * y
-        x = ml * imShape[1]/16.0 + imShape[1] / 2.
-        y = dv * imShape[0]/11.0
-        return x, y #x / 8., y / 5.5 + 1.
+        #return x * self.imageSize[0]/16.0 + self.imageSize[0]/2., \
+        #        self.imageSize[1] + self.imageSize[1]/11.0 * y
+        x = ml * imShape[1] / 16.0 + imShape[1] / 2.
+        y = dv * imShape[0] / 11.0
+        return x, y  # x / 8., y / 5.5 + 1.
 
-    for (ch, location) in zip(range(1,33), locations):
+    for (ch, location) in zip(range(1, 33), locations):
         # generate plot of position on atlas slice
         pl.clf()
         # ml - ap - dv
@@ -98,77 +103,38 @@ for epochNumber in epochs:
             if ap > v:
                 sliceIndex = k
                 break
-        
-        if sliceIndex == 0: physio.utils.error("Could not find slice index for: %f" % ap, ValueError)
-        
-        atlasDir = config.get('filesystem','atlas')
+
+        if sliceIndex == 0:
+            physio.utils.error("Could not find slice index for: %f" % \
+                    ap, ValueError)
+
+        atlasDir = config.get('filesystem', 'atlas')
         sliceFile = '%s/%03i.png' % (atlasDir, k)
-        
+
         im = pl.imread(sliceFile)
-        
+
         pl.imshow(im)
-        
+
         # convert ml, dv to pixel coordinates
         x, y = skull_to_pixel(ml, -dv, sliceIndex, im.shape)
         logging.debug("Channel: %i at %.3f %.3f %.3f" % (ch, ml, ap, dv))
-        pl.scatter(x, y, color = 'r')
-        pl.axhline(y, linestyle = '-.', color = 'b')
-        pl.axvline(x, linestyle = '-.', color = 'b')
-        pl.text(x-10, y+10, "%.3f, %.3f, %.3f" % (ml, ap, dv), ha = 'right', va = 'top')
-        
+        pl.scatter(x, y, color='r')
+        pl.axhline(y, linestyle='-.', color='b')
+        pl.axvline(x, linestyle='-.', color='b')
+        pl.text(x - 10, y + 10, "%.3f, %.3f, %.3f" % (ml, ap, dv), \
+                ha='right', va='top')
+
         pl.title("Channel: %i" % ch)
         pl.xlabel("ML (mm)")
         pl.ylabel("DV (mm)")
-        
+
         # reset axes
-        pl.xlim(0,im.shape[1])
-        pl.ylim(im.shape[0],0)
-        pl.xticks(np.linspace(0,im.shape[1],17), range(-8,9,1))
+        pl.xlim(0, im.shape[1])
+        pl.ylim(im.shape[0], 0)
+        pl.xticks(np.linspace(0, im.shape[1], 17), range(-8, 9, 1))
         if sliceIndex > 102:
-            pl.yticks(np.linspace(0,im.shape[0],12), range(1,13,1))
+            pl.yticks(np.linspace(0, im.shape[0], 12), range(1, 13, 1))
         else:
-            pl.yticks(np.linspace(0,im.shape[0],12), range(0,12,1))
-        
+            pl.yticks(np.linspace(0, im.shape[0], 12), range(0, 12, 1))
+
         pl.savefig('%s/atlas_%i.png' % (options.outdir, ch))
-
-
-# config.get('filesystem','atlas')
-# 
-# imread()
-
-# channels = range(1,33)
-# clusters = range(1,6)
-# 
-# subplotsWidth = len(channels)
-# subplotsHeight = len(clusters)
-# pl.figure(figsize=(subplotsWidth*2, subplotsHeight*2))
-# # pl.gcf().suptitle('%s %d' % (groupBy, group))
-# pl.subplot(subplotsHeight, subplotsWidth,1)
-# pl.subplots_adjust(left = 0.025, right = 0.975, top = 0.9, bottom = 0.1, wspace = 0.45)
-# logging.debug("Plotting %i by %i plots(%i)" % (subplotsWidth, subplotsHeight, subplotsWidth * subplotsHeight))
-# 
-# for (y, cluster) in enumerate(clusters):
-#     for (x, channel) in enumerate(channels):
-#         logging.debug("\tPlotting[%i, %i]: ch %s : cl %s" % (x, y, channel, cluster))
-#         spikes = session.get_spike_times(channel, cluster)
-#         pl.subplot(subplotsHeight, subplotsWidth, subplotsWidth * y + x + 1)
-#         physio.plotting.psth.plot(trialTimes, spikes, options.before, options.after, options.nbins)
-#         #physio.plotting.raster.plot(trialTimes, spikes, options.before, options.after)
-#         pl.axvline(0., color = 'k')
-#         pl.axvspan(0., 0.5, color = 'k', alpha = 0.1)
-#         
-#         if x == 0:
-#             pl.ylabel('Cluster: %i\nRate(Hz)' % cluster)
-#         #else:
-#         #    pl.yticks([])
-#         if y == 0: pl.title('Ch:%i' % channel, rotation=45)
-#         if y < len(clusters) - 1:
-#             pl.xticks([])
-#         else:
-#             pl.xticks([0., .5])
-#             pl.xlabel("Seconds")
-# 
-# session.close()
-# 
-# if not os.path.exists(options.outdir): os.makedirs(options.outdir) # TODO move this down
-# pl.savefig("%s/bluesquare.png" % (options.outdir))
