@@ -97,12 +97,12 @@ for epochNumber in epochs:
     data = [(options.channel, cl) for cl in clusters]
 
     subplotsWidth = len(conditions)
-    subplotsHeight = len(data)
+    subplotsHeight = min(10, len(data))
     pl.figure(figsize=(subplotsWidth * 2, subplotsHeight * 2))
 
-    pl.subplot(subplotsHeight, subplotsWidth, 1)
     logging.debug("Plotting %i by %i plots(%i)" % \
             (subplotsWidth, subplotsHeight, subplotsWidth * subplotsHeight))
+    pl.subplot(subplotsHeight, subplotsWidth, 1)
 
     ymaxs = [0 for i in data]
     for (y, datum) in enumerate(data):
@@ -121,20 +121,23 @@ for epochNumber in epochs:
             # if the user has requested a subportion of the session
             if options.subsession_start > 0.0 or options.subsession_end < 1.0:
                 nt = len(trials)
-                trials = trials[int(nt * options.subsession_start):int(nt * options.subsession_end)]
-
+                trials = trials[int(nt * options.subsession_start):\
+                        int(nt * options.subsession_end)]
 
             spikes = session.get_spike_times(*datum)
-            pl.subplot(subplotsHeight, subplotsWidth, subplotsWidth * y + x + 1)
-            physio.plotting.psth.plot(trials, spikes, options.before, options.after, options.nbins)
-            pl.axvline(0., color = 'k')
-            pl.axvspan(0., 0.5, color = 'k', alpha = 0.1)
-            
+            pl.subplot(subplotsHeight, subplotsWidth, \
+                    subplotsWidth * y + x + 1)
+            physio.plotting.psth.plot(trials, spikes, options.before, \
+                    options.after, options.nbins)
+            pl.axvline(0., color='k')
+            pl.axvspan(0., 0.5, color='k', alpha=0.1)
+
             if x == 0:
                 pl.ylabel('Cluster: %i\nRate(Hz)' % datum[1])
             else:
                 pl.yticks([])
-            if y == 0: pl.title('%s' % str(condition), rotation=45)
+            if y == 0:
+                pl.title('%s' % str(condition), rotation=45)
             if y < len(data) - 1:
                 pl.xticks([])
             else:
@@ -146,8 +149,11 @@ for epochNumber in epochs:
 
     for y in xrange(subplotsHeight):
         for x in xrange(subplotsWidth):
-            pl.subplot(subplotsHeight, subplotsWidth, subplotsWidth * y + x + 1)
-            pl.ylim(0,ymaxs[y])
+            pl.subplot(subplotsHeight, subplotsWidth, \
+                    subplotsWidth * y + x + 1)
+            pl.ylim(0, ymaxs[y])
 
-    if not os.path.exists(options.outdir): os.makedirs(options.outdir) # TODO move this down
-    pl.savefig("%s/psth_%i_%s.png" % (options.outdir, options.channel, options.group))
+    if not os.path.exists(options.outdir):
+        os.makedirs(options.outdir)  # TODO move this down
+    pl.savefig("%s/psth_%i_%s.png" % \
+            (options.outdir, options.channel, options.group))

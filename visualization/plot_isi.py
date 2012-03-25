@@ -55,7 +55,7 @@ for epochNumber in epochs:
     clusters = range(0, nclusters)
 
     subplotsWidth = len(channels)
-    subplotsHeight = len(clusters)
+    subplotsHeight = min(10, len(clusters))
     pl.figure(figsize=(subplotsWidth * 2, subplotsHeight * 2))
     # pl.gcf().suptitle('%s %d' % (groupBy, group))
     #pl.subplot(subplotsHeight, subplotsWidth,1)

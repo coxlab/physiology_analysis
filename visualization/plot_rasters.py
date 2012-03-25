@@ -84,16 +84,16 @@ for epochNumber in epochs:
 # data = [(ch,cl) for ch in depthOrdered for cl in range(1,6)]
     nclusters = session.get_n_clusters(options.channel)
     nclusters = min(10, nclusters)
-    clusters = range(0,nclusters)
+    clusters = range(0, nclusters)
     data = [(options.channel, cl) for cl in clusters]
 
-
     subplotsWidth = len(conditions)
-    subplotsHeight = len(data)
-    pl.figure(figsize=(subplotsWidth*2, subplotsHeight*2))
+    subplotsHeight = min(10, len(data))
+    pl.figure(figsize=(subplotsWidth * 2, subplotsHeight * 2))
 # pl.gcf().suptitle('%s %d' % (groupBy, group))
-    pl.subplot(subplotsHeight, subplotsWidth,1)
-    logging.debug("Plotting %i by %i plots(%i)" % (subplotsWidth, subplotsHeight, subplotsWidth * subplotsHeight))
+    pl.subplot(subplotsHeight, subplotsWidth, 1)
+    logging.debug("Plotting %i by %i plots(%i)" % \
+            (subplotsWidth, subplotsHeight, subplotsWidth * subplotsHeight))
 
 # ymaxs = [0 for i in data]
     for (y, datum) in enumerate(data):
