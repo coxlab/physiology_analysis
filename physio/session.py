@@ -281,7 +281,14 @@ class Session(object):
         times, stims = self.get_stimuli(matchDict, timeRange)
         tr = self.get_epoch_time_range('mworks')
         tr[0] = 0
-        dtts, dtvs = self.get_events('Distractor_Time', timeRange=tr)
+        codec = self.get_codec()
+        if 'Distractor_Time' in codec.values():
+            dtts, dtvs = self.get_events('Distractor_Time', timeRange=tr)
+        elif 'DistractorPresentation_Time' in codec.values():
+            dtts, dtvs = self.get_events('DistractorPresentation_Time', \
+                    timeRange=tr)
+        else:
+            raise ValueError("No distractor time in: %s" % str(codec))
         dtts = np.array(dtts)
 
         ftimes, _ = self.get_events('failure')
