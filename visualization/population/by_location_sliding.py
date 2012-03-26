@@ -12,8 +12,36 @@ import pymongo
 from physio.plotting.sliding_window import sliding_window_apply
 
 save = False
-key = 'selectivity.name.stats.Fp'
-#key = 'vrate'
+
+use_sliding_window = True
+fancy_color = False
+stat_to_compute = numpy.mean
+log_transform_stat = False
+one_minus_and_log_transform_stat = True
+
+to_plot = 'sep'
+
+min_cells = 5
+
+if to_plot is 'F':
+    key = 'selectivity.name.stats.F'
+    log_transform_stat = False
+    one_minus_and_log_transform_stat = False
+elif to_plot is 'Fp':
+    key = 'selectivity.name.stats.F'
+    log_transform_stat = True
+    one_minus_and_log_transform_stat = False
+elif to_plot is 'sep':
+    key = 'separability.name.pos_x.stats.spi'
+    log_transform_stat = False
+    one_minus_and_log_transform_stat = True
+else:
+    key = 'vrate'
+    log_transform_stat = False
+    one_minus_and_log_transform_stat = False
+
+cmap = pylab.cm.winter
+
 
 # This can also be called like: by_location.py <key>
 if len(sys.argv) > 1:
@@ -52,7 +80,7 @@ query['responsivity.p'] = {'$lt': 0.1}
 
 server = {'host': 'coxlabanalysis1.rowland.org',
         'db': 'physiology',
-        'coll': 'cells_sel'}
+        'coll': 'cells_sep'}
 
 cells = pymongo.Connection(server['host'])[server['db']][server['coll']]
 
@@ -169,33 +197,69 @@ pylab.ylabel('DV (mm)')
 xt, _ = pylab.xticks()
 pylab.xticks(xt, rotation=90)
 
-pylab.subplot(132)
+sp = pylab.subplot(132)
 
-stat = lambda x: numpy.median(-numpy.log(x))
-d, (X, Y) = sliding_window_apply(stat,
-                                zip(data['ap'], data['dv']),
-                                data[key],
-                                window_size=0.5,
-                                n_points=30)
-#X, Y = mesh
-im_extents = [X[0, 0], X[0, -1], Y[0, 0], Y[-1, 0]]
-print(im_extents)
 
-pylab.imshow(d.T, interpolation='nearest',
-             aspect='equal',
-             origin='upper',
-             extent=im_extents)
+def filter_min_cells(x):
+    if len(x) > min_cells:
+        return x
+    else:
+        return []
 
-# d, x, y = numpy.histogram2d(data['ap'], data['dv'], \
-#         bins=[10, 10], weights=data[key])
-# w, _, _ = numpy.histogram2d(data['ap'], data['dv'], \
-#         bins=[10, 10])
-# d *= 1. / w
-# pylab.imshow(d.T, interpolation='nearest', \
-#         aspect='equal', \
-#         origin='lower', \
-#         extent=[x[0], x[-1], y[0], y[-1]])
-pylab.colorbar()
+filter_nans = lambda x: [x1 for x1 in filter_min_cells(x) if not numpy.isnan(x1)]
+
+if log_transform_stat:
+    stat = lambda x: stat_to_compute(-numpy.log(filter_nans(x)))
+elif one_minus_and_log_transform_stat:
+    stat = lambda x: stat_to_compute(-numpy.log(1.0 - numpy.array(filter_nans(x))))
+else:
+    stat = lambda x: stat_to_compute(filter_nans(x))
+
+if use_sliding_window:
+
+    d, (X, Y) = sliding_window_apply(stat,
+                                    zip(data['ap'], data['dv']),
+                                    data[key],
+                                    window_size=0.5,
+                                    n_points=30)
+
+    im_extents = [X[0, 0], X[0, -1], Y[0, 0], Y[-1, 0]]
+    print(im_extents)
+
+    if fancy_color:
+        color_im = cmap(d)
+
+        count, _ = sliding_window_apply(numpy.sum,
+                                        zip(data['ap'], data['dv']),
+                                        data[key],
+                                        window_size=0.5,
+                                        n_points=30)
+        count_norm = numpy.median(count.ravel())
+        color_im[:, :, 3] = count / count_norm
+        pylab.imshow(color_im, aspect='equal', origin='upper',
+                     extent=im_extents)
+
+    else:
+
+        pylab.imshow(d, interpolation='nearest',
+                     aspect='equal',
+                     origin='upper',
+                     extent=im_extents,
+                     cmap=cmap)
+else:
+    d, x, y = numpy.histogram2d(data['ap'], data['dv'], \
+            bins=[10, 10], weights=data[key])
+    w, _, _ = numpy.histogram2d(data['ap'], data['dv'], \
+            bins=[10, 10])
+    d *= 1. / w
+    pylab.imshow(d.T, interpolation='nearest', \
+                 aspect='equal', \
+                 origin='lower', \
+                 extent=[x[0], x[-1], y[0], y[-1]],
+                 cmap=cmap)
+
+if not fancy_color:
+    pylab.colorbar()
 pylab.xlabel('AP')
 xt, _ = pylab.xticks()
 pylab.xticks(xt, rotation=90)

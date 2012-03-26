@@ -18,9 +18,12 @@ def sliding_window_apply(fun, xs, ys, window_size, mesh=None, n_points=None):
     else:
         ndims = 1
 
+    if not getattr(n_points, '__iter__', False):
+        n_points = [n_points] * ndims
+
     # Do the actual real work
     if ndims == 1:
-        return sliding_window_apply_1D(fun, xs, ys, window_size, mesh, n_points)
+        return sliding_window_apply_1D(fun, xs, ys, window_size, mesh, n_points[0])
 
     if ndims == 2:
         return sliding_window_apply_2D(fun, xs, ys, window_size, mesh, n_points)
@@ -76,7 +79,7 @@ def sliding_window_apply_2D(fun, xs, ys, window_size, mesh=None, n_points=None):
         y_vals = []
 
         for pt, y in zip(xs, ys):
-            if linalg.norm(array([m1, m2] - array(pt))) < (window_size / 2.):
+            if linalg.norm(array([m1, m2]) - array(pt)) < (window_size / 2.):
                 y_vals.append(y)
 
         return fun(y_vals)
@@ -118,4 +121,13 @@ def test_sliding_window():
     assert_almost_equal(array(res), array([[1, 0, 0], [0, 1, 0], [0, 0, 1]]))
 
     # more tests than this are needed!
+
+    xs = [(1, 1), (1.1, 1), (1.2, 1), (4, 2), (2, 4)]
+    ys = [1, 2, 1, 5, 2]
+
+    res, _ = sliding_window_apply(sum, xs, ys, 1.0, n_points=(4, 4))
+
+    print res
+    assert_almost_equal(array(res), array([[4, 0, 0, 0], [0, 0, 0, 2], [0, 0, 0, 0], [0, 5, 0, 0]]))
+
 
