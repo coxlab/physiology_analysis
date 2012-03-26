@@ -178,15 +178,15 @@ max_response = max(rateByPos.ravel())
 
 pl.subplot(1, 4, 2)
 pl.title('Worst stim')
-pl.imshow(rateByPos[0, :, :] / max_response)
+pl.imshow(rateByPos[0, :, :], vmax=max_response, interpolation='sinc')
 
 pl.subplot(1, 4, 3)
 pl.title('Middle stim')
-pl.imshow(rateByPos[1, :, :] / max_response)
+pl.imshow(rateByPos[1, :, :], vmax=max_response, interpolation='sinc')
 
 pl.subplot(1, 4, 4)
 pl.title('Best stim')
-pl.imshow(rateByPos[2, :, :] / max_response)
+pl.imshow(rateByPos[2, :, :], vmax=max_response, interpolation='sinc')
 
 #pl.subplot(133)
 
