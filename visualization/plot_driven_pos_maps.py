@@ -174,18 +174,19 @@ print rateByPos
 cmaps = (pl.cm.Blues, pl.cm.Greens, pl.cm.Reds)
 
 
+max_response = max(rateByPos.ravel())
 
 pl.subplot(1, 4, 2)
-pl.title('Best stim')
-pl.imshow(rateByPos[0, :, :])
+pl.title('Worst stim')
+pl.imshow(rateByPos[0, :, :] / max_response)
 
 pl.subplot(1, 4, 3)
 pl.title('Middle stim')
-pl.imshow(rateByPos[1, :, :])
+pl.imshow(rateByPos[1, :, :] / max_response)
 
 pl.subplot(1, 4, 4)
-pl.title('Worst stim')
-pl.imshow(rateByPos[2, :, :])
+pl.title('Best stim')
+pl.imshow(rateByPos[2, :, :] / max_response)
 
 #pl.subplot(133)
 
