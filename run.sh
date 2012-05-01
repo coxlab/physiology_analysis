@@ -16,8 +16,10 @@
 # icapp.py location
 icapp="/home/graham/Repositories/braingram/icapp/icapp.py"
 # arguments to icapp.py: python icapp.py -m $icamode -s $icaarg ...
-icamode="random"
-icaarg="102400" #"441000" # 10240 is 10 x (32 x 32)
+icamode="range"
+icaarg="158760000 -s 158862400"  # start halfway through
+#icamode="random"
+#icaarg="102400" #"441000" # 10240 is 10 x (32 x 32)
 runica="true" # "true" or "false"
 
 # change cwd to visualization directory so calling plot scripts is easier
@@ -151,8 +153,8 @@ do
     #echo "copying over ica matrices"
     #cp /scratch/$session/Audio\ Files/mixingmatrix /data/raw/$session/
     #cp /scratch/$session/Audio\ Files/unmixingmatrix /data/raw/$session/
-    #echo "plot.sh $session"
-    #sh plot.sh $session
+    echo "plot.sh $session"
+    sh plot.sh $session
     # clean up
-    rm -rf /scratch/$session/
+    #rm -rf /scratch/$session/
 done
