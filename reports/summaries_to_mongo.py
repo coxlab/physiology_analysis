@@ -15,6 +15,8 @@ from joblib import Parallel, delayed
 
 import physio
 
+import brainatlas
+
 
 blacklist_animals = ['fake', 'H3', 'H4', 'H7', 'H8']
 
@@ -240,8 +242,48 @@ def test_separability(M):
     return {'sep': sep, 'spi': spi, 'p0': p0, 'p1': p1}
 
 
-def get_tolerance():
-    pass
+def stim_to_dict(stim):
+    return dict([(k, stim[k]) for k in dict(stim.dtype.fields).keys()])
+
+
+def get_tolerance(summary, trials, stims):
+    conditions = {}
+    stimds = {}
+    for stim in stims:
+        sd = stim_to_dict(stim)
+        si = summary.get_stimulus_indices(sd)
+        if si in conditions:
+            raise ValueError("Two stimuli matched[%s]: %s" % (si, sd))
+        ftrials = summary.filter_trials_by_stim_index(trials, si)
+        if len(ftrials) == 0:
+            continue
+        conditions[si] = ftrials['response']
+        stimds[si] = sd
+
+    stat = test_selectivity(conditions.values())
+    mv = {}
+    for k, v in conditions.iteritems():
+        mv[k] = numpy.mean(v)
+    mv = sorted(mv.iteritems(), key=lambda i: i[1])
+    sorted_keys = [i[0] for i in mv[::-1]]
+    means = []
+    stds = []
+    ns = []
+    for k in sorted_keys:
+        v = conditions[k]
+        ns.append(len(v))
+        stds.append(numpy.std(v))
+        means.append(numpy.mean(v))
+
+    return sorted_keys, means, stds, ns, stat, stimds
+
+
+def get_area(location):
+    ap, dv, ml = location
+    areas = 'V2L AuD Au1 AuV PRh V1B V1M TeA Ect'.split()
+    cs = brainatlas.section.get_closest_section(ap, areas=areas)
+    area = cs.get_area_for_location(ml, dv, 'skull')
+    return area
 
 
 # have this dump directly to mongo (remove plotting)
@@ -332,6 +374,15 @@ def process_summary(summary_filename):
                 location = (0, 0, 0)
                 print "Attempt to get location failed: %s" % str(E)
             cell['location'] = list(location)
+            if location != (0, 0, 0):
+                try:
+                    area = get_area(location)
+                except Exception as E:
+                    print "Failed to get area: %s" % E
+                    area = 'Na'
+            else:
+                area = 'Na'
+            cell['area'] = area
 
             # ---------- responsivity ---------------
             baseline, response, stat = get_responsivity(\
@@ -392,6 +443,11 @@ def process_summary(summary_filename):
                             {'M': M, 'S': S, 'N': N, 'stats': stats}
 
             # --------- tolerance ------------
+            sorted_keys, means, stds, ns, stats, stimds = \
+                    get_tolerance(summary, dtrials, dstims)
+            cell['tolerance'] = dict(means=means, stds=stds, ns=ns, \
+                    stats=stats, sorted=sorted_keys)
+            cell['stimuli'] = stimds
 
             write_cell(cell)
             continue

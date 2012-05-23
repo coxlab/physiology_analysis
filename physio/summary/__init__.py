@@ -326,16 +326,27 @@ class Summary(object):
             return 0
         return total / (len(trials) * prew)
 
-    def filter_trials(self, trials, match=None, timeRange=None):
-        sis = self.get_stimulus_indices(match)
-        if len(sis) == 0:
-            return numpy.array([])
-        ftrials = trials[numpy.in1d(trials['stim_index'], sis)]
+    def filter_trials_by_stim_index(self, trials, index, timeRange=None):
+        ftrials = trials[numpy.in1d(trials['stim_index'], index)]
         if timeRange is not None:
             ftrials = ftrials[numpy.logical_and( \
                     ftrials['time'] > timeRange[0], \
                     ftrials['time'] < timeRange[1])]
         return ftrials
+
+    def filter_trials(self, trials, match=None, timeRange=None):
+        sis = self.get_stimulus_indices(match)
+        if len(sis) == 0:
+            return numpy.array([])
+        return self.filter_trials_by_stim_index(trials, sis, timeRange)
+
+    def filter_trials_by_stim(self, trials, stim, timeRange=None):
+        if hasattr(stim, 'dtype'):  # stim
+            keys = dict(stim.dtype.fields).keys()
+            match = dict([(k, stim[k]) for k in keys])
+            return self.filter_trials(trials, match, timeRange)
+        else:
+            raise TypeError("stim[%s] does not have a dtype attribute" % stim)
 
     def fill_trials(self, trials):
         """ fill in stimulus characteristics for an array of trials """
