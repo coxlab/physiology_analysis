@@ -251,7 +251,9 @@ def get_tolerance(summary, trials, stims):
     stimds = {}
     for stim in stims:
         sd = stim_to_dict(stim)
-        si = summary.get_stimulus_indices(sd)
+        sis = summary.get_stimulus_indices(sd)
+        assert len(sis) == 1, "Found %s stim that matched %s" % (len(sis), sd)
+        si = sis[0]
         if si in conditions:
             raise ValueError("Two stimuli matched[%s]: %s" % (si, sd))
         ftrials = summary.filter_trials_by_stim_index(trials, si)
