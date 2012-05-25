@@ -3,13 +3,14 @@
 import numpy as np
 import pylab as pl
 
-def plot(eventTimes, spikeTimes, preT = -0.2, postT = 0.5, marker = '|k'):
-    
-    for (y,et) in enumerate(eventTimes):
+
+def plot(eventTimes, spikeTimes, preT=-0.2, postT=0.5, marker=',k'):
+    for (y, et) in enumerate(eventTimes):
         # find spiketimes that match
-        spikes = spikeTimes[(spikeTimes > (et + preT)) & (spikeTimes < (et + postT))] - et
-        if len(spikes): pl.plot(spikes, np.ones_like(spikes)*y, marker, hold = True)
-    
+        spikes = spikeTimes[(spikeTimes > (et + preT)) & \
+                (spikeTimes < (et + postT))] - et
+        if len(spikes):
+            pl.plot(spikes, np.ones_like(spikes) * y, marker, hold=True)
     pl.xlim(preT, postT)
 
 
