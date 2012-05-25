@@ -11,36 +11,54 @@ import pymongo
 
 from physio.plotting.sliding_window import sliding_window_apply
 
-save = False
+save = True
 
 use_sliding_window = True
 fancy_color = False
 stat_to_compute = numpy.mean
 log_transform_stat = False
-one_minus_and_log_transform_stat = True
+one_minus_and_log_transform_stat = False
+weak_cull = False
+no_scaling = False
+thresh = None
+vmax = None
+vmin = None
 
-to_plot = 'sep'
+plot_im = True
+to_plot = 'Fp'
 
-min_cells = 5
+min_cells = 1
 
 if to_plot is 'F':
     key = 'selectivity.name.stats.F'
     log_transform_stat = False
     one_minus_and_log_transform_stat = False
 elif to_plot is 'Fp':
-    key = 'selectivity.name.stats.F'
+    key = 'selectivity.name.stats.Fp'
     log_transform_stat = True
     one_minus_and_log_transform_stat = False
+    #thresh = -numpy.log(0.1)
+    #vmin = None
 elif to_plot is 'sep':
     key = 'separability.name.pos_x.stats.spi'
     log_transform_stat = False
     one_minus_and_log_transform_stat = True
+elif to_plot is 'samp':
+    key = 'ap'
+    no_scaling = True
+    weak_cull = True
+
+    def at_least_length_one(x):
+        if len(x) > 0:
+            return 1.0
+
+    stat_to_compute = at_least_length_one
 else:
     key = 'vrate'
     log_transform_stat = False
     one_minus_and_log_transform_stat = False
 
-cmap = pylab.cm.winter
+cmap = pylab.cm.hot
 
 
 # This can also be called like: by_location.py <key>
@@ -65,17 +83,20 @@ attrs = { \
         'selectivity.name.stats.F': { \
                 'default': numpy.nan,
                 },
-        'vrate': { \
-                'getter': lambda c, k, d: try_get(c, numpy.nan, 'driven_mean')\
-                / try_get(c, numpy.nan, 'baseline_mean'),
-                }
+        # 'vrate': { \
+        #         'getter': lambda c, k, d: try_get(c, numpy.nan, 'driven_mean')\
+        #         / try_get(c, numpy.nan, 'baseline_mean'),
+        #         }
         }
 
 if key not in attrs.keys():
     attrs[key] = {}
 
-query['nspikes'] = {'$gt': 1000}
-query['responsivity.p'] = {'$lt': 0.1}
+if weak_cull:
+    query['nspikes'] = {'$gt': 1}
+else:
+    query['nspikes'] = {'$gt': 1000}
+    query['responsivity.p'] = {'$lt': 0.1}
 #query['animal'] = 'K4'
 
 server = {'host': 'coxlabanalysis1.rowland.org',
@@ -188,9 +209,14 @@ tex = [-7, -8.5]
 tey1 = [-3.8, -2.2]
 tey2 = [-5.6, -4.4]
 pylab.fill_between(tex, tey1, tey2, alpha=0.1, color='k')
-pylab.scatter(data['ap'], data['dv'], s=data[key] * 25, \
-#        c=(data['Fp'] < 0.05).astype(int), \
-        edgecolors='none', alpha=0.3)
+
+if no_scaling:
+    pylab.scatter(data['ap'], data['dv'],
+                  edgecolors='none', alpha=0.3)
+else:
+    pylab.scatter(data['ap'], data['dv'], s=data[key] * 25,
+                  edgecolors='none', alpha=0.3)
+
 #pylab.title("Red = selective(alpha=0.05)")
 pylab.xlabel('AP (mm)')
 pylab.ylabel('DV (mm)')
@@ -215,73 +241,84 @@ elif one_minus_and_log_transform_stat:
 else:
     stat = lambda x: stat_to_compute(filter_nans(x))
 
-if use_sliding_window:
 
-    d, (X, Y) = sliding_window_apply(stat,
-                                    zip(data['ap'], data['dv']),
-                                    data[key],
-                                    window_size=0.5,
-                                    n_points=30)
+if plot_im:
 
-    im_extents = [X[0, 0], X[0, -1], Y[0, 0], Y[-1, 0]]
-    print(im_extents)
+    if use_sliding_window:
 
-    if fancy_color:
-        color_im = cmap(d)
-
-        count, _ = sliding_window_apply(numpy.sum,
+        d, (X, Y) = sliding_window_apply(stat,
                                         zip(data['ap'], data['dv']),
                                         data[key],
                                         window_size=0.5,
                                         n_points=30)
-        count_norm = numpy.median(count.ravel())
-        color_im[:, :, 3] = count / count_norm
-        pylab.imshow(color_im, aspect='equal', origin='upper',
-                     extent=im_extents)
+
+        if thresh is not None:
+            d[d < thresh] = numpy.nan
+
+        im_extents = [X[0, 0], X[0, -1], Y[0, 0], Y[-1, 0]]
+        print(im_extents)
+
+        if fancy_color:
+            color_im = cmap(d)
+
+            count, _ = sliding_window_apply(numpy.sum,
+                                            zip(data['ap'], data['dv']),
+                                            data[key],
+                                            window_size=0.5,
+                                            n_points=30)
+            count_norm = numpy.median(count.ravel())
+            color_im[:, :, 3] = count / count_norm
+            pylab.imshow(color_im, aspect='equal', origin='lower',
+                         extent=im_extents)
+
+        else:
+
+            pylab.imshow(d, interpolation='nearest',
+                         aspect='equal',
+                         origin='upper',
+                         extent=im_extents,
+                         cmap=cmap,
+                         vmin=vmin,
+                         vmax=vmax)
+
+            pylab.hold(True)
 
     else:
-
-        pylab.imshow(d, interpolation='nearest',
-                     aspect='equal',
-                     origin='upper',
-                     extent=im_extents,
+        d, x, y = numpy.histogram2d(data['ap'], data['dv'], \
+                bins=[10, 10], weights=data[key])
+        w, _, _ = numpy.histogram2d(data['ap'], data['dv'], \
+                bins=[10, 10])
+        d *= 1. / w
+        pylab.imshow(d.T, interpolation='nearest', \
+                     aspect='equal', \
+                     origin='lower', \
+                     extent=[x[0], x[-1], y[0], y[-1]],
                      cmap=cmap)
-else:
-    d, x, y = numpy.histogram2d(data['ap'], data['dv'], \
-            bins=[10, 10], weights=data[key])
-    w, _, _ = numpy.histogram2d(data['ap'], data['dv'], \
-            bins=[10, 10])
+
+    if not fancy_color:
+        pylab.colorbar()
+    pylab.xlabel('AP')
+    xt, _ = pylab.xticks()
+    pylab.xticks(xt, rotation=90)
+    pylab.ylabel('DV')
+
+    pylab.subplot(233)
+    d, x = numpy.histogram(data['dv'], weights=data[key])
+    w, _ = numpy.histogram(data['dv'])
     d *= 1. / w
-    pylab.imshow(d.T, interpolation='nearest', \
-                 aspect='equal', \
-                 origin='lower', \
-                 extent=[x[0], x[-1], y[0], y[-1]],
-                 cmap=cmap)
+    cx = (x[1:] - x[:-1]) / 2. + x[:-1]
+    pylab.plot(cx, d)
+    pylab.xlabel('DV')
+    pylab.ylabel(key)
 
-if not fancy_color:
-    pylab.colorbar()
-pylab.xlabel('AP')
-xt, _ = pylab.xticks()
-pylab.xticks(xt, rotation=90)
-pylab.ylabel('DV')
-
-pylab.subplot(233)
-d, x = numpy.histogram(data['dv'], weights=data[key])
-w, _ = numpy.histogram(data['dv'])
-d *= 1. / w
-cx = (x[1:] - x[:-1]) / 2. + x[:-1]
-pylab.plot(cx, d)
-pylab.xlabel('DV')
-pylab.ylabel(key)
-
-pylab.subplot(236)
-d, x = numpy.histogram(data['ap'], weights=data[key])
-w, _ = numpy.histogram(data['ap'])
-d *= 1. / w
-cx = (x[1:] - x[:-1]) / 2. + x[:-1]
-pylab.plot(cx, d)
-pylab.xlabel('AP')
-pylab.ylabel(key)
+    pylab.subplot(236)
+    d, x = numpy.histogram(data['ap'], weights=data[key])
+    w, _ = numpy.histogram(data['ap'])
+    d *= 1. / w
+    cx = (x[1:] - x[:-1]) / 2. + x[:-1]
+    pylab.plot(cx, d)
+    pylab.xlabel('AP')
+    pylab.ylabel(key)
 
 if save:
     pylab.savefig('%s_by_location.svg' % key)
