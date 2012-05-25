@@ -3,6 +3,7 @@
 import datetime
 import logging
 import os
+import re
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -27,9 +28,55 @@ bwin = (-0.15, 0.0)
 
 attrs = ['name', 'pos_x', 'pos_y', 'size_x', 'rotation']
 
+
+shift_locations = True
+shifts = {  # ap, dv, ml
+    'H3': (0., .2, .9),  # unverified
+    'H8': (0., 0., 1.),  # unverified
+    'K2': (.7, 0., -6.8),  # unverified
+    'K4': (0., 0., 0.),
+    'L1': (.5, -.6, -1.7),
+    'L2': (-.3, -1.0, -1.8),
+    'M2': (0., 0., 0.),
+    'M4': {
+        '120106': (-.8, 0., -1.),
+        '120109': (-.8, 0., -1.),
+        '120111': (-.8, 0., -1.),
+        '120113': (-.8, 0., -1.),
+        '120118': (-.8, 0., -1.),
+        '*': (0., 0., -.2),
+        },
+}  # add this to the locations
+
+
+def find_shift(shift, date):
+    if date in shift:
+        return shift[date]
+    return shift['*']
+
+
+def get_location(summary, ch):
+    session = re.findall('([A-Z][0-9]_[0-9]{6}_[0-9])', summary._filename)[0]
+    animal, date, epoch = session.split('_')
+    location = numpy.array(summary.get_location(ch).tolist())
+    if shift_locations:
+        shift = shifts[animal]
+        if isinstance(shift, dict):
+            shift = find_shift(shift, date)
+            if date in shift:
+                shift = shift[date]
+            else:
+                shift = find_shift(shift, date)
+        shift = numpy.array(shift)
+        location = numpy.array(summary.get_location(ch).tolist())
+        return tuple(location + shift)
+    else:
+        return tuple(location)
+
+
 mongo_server = 'coxlabanalysis1.rowland.org'
 mongo_db = 'physiology'
-mongo_collection = 'cells_sep'
+mongo_collection = 'cells_shift'
 
 
 def make_mongo_safe(d, pchar=','):
@@ -279,13 +326,37 @@ def get_tolerance(summary, trials, stims):
 
     return sorted_keys, means, stds, ns, stat, stimds
 
+global sections
+sections = {}
+
+
+def get_closest_section(ap):
+    bounds = brainatlas.section.bounds
+    index = -1
+    for i in sorted(bounds.keys()):
+        ref_ap = bounds[i]
+        if ref_ap < ap:
+            break
+        index = i
+    global sections
+    if index in sections:
+        return sections[index]
+    else:
+        areas = 'V2L AuD Au1 AuV PRh V1B V1M TeA Ect'.split()
+        sections[index] = brainatlas.section.Section(index, areas=areas)
+        return sections[index]
+
 
 def get_area(location):
     ap, dv, ml = location
-    areas = 'V2L AuD Au1 AuV PRh V1B V1M TeA Ect'.split()
-    cs = brainatlas.section.get_closest_section(ap, areas=areas)
+    # flip dv as brainatlas expects + to be down
+    dv *= -1
+    #areas = 'V2L AuD Au1 AuV PRh V1B V1M TeA Ect'.split()
+    cs = get_closest_section(ap)
+    #cs = brainatlas.section.get_closest_section(ap, areas=areas)
     area = cs.get_area_for_location(ml, dv, 'skull')
-    return area
+    assert len(area) == 1, "len(area) != 1: %s" % area
+    return str(area[0])
 
 
 # have this dump directly to mongo (remove plotting)
@@ -371,19 +442,22 @@ def process_summary(summary_filename):
 
             # location
             try:
-                location = summary.get_location(ch)
+                location = get_location(summary, ch)
+                #location = summary.get_location(ch)
             except Exception as E:
                 location = (0, 0, 0)
                 print "Attempt to get location failed: %s" % str(E)
+                #raise E
             cell['location'] = list(location)
             if location != (0, 0, 0):
                 try:
                     area = get_area(location)
                 except Exception as E:
-                    print "Failed to get area: %s" % E
-                    area = 'Na'
+                    print "Failed to get area at (%s): %s" % (location, E)
+                    area = 'Fail'
+                    #raise E
             else:
-                area = 'Na'
+                area = 'None'
             cell['area'] = area
 
             # ---------- responsivity ---------------
