@@ -76,7 +76,7 @@ def get_location(summary, ch):
 
 mongo_server = 'coxlabanalysis1.rowland.org'
 mongo_db = 'physiology'
-mongo_collection = 'cells_shift'
+mongo_collection = 'cells_rerun'
 
 
 def make_mongo_safe(d, pchar=','):
