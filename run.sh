@@ -156,5 +156,5 @@ do
     echo "plot.sh $session"
     sh plot.sh $session
     # clean up
-    #rm -rf /scratch/$session/
+    rm -rf /scratch/$session/
 done
