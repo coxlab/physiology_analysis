@@ -8,7 +8,7 @@ logging.basicConfig(level=logging.DEBUG)
 
 import physio
 
-import numpy as np
+import numpy
 import pylab as pl
 
 
@@ -52,6 +52,8 @@ if len(args) < 1:
 
 
 process_gaze = (options.gaze_std_thresh > 0.0 or options.gaze_dev_thresh > 0.0)
+if process_gaze:
+    raise NotImplementedError("Process gaze is broken")
 
 
 config = physio.cfg.load(args[0])
@@ -63,7 +65,8 @@ else:
     epochs = range(physio.session.get_n_epochs(args[0]))  # config))
 
 for epochNumber in epochs:
-    session = physio.session.load(args[0], epochNumber)
+    summary = physio.summary.load_summary(args[0], epochNumber)
+    #session = physio.session.load(args[0], epochNumber)
     if True or options.outdir.strip() == '':
         config = physio.cfg.load(args[0])
         outdir = physio.session.get_epoch_dir(config, epochNumber)
@@ -71,15 +74,19 @@ for epochNumber in epochs:
         outdir += '/plots'
         options.outdir = outdir
 
-    trialTimes, stimuli, _, _ = session.get_trials()
+    #trialTimes, stimuli, _, _ = session.get_trials()
+    match = {'name': {'value': 'BlueSquare', 'op': '!='}}
+    trials = summary.get_trials(match)
+    trialTimes = numpy.array(trials['time'])
+    stimuli = summary.get_stimuli(match)
     nTrials = len(trialTimes)
     logging.debug("N Trials: %i" % nTrials)
 
-    stimCounts = physio.events.stimuli.count(stimuli)
+    #stimCounts = physio.events.stimuli.count(stimuli)
     uniqueStimuli = physio.events.stimuli.unique(stimuli)
-    for s in stimCounts.keys():
-        logging.debug("\t%i presentations of %s" % \
-                (stimCounts[s], s))
+    #for s in stimCounts.keys():
+    #    logging.debug("\t%i presentations of %s" % \
+    #            (stimCounts[s], s))
 
     # get unique positions & sizes
     values = {}
@@ -91,7 +98,8 @@ for epochNumber in epochs:
     for v in values:
         conditions.append({options.group: v})
 
-    nclusters = session.get_n_clusters(options.channel)
+    #nclusters = session.get_n_clusters(options.channel)
+    nclusters = summary.get_n_clusters(options.channel)
     nclusters = min(10, nclusters)
     clusters = range(0, nclusters)
     data = [(options.channel, cl) for cl in clusters]
@@ -110,13 +118,15 @@ for epochNumber in epochs:
             logging.debug("\tPlotting[%i, %i]: ch/cl %s : s %s" % \
                     (x, y, datum, condition))
 
-            if process_gaze:
-                trials, _, _, _ = session.get_gaze_filtered_trials(
-                      condition,
-                      intra_trial_std_threshold=options.gaze_std_thresh,
-                      default_gaze_deviation_threshold=options.gaze_dev_thresh)
-            else:
-                trials, _, _, _ = session.get_trials(condition)
+            #if process_gaze:
+            #    trials, _, _, _ = session.get_gaze_filtered_trials(
+            #          condition,
+            #          intra_trial_std_threshold=options.gaze_std_thresh,
+            #          default_gaze_deviation_threshold=\
+            #          options.gaze_dev_thresh)
+            #else:
+            #    trials, _, _, _ = session.get_trials(condition)
+            trials = numpy.array(summary.get_trials(condition)['time'])
 
             # if the user has requested a subportion of the session
             if options.subsession_start > 0.0 or options.subsession_end < 1.0:
@@ -124,7 +134,8 @@ for epochNumber in epochs:
                 trials = trials[int(nt * options.subsession_start):\
                         int(nt * options.subsession_end)]
 
-            spikes = session.get_spike_times(*datum)
+            #spikes = session.get_spike_times(*datum)
+            spikes = summary.get_spike_times(*datum)
             pl.subplot(subplotsHeight, subplotsWidth, \
                     subplotsWidth * y + x + 1)
             physio.plotting.psth.plot(trials, spikes, options.before, \
@@ -145,7 +156,8 @@ for epochNumber in epochs:
                 pl.xlabel("Seconds")
             ymaxs[y] = max(ymaxs[y], pl.ylim()[1])
 
-    session.close()
+    #session.close()
+    summary.close()
 
     for y in xrange(subplotsHeight):
         for x in xrange(subplotsWidth):
