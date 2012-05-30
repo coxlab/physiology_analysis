@@ -326,6 +326,27 @@ def get_tolerance(summary, trials, stims):
 
     return sorted_keys, means, stds, ns, stat, stimds
 
+
+def get_friedman(summary, trials, stims):
+    ids = numpy.unique(stims['name'])
+    trans = numpy.unique(stims[list(stims.dtype.names[1:])])
+    M = numpy.zeros((len(ids), len(trans), 5))
+    for (ni, n) in enumerate(ids):
+        for (ti, t) in enumerate(trans):
+            sd = dict(name=n)
+            sd.update(dict(zip(trans.dtype.names, t)))
+            ft = summary.filter_trials(trials, sd)
+            #br = numpy.mean(ft['baseline'])
+            M[ni, ti, 0] = numpy.mean(ft['response'])
+            M[ni, ti, 1] = numpy.std(ft['response'])
+            M[ni, ti, 2] = len(ft['response'])
+            M[ni, ti, 3] = numpy.mean(ft['baseline'])
+            M[ni, ti, 4] = numpy.std(ft['baseline'])
+    r = M[:, :, 0] - M[:, :, 3]  # use driven response for now
+    stat = scipy.stats.friedmanchisquare(*r)  # stat = Q, p
+    return M, ids, trans, stat
+
+
 global sections
 sections = {}
 
@@ -524,6 +545,11 @@ def process_summary(summary_filename):
             cell['tolerance'] = dict(means=means, stds=stds, ns=ns, \
                     stats=stats, sorted=sorted_keys)
             cell['stimuli'] = stimds
+
+            M, ids, trans, stats = get_friedman(summary, dtrials, dstims)
+            cell['friedman'] = dict(rmean=M[:, :, 0], rstd=M[:, :, 1], \
+                    n=M[:, :, 2], bmean=M[:, :, 3], bstd=M[:, :, 4], ids=ids, \
+                    trans=trans, stats=stats)
 
             write_cell(cell)
             continue
