@@ -80,7 +80,7 @@ query['responsivity.p'] = {'$lt': 0.1}
 
 server = {'host': 'coxlabanalysis1.rowland.org',
         'db': 'physiology',
-        'coll': 'cells_sep'}
+        'coll': 'cells_shift'}
 
 cells = pymongo.Connection(server['host'])[server['db']][server['coll']]
 
