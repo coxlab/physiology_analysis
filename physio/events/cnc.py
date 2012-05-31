@@ -61,7 +61,7 @@ def get_channel_locations(cncDict, offset, time, override=None):
     eventNames = ['path_origin_x', 'path_origin_y', 'path_origin_z',
                     'path_slope_x', 'path_slope_y', 'path_slope_z',
                     'path_depth']
-    if override is not None:
+    if override is None:
         current = {}
         for eventName in eventNames:
             # print cncDict[eventName]
