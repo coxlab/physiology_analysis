@@ -35,8 +35,8 @@ def summarize_session_object(session, output_filename):
     summary_file = tables.openFile(output_filename, 'w')
 
     #gtt, gts, btt, bts = session.get_trials()
-    image_times, image_stims = session.get_stimuli()
-    rect_times, rect_stims = session.get_stimuli(stimType='rectangle')
+    image_times, image_stims = session.get_stimuli()  # 8%  FIXME
+    rect_times, rect_stims = session.get_stimuli(stimType='rectangle')  # 5%  FIXME
 
     stims = events.stimuli.unique(rect_stims + image_stims)  # dicts
 
@@ -146,25 +146,6 @@ def summarize_session_object(session, output_filename):
             SpikeDescription)
 
     #nclusters = {} # TODO save this later
-
-    for ch in xrange(1, 33):  # tdt numbering
-        #nclusters[ch] = session.get_n_clusters(ch)
-        #for cl in xrange(nclusters[ch]):
-        for cl in xrange(session.get_n_clusters(ch)):
-            spike_times = session.get_spike_times(ch, cl)
-            if len(spike_times):
-                snrs = spikes.stats.waveforms_snr_ptp( \
-                        session.get_spike_waveforms(ch, cl))
-            else:
-                snrs = []
-            for (snr, spike_time) in zip(snrs, spike_times):
-                spike_table.row['ch'] = ch
-                spike_table.row['cl'] = cl
-                spike_table.row['time'] = spike_time
-                spike_table.row['snr'] = snr
-                spike_table.row.append()
-    summary_file.flush()
-
     # find waveform length
     wfs = session._file.root.Channels.ch1.coldtypes['wave'].shape
     # tables for spike ch info (nclusters, signal to noise, etc)
@@ -179,22 +160,34 @@ def summarize_session_object(session, output_filename):
     spike_info_table = summary_file.createTable('/', 'SpikeInfo', \
             SpikeInfoDescription)
 
-    # TODO combine these for loops with the previous
     for ch in xrange(1, 33):  # tdt numbering
-        for cl in xrange(session.get_n_clusters(ch)):
-            waves = numpy.array(session.get_spike_waveforms(ch, cl))
+        #nclusters[ch] = session.get_n_clusters(ch)
+        #for cl in xrange(nclusters[ch]):
+        for cl in xrange(session.get_n_clusters(ch)):  # 7% FIXME
+            spike_times = session.get_spike_times(ch, cl)  # 14% FIXME
+            waves = session.get_spike_waveforms(ch, cl)  # 21% FIXME
+            if len(spike_times):
+                snrs = spikes.stats.waveforms_snr_ptp(waves)  # 18% FIXME
+            else:
+                snrs = []
+            for (snr, spike_time) in zip(snrs, spike_times):
+                spike_table.row['ch'] = ch
+                spike_table.row['cl'] = cl
+                spike_table.row['time'] = spike_time
+                spike_table.row['snr'] = snr
+                spike_table.row.append()
             if len(waves) == 0:
                 continue
-            snrs = spikes.stats.waveforms_snr_ptp(waves)
-            wave_mean = numpy.mean(waves, 0)
-            wave_std = numpy.std(waves, 0)
-            spike_info_table.row['ch'] = ch
-            spike_info_table.row['cl'] = cl
-            spike_info_table.row['wave_mean'] = wave_mean
-            spike_info_table.row['wave_std'] = wave_std
-            spike_info_table.row['snr_mean'] = numpy.mean(snr)
-            spike_info_table.row['snr_std'] = numpy.std(snr)
-            spike_info_table.row.append()
+            else:
+                wave_mean = numpy.mean(waves, 0)
+                wave_std = numpy.std(waves, 0)
+                spike_info_table.row['ch'] = ch
+                spike_info_table.row['cl'] = cl
+                spike_info_table.row['wave_mean'] = wave_mean
+                spike_info_table.row['wave_std'] = wave_std
+                spike_info_table.row['snr_mean'] = numpy.mean(snrs)
+                spike_info_table.row['snr_std'] = numpy.std(snrs)
+                spike_info_table.row.append()
     summary_file.flush()
 
     # 4) gaze
