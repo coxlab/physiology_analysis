@@ -192,40 +192,25 @@ class Session(object):
         ch, cl = self.get_cell(i)
         return self.get_spike_waveforms(ch, cl, timeRange)
 
-    def get_spike_waveforms(self, channel, cluster, timeRange=None):
-        #n = self._file.getNode('/Channels/ch%i' % channel)
+    def get_cell_events(self, channel, cluster, timeRange=None):
         if timeRange is None:
-            waves = [i['wave'] for i in \
-                    self._file.getNode('/Channels/ch%i' % channel).\
-                    where('clu == %i' % cluster)]
+            q = 'clu == %i' % cluster
         else:
-            assert len(timeRange) == 2, "timeRange must be length 2: %s" % \
+            assert len(timeRange) == 2, "timeRange must be len 2: %s" % \
                     len(timeRange)
-            samplerange = (int(timeRange[0] * self._samplingrate),
-                            int(timeRange[1] * self._samplingrate))
-            waves = [i['wave'] for i in \
-                    self._file.getNode('/Channels/ch%i' % channel).\
-                    where('(clu == %i) & (time > %i) & (time < %i)' % \
-                    (cluster, samplerange[0], samplerange[1]))]
-        return np.array(waves)
+            sr = (int(timeRange[0] * self._samplingrate),
+                    int(timeRange[1] * self._samplingrate))
+            q = '(clu == %i) & (time > %i) & (time < %i)' % \
+                    (cluster, sr[0], sr[1])
+        return self._file.getNode('/Channels/ch%i' % channel).\
+                readWhere(q)
 
-    @utils.memoize
+    def get_spike_waveforms(self, channel, cluster, timeRange=None):
+        return self.get_cell_events(channel, cluster, timeRange)['wave']
+
+    #@utils.memoize
     def get_spike_times(self, channel, cluster, timeRange=None):
-        #n = self._file.getNode('/Channels/ch%i' % channel)
-        if timeRange is None:
-            times = [i['time'] for i in \
-                    self._file.getNode('/Channels/ch%i' % channel). \
-                    where('clu == %i' % cluster)]
-        else:
-            assert len(timeRange) == 2, "timeRange must be length 2: %s" % \
-                    len(timeRange)
-            samplerange = (int(timeRange[0] * self._samplingrate),
-                            int(timeRange[1] * self._samplingrate))
-            times = [i['time'] for i in \
-                    self._file.getNode('/Channels/ch%i' % channel).\
-                    where('(clu == %i) & (time > %i) & (time < %i)' %\
-                    (cluster, samplerange[0], samplerange[1]))]
-        return np.array(times) / float(self._samplingrate)
+        return self.get_cell_events(channel, cluster, timeRange)['time']
 
     def get_events(self, name, timeRange=None):
         if timeRange is None:
@@ -243,7 +228,7 @@ class Session(object):
     def get_codec(self):
         return h5.events.get_codec(self._file)
 
-    @utils.memoize
+    #@utils.memoize
     def get_stimuli(self, matchDict=None, timeRange=None, stimType='image'):
         """
         get all trials that match matchDict and are of type stimType
