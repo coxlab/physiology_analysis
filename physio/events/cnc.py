@@ -76,7 +76,7 @@ def get_channel_locations(cncDict, offset, time, override=None):
     else:
         current = override
 
-    if eventName in eventNames:
+    for eventName in eventNames:
         if not (eventName in current.keys()):
             utils.error("cnc dict does not contain: %s" % str(eventName))
 
