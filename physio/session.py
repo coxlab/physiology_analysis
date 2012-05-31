@@ -228,7 +228,7 @@ class Session(object):
     def get_codec(self):
         return h5.events.get_codec(self._file)
 
-    #@utils.memoize
+    @utils.memoize
     def get_stimuli(self, matchDict=None, timeRange=None, stimType='image'):
         """
         get all trials that match matchDict and are of type stimType
