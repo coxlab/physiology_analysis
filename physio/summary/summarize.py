@@ -211,6 +211,28 @@ def summarize_session_object(session, output_filename):
         gaze_table.row['pupil_radius'] = pv[i]
         gaze_table.row.append()
 
+    # licking, moving
+    class EventDescription(tables.IsDescription):
+        time = tables.Float64Col()
+        code = tables.UInt8Col()
+        value = tables.Float64Col()
+
+    event_table = summary_file.createTable('/', 'Events', \
+            EventDescription)
+    for (en, code) in [('LickInput', 0), ('MotionInput1', 1), \
+            ('MotionInput2', 2)]:
+        try:
+            for (t, v) in session.get_events(en):
+                event_table.row['time'] = t
+                event_table.row['value'] = v
+                event_table.row['code'] = code
+                event_table.row.append()
+        except Exception as E:
+            logging.error("Failed to store events for %s: %s" % \
+                    (en, E))
+
+    summary_file.flush()
+
     #gaze_group = summary_file.createGroup('/', 'Gaze', 'Gaze')
     #summary_file.createArray(gaze_group, 'times', tt)
     #summary_file.createArray(gaze_group, 'cobra_timestamps', tv)
