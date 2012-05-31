@@ -35,8 +35,8 @@ def summarize_session_object(session, output_filename):
     summary_file = tables.openFile(output_filename, 'w')
 
     #gtt, gts, btt, bts = session.get_trials()
-    image_times, image_stims = session.get_stimuli()  # 8%  FIXME
-    rect_times, rect_stims = session.get_stimuli(stimType='rectangle')  # 5%  FIXME
+    image_times, image_stims = session.get_stimuli()
+    rect_times, rect_stims = session.get_stimuli(stimType='rectangle')
 
     stims = events.stimuli.unique(rect_stims + image_stims)  # dicts
 
@@ -163,11 +163,14 @@ def summarize_session_object(session, output_filename):
     for ch in xrange(1, 33):  # tdt numbering
         #nclusters[ch] = session.get_n_clusters(ch)
         #for cl in xrange(nclusters[ch]):
-        for cl in xrange(session.get_n_clusters(ch)):  # 7% FIXME
-            spike_times = session.get_spike_times(ch, cl)  # 14% FIXME
-            waves = session.get_spike_waveforms(ch, cl)  # 21% FIXME
+        for cl in xrange(session.get_n_clusters(ch)):
+            cell_events = session.get_cell_events(ch, cl)
+            spike_times = cell_events['time']
+            waves = cell_events['wave']
+            #spike_times = session.get_spike_times(ch, cl)
+            #waves = session.get_spike_waveforms(ch, cl)
             if len(spike_times):
-                snrs = spikes.stats.waveforms_snr_ptp(waves)  # 18% FIXME
+                snrs = spikes.stats.waveforms_snr_ptp(waves)
             else:
                 snrs = []
             for (snr, spike_time) in zip(snrs, spike_times):
