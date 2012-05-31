@@ -313,6 +313,9 @@ class Session(object):
         return goodTimes, goodStims, badTimes, badStims
 
     def get_channel_locations(self):
+        """
+        ml, ap, dv
+        """
         cncDict = events.cnc.get_cnc_events(self._file)
         offset = events.cnc.get_tip_offset(self._file)
         override = events.cnc.get_location_override(self._file)
