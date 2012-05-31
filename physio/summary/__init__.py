@@ -196,6 +196,13 @@ class Summary(object):
                 '(time > %f) & (time < %f)' %\
                 (timeRange[0], timeRange[1]))
 
+    def get_events(self, timeRange=None):
+        if timeRange is None:
+            return self._file.root.Events.read()
+        return self._file.root.Events.readWhere(\
+                '(time > %f) & (time < %f)' %\
+                (timeRange[0], timeRange[1]))
+
     def get_epoch_range(self):
         return self._file.root._v_attrs['au_start'], \
                 self._file.root._v_attrs['au_end']
