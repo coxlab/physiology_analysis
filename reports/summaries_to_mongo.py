@@ -5,7 +5,8 @@ import logging
 import os
 import re
 
-logging.basicConfig(level=logging.DEBUG)
+#logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.WARNING)
 
 import pylab
 import numpy
@@ -19,10 +20,11 @@ import physio
 import brainatlas
 
 
-blacklist_animals = ['fake', 'H3', 'H4', 'H7', 'H8']
+#blacklist_animals = ['fake', 'H3', 'H4', 'H7', 'H8']
+blacklist_animals = []
 
 min_spikes = 100
-min_rate = 0.01  # hz
+min_rate = 0.0001  # hz
 rwin = (0.05, 0.2)
 bwin = (-0.15, 0.0)
 
@@ -220,28 +222,28 @@ def test_selectivity(responses):
     try:
         H, p = scipy.stats.kruskal(responses)
     except Exception as e:
-        print "kruskal failed with: %s" % str(e)
+        logging.warning("kruskal failed with: %s" % str(e))
 
     try:
         #F, p2 = scipy.stats.f_oneway(*all_sqrt_counts)
         F, p2 = scipy.stats.f_oneway(*responses)
-        print ("anova F=%f, p=%f" % (F, p2))
+        #print ("anova F=%f, p=%f" % (F, p2))
     except Exception as e:
-        print "anova failed with: %s" % str(e)
+        logging.warning("anova failed with: %s" % str(e))
 
     try:
         lens = [len(r) for r in responses]
         trunced = [numpy.array(r[0:numpy.min(lens)]) for r in responses]
         X, p3 = scipy.stats.friedmanchisquare(*trunced)
-        print ("friedman=%f, p=%f" % (X, p3))
+        #print ("friedman=%f, p=%f" % (X, p3))
     except Exception as e:
-        print "friedman failed with: %s" % str(e)
+        logging.warning("friedman failed with: %s" % str(e))
 
     try:
         mr = [numpy.mean(r) for r in responses]
         sel_index = physio.spikes.selectivity.selectivity(mr)
     except Exception as e:
-        print "selectivity failed with: %s" % str(e)
+        logging.warning("selectivity failed with: %s" % str(e))
 
     return {'H': H, 'Hp': p, 'F': F, 'Fp': p2, 'X': X, 'Xp': p3, \
             'sel': sel_index}
@@ -336,6 +338,8 @@ def get_friedman(summary, trials, stims):
             sd = dict(name=n)
             sd.update(dict(zip(trans.dtype.names, t)))
             ft = summary.filter_trials(trials, sd)
+            if len(ft) == 0:
+                raise ValueError("0 Trials with %s [%s]" % (n, t))
             #br = numpy.mean(ft['baseline'])
             M[ni, ti, 0] = numpy.mean(ft['response'])
             M[ni, ti, 1] = numpy.std(ft['response'])
@@ -402,7 +406,7 @@ def process_summary(summary_filename):
     try:
         gaze = clean_gaze(summary.get_gaze())
     except Exception as E:
-        print "Fetching gaze failed: %s" % E
+        logging.warning("Fetching gaze failed: %s" % E)
         gaze = []
 
     if len(gaze) > 0:
@@ -414,7 +418,7 @@ def process_summary(summary_filename):
         try:
             cis = summary.get_cluster_indices(ch)
         except Exception as E:
-            print "Getting cluster_indices failed: %s" % E
+            logging.warning("Getting cluster_indices failed: %s" % E)
             continue
         for cl in cis:
             ctrials = trials.copy()
@@ -459,7 +463,7 @@ def process_summary(summary_filename):
                 cell['snr_mean'] = numpy.mean(snrs)
                 cell['snr_std'] = numpy.std(snrs)
             except Exception as E:
-                print "Snr measure failed: %s" % str(E)
+                logging.warning("Snr measure failed: %s" % str(E))
 
             # location
             try:
@@ -467,14 +471,15 @@ def process_summary(summary_filename):
                 #location = summary.get_location(ch)
             except Exception as E:
                 location = (0, 0, 0)
-                print "Attempt to get location failed: %s" % str(E)
+                logging.warning("Attempt to get location failed: %s" % str(E))
                 #raise E
             cell['location'] = list(location)
             if location != (0, 0, 0):
                 try:
                     area = get_area(location)
                 except Exception as E:
-                    print "Failed to get area at (%s): %s" % (location, E)
+                    logging.warning("Failed to get area at (%s): %s" % \
+                            (location, E))
                     area = 'Fail'
                     #raise E
             else:
@@ -513,31 +518,31 @@ def process_summary(summary_filename):
             for attr in attrs:
                 sorted_keys, means, stds, ns, stats = \
                         get_selectivity(summary, dtrials, dstims, attr)
-                max_key = sorted_keys[0]
+                #max_key = sorted_keys[0]
                 cell['selectivity'][attr] = { \
                         'means': means, 'stds': stds, 'ns': ns,
                         'stats': stats, 'sorted': sorted_keys}
-                cell['separability'][attr] = {}
-
-                atrials = summary.filter_trials(dtrials, {attr: max_key})
-                for attr2 in attrs:
-                    if attr == attr2:
-                        continue
-
-                    # this is only for the MAX
-                    sorted_keys, means, stds, ns, stats = \
-                            get_selectivity(summary, atrials, dstims, attr2)
-                    max_key = sorted_keys[0]
-                    cell['selectivity'][attr][attr2] = { \
-                            'means': means, 'stds': stds, 'ns': ns,
-                            'stats': stats, 'sorted': sorted_keys}
-
-                    # ----------- separability --------------
-                    # this is for all
-                    M, S, N, L, stats = get_separability(summary, dtrials, \
-                            dstims, attr, attr2)
-                    cell['separability'][attr][attr2] = \
-                            {'M': M, 'S': S, 'N': N, 'stats': stats}
+            #    cell['separability'][attr] = {}
+#
+#                atrials = summary.filter_trials(dtrials, {attr: max_key})
+#                for attr2 in attrs:
+#                    if attr == attr2:
+#                        continue
+#
+#                    # this is only for the MAX
+#                    sorted_keys, means, stds, ns, stats = \
+#                            get_selectivity(summary, atrials, dstims, attr2)
+#                    max_key = sorted_keys[0]
+#                    cell['selectivity'][attr][attr2] = { \
+#                            'means': means, 'stds': stds, 'ns': ns,
+#                            'stats': stats, 'sorted': sorted_keys}
+#
+#                    # ----------- separability --------------
+#                    # this is for all
+#                    M, S, N, L, stats = get_separability(summary, dtrials, \
+#                            dstims, attr, attr2)
+#                    cell['separability'][attr][attr2] = \
+#                            {'M': M, 'S': S, 'N': N, 'stats': stats}
 
             # --------- tolerance ------------
             sorted_keys, means, stds, ns, stats, stimds = \
@@ -546,10 +551,21 @@ def process_summary(summary_filename):
                     stats=stats, sorted=sorted_keys)
             cell['stimuli'] = stimds
 
-            M, ids, trans, stats = get_friedman(summary, dtrials, dstims)
-            cell['friedman'] = dict(rmean=M[:, :, 0], rstd=M[:, :, 1], \
+            try:
+                M, ids, trans, stats = get_friedman(summary, dtrials, dstims)
+                cell['friedman'] = dict(rmean=M[:, :, 0], rstd=M[:, :, 1], \
                     n=M[:, :, 2], bmean=M[:, :, 3], bstd=M[:, :, 4], ids=ids, \
                     trans=trans, stats=stats)
+            except Exception as E:
+                logging.warning("friedman failed: %s" % E)
+                cell['friedman'] = {}
+
+            try:
+                r = M[:, :, 0] - M[:, :, 3]
+                cell['separability'] = test_separability(r)
+            except Exception as E:
+                logging.warning("separability calculation failed: %s" % E)
+                cell['separability'] = {}
 
             write_cell(cell)
             continue
@@ -567,8 +583,8 @@ if __name__ == '__main__':
         if not blacklist:
             sfns.append(sfn)
 
-    print "processing [%i] summary files" % len(sfns)
-    print sfns
+    logging.debug("processing [%i] summary files" % len(sfns))
+    logging.debug("%s" % sfns)
 
     #Parallel(n_jobs=1)(delayed(process_summary)(s) for s in sfns)
     Parallel(n_jobs=-1)(delayed(process_summary)(s) for s in sfns)
