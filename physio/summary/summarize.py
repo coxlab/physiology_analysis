@@ -222,7 +222,7 @@ def summarize_session_object(session, output_filename):
     for (en, code) in [('LickInput', 0), ('MotionInput1', 1), \
             ('MotionInput2', 2)]:
         try:
-            for (t, v) in session.get_events(en):
+            for t, v in zip(*session.get_events(en)):
                 event_table.row['time'] = t
                 event_table.row['value'] = v
                 event_table.row['code'] = code
