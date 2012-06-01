@@ -6,8 +6,8 @@ import os
 import re
 import sys
 
-#logging.basicConfig(level=logging.DEBUG)
-logging.basicConfig(level=logging.WARNING)
+logging.basicConfig(level=logging.DEBUG)
+#logging.basicConfig(level=logging.WARNING)
 
 import pylab
 import numpy
@@ -495,8 +495,9 @@ def process_summary(summary_filename):
             if cell['nspikes'] < min_spikes:
                 logging.warning("\t%i < min_spikes[%i]" % \
                         (cell['nspikes'], min_spikes))
-                write_cell(cell)
                 cell['err'] += "Nspikes < %i" % min_spikes
+                logging.debug("writing truncated cell")
+                write_cell(cell)
                 continue
 
             # ---------- responsivity ---------------
@@ -522,6 +523,8 @@ def process_summary(summary_filename):
             if len(dtrials) == 0:
                 logging.error("Zero trials for %i %i %s" % \
                         (ch, cl, summary._filename))
+                cell['err'] += "Zero trials"
+                write_cell(cell)
                 continue
             dstims = summary.get_stimuli({'name': \
                     {'value': 'BlueSquare', 'op': '!='}})
@@ -562,6 +565,7 @@ def process_summary(summary_filename):
                 cell['err'] += "separability calculation failed: %s\n" % E
                 cell['separability'] = {}
 
+            logging.debug("writing full cell")
             write_cell(cell)
             continue
 
