@@ -202,8 +202,14 @@ class Session(object):
                     int(timeRange[1] * self._samplingrate))
             q = '(clu == %i) & (time > %i) & (time < %i)' % \
                     (cluster, sr[0], sr[1])
-        return self._file.getNode('/Channels/ch%i' % channel).\
-                readWhere(q)
+
+        r = self._file.getNode('/Channels/ch%i' % channel).\
+                readWhere(q).astype(np.dtype(\
+                [('clu', '|u1'), ('time', '<f8'), ('wave', '<f8', (128,))]))
+        r['time'] = r['time'] / float(self._samplingrate)
+        return r
+        #return self._file.getNode('/Channels/ch%i' % channel).\
+        #        readWhere(q)
 
     def get_spike_waveforms(self, channel, cluster, timeRange=None):
         return self.get_cell_events(channel, cluster, timeRange)['wave']
