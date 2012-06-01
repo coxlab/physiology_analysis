@@ -4,6 +4,7 @@ import datetime
 import logging
 import os
 import re
+import sys
 
 #logging.basicConfig(level=logging.DEBUG)
 logging.basicConfig(level=logging.WARNING)
@@ -51,25 +52,22 @@ shifts = {  # ap, dv, ml
 }  # add this to the locations
 
 
-def find_shift(shift, date):
+def find_shift(animal, date):
+    shift = shifts[animal]
+    if not isinstance(shift, dict):
+        return shift
     if date in shift:
         return shift[date]
     return shift['*']
 
 
 def get_location(summary, ch):
+    """ ap, dv, ml """
     session = re.findall('([A-Z][0-9]_[0-9]{6}_[0-9])', summary._filename)[0]
     animal, date, epoch = session.split('_')
     location = numpy.array(summary.get_location(ch).tolist())
     if shift_locations:
-        shift = shifts[animal]
-        if isinstance(shift, dict):
-            shift = find_shift(shift, date)
-            if date in shift:
-                shift = shift[date]
-            else:
-                shift = find_shift(shift, date)
-        shift = numpy.array(shift)
+        shift = numpy.array(find_shift(animal, date))
         location = numpy.array(summary.get_location(ch).tolist())
         return tuple(location + shift)
     else:
@@ -348,6 +346,7 @@ def get_friedman(summary, trials, stims):
             M[ni, ti, 4] = numpy.std(ft['baseline'])
     r = M[:, :, 0] - M[:, :, 3]  # use driven response for now
     stat = scipy.stats.friedmanchisquare(*r)  # stat = Q, p
+    trans = [list(t) for t in trans]  # make mongo happy
     return M, ids, trans, stat
 
 
@@ -409,10 +408,12 @@ def process_summary(summary_filename):
         logging.warning("Fetching gaze failed: %s" % E)
         gaze = []
 
+    nt = len(trials)
     if len(gaze) > 0:
         logging.debug("N Trials before gaze culling: %i" % len(trials))
         trials = cull_trials_by_gaze(trials, gaze)
         logging.debug("N Trials after gaze culling: %i" % len(trials))
+    n_culled_trials = nt - len(trials)
 
     for ch in xrange(1, 33):
         try:
@@ -423,6 +424,7 @@ def process_summary(summary_filename):
         for cl in cis:
             ctrials = trials.copy()
             cell = {}
+            cell['err'] = ""
             cell['ch'] = ch
             cell['cl'] = cl
             cell['animal'] = animal
@@ -433,37 +435,32 @@ def process_summary(summary_filename):
             # rate
             spike_times = summary.get_spike_times(ch, cl)
 
+            trange = (spike_times.min(), spike_times.max())
+            cell['raw_trange'] = trange
+
+            # trange = summary.get_epoch_range()
             # find start of isolation
             isolation_start = physio.spikes.times.\
                     find_isolation_start_by_isi(spike_times)
+
             spike_times = spike_times[spike_times >= isolation_start]
 
             nspikes = len(spike_times)
             cell['nspikes'] = nspikes
-            if nspikes < min_spikes:
-                logging.warning("\t%i < min_spikes[%i]" % \
-                        (nspikes, min_spikes))
-                #write_cell(cell)
-                continue
 
             trange = (spike_times.min(), spike_times.max())
-            # trange = summary.get_epoch_range()
             rate = nspikes / (trange[1] - trange[0])
             cell['rate'] = rate
-            if rate < min_rate:
-                logging.warning("\t%i < min_rate[%i]" % \
-                        (rate, min_rate))
-                write_cell(cell)
-                continue
             cell['trange'] = trange
 
-            # snr TODO
+            # snr
             try:
                 snrs = summary.get_spike_snrs(ch, cl, timeRange=trange)
                 cell['snr_mean'] = numpy.mean(snrs)
                 cell['snr_std'] = numpy.std(snrs)
             except Exception as E:
                 logging.warning("Snr measure failed: %s" % str(E))
+                cell['err'] += 'Snr measure failed: %s\n' % E
 
             # location
             try:
@@ -472,7 +469,11 @@ def process_summary(summary_filename):
             except Exception as E:
                 location = (0, 0, 0)
                 logging.warning("Attempt to get location failed: %s" % str(E))
+                cell['err'] += 'Attempt to get location failed: %s\n' % E
                 #raise E
+            cell['ap'] = location[0]
+            cell['dv'] = location[1]
+            cell['ml'] = location[2]
             cell['location'] = list(location)
             if location != (0, 0, 0):
                 try:
@@ -480,11 +481,23 @@ def process_summary(summary_filename):
                 except Exception as E:
                     logging.warning("Failed to get area at (%s): %s" % \
                             (location, E))
+                    cell['err'] += "Failed to get area at (%s): %s\n" % \
+                            (location, E)
                     area = 'Fail'
                     #raise E
             else:
                 area = 'None'
             cell['area'] = area
+
+            if cell['rate'] < min_rate:
+                logging.warning("\t%i < min_rate[%i]" % \
+                        (cell['rate'], min_rate))
+            if cell['nspikes'] < min_spikes:
+                logging.warning("\t%i < min_spikes[%i]" % \
+                        (cell['nspikes'], min_spikes))
+                write_cell(cell)
+                cell['err'] += "Nspikes < %i" % min_spikes
+                continue
 
             # ---------- responsivity ---------------
             baseline, response, stat = get_responsivity(\
@@ -496,6 +509,7 @@ def process_summary(summary_filename):
             cell['driven_std'] = numpy.std(response)
 
             cell['ntrials'] = len(ctrials)
+            cell['culled_trials'] = n_culled_trials
             cell['responsivity'] = stat
 
             ctrials = pylab.rec_append_fields(ctrials, \
@@ -522,27 +536,6 @@ def process_summary(summary_filename):
                 cell['selectivity'][attr] = { \
                         'means': means, 'stds': stds, 'ns': ns,
                         'stats': stats, 'sorted': sorted_keys}
-            #    cell['separability'][attr] = {}
-#
-#                atrials = summary.filter_trials(dtrials, {attr: max_key})
-#                for attr2 in attrs:
-#                    if attr == attr2:
-#                        continue
-#
-#                    # this is only for the MAX
-#                    sorted_keys, means, stds, ns, stats = \
-#                            get_selectivity(summary, atrials, dstims, attr2)
-#                    max_key = sorted_keys[0]
-#                    cell['selectivity'][attr][attr2] = { \
-#                            'means': means, 'stds': stds, 'ns': ns,
-#                            'stats': stats, 'sorted': sorted_keys}
-#
-#                    # ----------- separability --------------
-#                    # this is for all
-#                    M, S, N, L, stats = get_separability(summary, dtrials, \
-#                            dstims, attr, attr2)
-#                    cell['separability'][attr][attr2] = \
-#                            {'M': M, 'S': S, 'N': N, 'stats': stats}
 
             # --------- tolerance ------------
             sorted_keys, means, stds, ns, stats, stimds = \
@@ -558,6 +551,7 @@ def process_summary(summary_filename):
                     trans=trans, stats=stats)
             except Exception as E:
                 logging.warning("friedman failed: %s" % E)
+                cell['err'] += "friedman failed: %s\n" % E
                 cell['friedman'] = {}
 
             try:
@@ -565,6 +559,7 @@ def process_summary(summary_filename):
                 cell['separability'] = test_separability(r)
             except Exception as E:
                 logging.warning("separability calculation failed: %s" % E)
+                cell['err'] += "separability calculation failed: %s\n" % E
                 cell['separability'] = {}
 
             write_cell(cell)
@@ -573,8 +568,11 @@ def process_summary(summary_filename):
 
 if __name__ == '__main__':
     clear_mongo()
+    args = sys.argv[1:]
+    if len(args) == 0:
+        args = physio.summary.get_summary_filenames()
     sfns = []
-    for sfn in physio.summary.get_summary_filenames():
+    for sfn in args:
         blacklist = False
         for animal in blacklist_animals:
             if animal in sfn:
