@@ -301,12 +301,17 @@ class Session(object):
         """
         ml, ap, dv
         """
-        cncDict = events.cnc.get_cnc_events(self._file)
-        offset = events.cnc.get_tip_offset(self._file)
         override = events.cnc.get_location_override(self._file)
-        #time, _ = self.get_epoch_time_range('mworks')
-        tr = self.get_epoch_time_range('mworks')
-        time = (tr[1] - tr[0]) / 2. + tr[0]  # middle of epoch
+        if override is None:
+            cncDict = events.cnc.get_cnc_events(self._file)
+            tr = self.get_epoch_time_range('mworks')
+            time = (tr[1] - tr[0]) / 2. + tr[0]  # middle of epoch
+        else:
+            logging.debug("Using channel locations override: %s" % \
+                    override)
+            cncDict = {}
+            time = None
+        offset = events.cnc.get_tip_offset(self._file)
         return events.cnc.get_channel_locations(cncDict, offset, time, \
                 override)
 
