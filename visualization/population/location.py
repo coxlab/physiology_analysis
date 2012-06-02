@@ -11,8 +11,8 @@ import pylab
 import attribute
 import utils
 
-#key = 'selectivity.name.stats.F'
-key = 'friedman.stats.p'
+key = 'selectivity.name.stats.F'
+#key = 'friedman.stats.p'
 #op = None
 op = lambda v: -numpy.log(v)
 #key = {
@@ -53,6 +53,9 @@ print "Prior to position culling: %i" % len(data)
 data = data[data['dv'] < 0]
 data = data[data['ap'] < -3]
 print "After to position culling: %i" % len(data)
+
+data = data[numpy.logical_not(numpy.isnan(data[key]))]
+print "After nan culling: %i" % len(data)
 
 
 pylab.figure()
@@ -106,6 +109,7 @@ pylab.ylabel(key)
 
 if opts.save:
     #pylab.savefig(opts.filename)
-    pylab.savefig('%s_by_location.svg' % key)
+    #pylab.savefig('%s_by_location.svg' % key)
+    pylab.savefig('%s_by_location.png' % key)
 else:
     pylab.show()
