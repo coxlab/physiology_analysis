@@ -54,8 +54,7 @@ def parse(parser=None, query=None, include_defaults=True):
         query = default_query
     elif include_defaults:
         query.update(default_query)
-    if parser is None:
-        parser = setup_parser(parser, query)
+    parser = setup_parser(parser, query)
     return parser.parse_args()
 
 
