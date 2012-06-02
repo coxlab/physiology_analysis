@@ -76,7 +76,7 @@ def get_location(summary, ch):
 
 mongo_server = 'coxlabanalysis1.rowland.org'
 mongo_db = 'physiology'
-mongo_collection = 'cells_rerun'
+mongo_collection = 'cells_shift'
 
 
 def make_mongo_safe(d, pchar=','):
@@ -345,9 +345,9 @@ def get_friedman(summary, trials, stims):
             M[ni, ti, 3] = numpy.mean(ft['baseline'])
             M[ni, ti, 4] = numpy.std(ft['baseline'])
     r = M[:, :, 0] - M[:, :, 3]  # use driven response for now
-    stat = scipy.stats.friedmanchisquare(*r)  # stat = Q, p
+    Q, p = scipy.stats.friedmanchisquare(*r)  # stat = Q, p
     trans = [list(t) for t in trans]  # make mongo happy
-    return M, ids, trans, stat
+    return M, ids, trans, {'Q': Q, 'p': p}
 
 
 global sections
@@ -496,8 +496,8 @@ def process_summary(summary_filename):
                 logging.warning("\t%i < min_spikes[%i]" % \
                         (cell['nspikes'], min_spikes))
                 cell['err'] += "Nspikes < %i" % min_spikes
-                logging.debug("writing truncated cell")
-                write_cell(cell)
+                logging.error("skipping writing truncated cell")
+                #write_cell(cell)
                 continue
 
             # ---------- responsivity ---------------
@@ -524,7 +524,8 @@ def process_summary(summary_filename):
                 logging.error("Zero trials for %i %i %s" % \
                         (ch, cl, summary._filename))
                 cell['err'] += "Zero trials"
-                write_cell(cell)
+                logging.error("skipping writing truncated cell")
+                #write_cell(cell)
                 continue
             dstims = summary.get_stimuli({'name': \
                     {'value': 'BlueSquare', 'op': '!='}})
