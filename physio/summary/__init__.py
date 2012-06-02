@@ -93,6 +93,16 @@ class Summary(object):
     def __init__(self, h5filename):
         self._file = tables.openFile(h5filename, 'r')
         self._filename = h5filename
+        tokens = os.path.basename(self._filename).split('_')
+        self.animal = tokens[0]
+        if len(tokens) > 1:
+            self.date = tokens[1]
+        else:
+            self.date = ''
+        if len(tokens) > 2:
+            self.epoch = tokens[2]
+        else:
+            self.epoch = ''
 
     def close(self):
         self._file.close()

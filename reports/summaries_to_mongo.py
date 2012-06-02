@@ -63,11 +63,9 @@ def find_shift(animal, date):
 
 def get_location(summary, ch):
     """ ap, dv, ml """
-    session = re.findall('([A-Z][0-9]_[0-9]{6}_[0-9])', summary._filename)[0]
-    animal, date, epoch = session.split('_')
     location = numpy.array(summary.get_location(ch).tolist())
     if shift_locations:
-        shift = numpy.array(find_shift(animal, date))
+        shift = numpy.array(find_shift(summary.animal, summary.date))
         location = numpy.array(summary.get_location(ch).tolist())
         return tuple(location + shift)
     else:
@@ -388,9 +386,8 @@ def process_summary(summary_filename):
     summary = physio.summary.Summary(summary_filename)
     logging.debug("Processing %s" % summary._filename)
 
-    fn = os.path.basename(summary_filename)
-    animal = fn.split('_')[0]
-    date = fn.split('_')[1]
+    animal = summary.animal
+    date = summary.date
     # convert to datetime
     dt = datetime.datetime(int('20' + date[:2]), int(date[2:4]), int(date[4:]))
 
@@ -425,15 +422,21 @@ def process_summary(summary_filename):
             ctrials = trials.copy()
             cell = {}
             cell['err'] = ""
-            cell['ch'] = ch
-            cell['cl'] = cl
+            # things to fix for cluster merging
+            # channel : see below
+            # cluster : just call this cell_index
+            # get_spike_times : merge them in summary.get_spike_times
+            # get_spike_snrs : merge them in summary.get_spike_snrs
+            # get_location : average channel locations?
+            cell['ch'] = ch  # FIXME
+            cell['cl'] = cl  # FIXME
             cell['animal'] = animal
             cell['date'] = date
             cell['datetime'] = dt
 
             logging.debug("ch: %i, cl: %i" % (ch, cl))
             # rate
-            spike_times = summary.get_spike_times(ch, cl)
+            spike_times = summary.get_spike_times(ch, cl)  # FIXME
 
             trange = (spike_times.min(), spike_times.max())
             cell['raw_trange'] = trange
@@ -455,7 +458,7 @@ def process_summary(summary_filename):
 
             # snr
             try:
-                snrs = summary.get_spike_snrs(ch, cl, timeRange=trange)
+                snrs = summary.get_spike_snrs(ch, cl, timeRange=trange)  # FIXME
                 cell['snr_mean'] = numpy.mean(snrs)
                 cell['snr_std'] = numpy.std(snrs)
             except Exception as E:
@@ -464,7 +467,7 @@ def process_summary(summary_filename):
 
             # location
             try:
-                location = get_location(summary, ch)
+                location = get_location(summary, ch)  # FIXME
                 #location = summary.get_location(ch)
             except Exception as E:
                 location = (0, 0, 0)
