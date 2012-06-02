@@ -104,7 +104,8 @@ pylab.plot(cx, d)
 pylab.xlabel('AP')
 pylab.ylabel(key)
 
-if save:
+if opts.save:
+    #pylab.savefig(opts.filename)
     pylab.savefig('%s_by_location.svg' % key)
 else:
     pylab.show()

@@ -4,9 +4,11 @@ import logging
 
 import attribute
 import cmdmongo
+import plotting
 
 
 def fetch(attrs=None, parser=None, query=None, full=False):
+    parser = plotting.setup_parser(parser)  # do this first
     opts, args = cmdmongo.parse(parser, query)
     cells = cmdmongo.connect(opts)
     logging.debug("Issuing query: %s" % opts.query)
