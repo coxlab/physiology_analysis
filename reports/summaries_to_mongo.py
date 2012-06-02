@@ -6,8 +6,9 @@ import os
 import re
 import sys
 
-logging.basicConfig(level=logging.DEBUG)
+#logging.basicConfig(level=logging.DEBUG)
 #logging.basicConfig(level=logging.WARNING)
+logging.basicConfig(level=logging.ERROR)
 
 import pylab
 import numpy
@@ -82,7 +83,7 @@ def get_channel_location(summary, ch):
 
 mongo_server = 'coxlabanalysis1.rowland.org'
 mongo_db = 'physiology'
-mongo_collection = 'cells_shift'
+mongo_collection = 'cells_merge'
 
 
 def make_mongo_safe(d, pchar=','):
@@ -420,7 +421,7 @@ def process_summary(summary_filename, overrides):
         logging.debug("N Trials after gaze culling: %i" % len(trials))
     n_culled_trials = nt - len(trials)
 
-    for cid in summary.cells():
+    for cid in summary.get_cells():  # iterator
         # cid is a list of ch/cl tuples
         # hack for ch, cl
         ch, cl = cid[0]
@@ -444,9 +445,9 @@ def process_summary(summary_filename, overrides):
         logging.debug("ch: %i, cl: %i" % (ch, cl))
         # rate
         spike_times = numpy.array([])
-        for ch, cl in cell:
+        for cidch, cidcl in cid:
             spike_times = numpy.hstack((spike_times, \
-                    summary.get_spike_times(ch, cl)))
+                    summary.get_spike_times(cidch, cidcl)))
             #spike_times = summary.get_spike_times(ch, cl)  # FIXME
 
         trange = (spike_times.min(), spike_times.max())
@@ -470,9 +471,10 @@ def process_summary(summary_filename, overrides):
         # snr
         try:
             snrs = numpy.array([])
-            for ch, cl in cell:
+            for cidch, cidcl in cid:
                 snrs = numpy.hstack((snrs, \
-                        summary.get_spike_snrs(ch, cl, timeRange=trange)))
+                        summary.get_spike_snrs(cidch, cidcl, \
+                        timeRange=trange)))
             #snrs = summary.get_spike_snrs(ch, cl, timeRange=trange)  # FIXME
             cell['snr_mean'] = numpy.mean(snrs)
             cell['snr_std'] = numpy.std(snrs)
@@ -482,7 +484,7 @@ def process_summary(summary_filename, overrides):
 
         # location
         try:
-            location = get_location(summary, cell)
+            location = get_location(summary, cid)
             #location = get_location(summary, ch)  # FIXME
             #location = summary.get_location(ch)
         except Exception as E:
@@ -588,9 +590,15 @@ def process_summary(summary_filename, overrides):
         logging.debug("writing full cell")
         write_cell(cell)
         continue
+    summary.close()
 
 
 if __name__ == '__main__':
+    # fetch overrides do this first, as if this fails... STOP
+    overrides = clustermerge.get_overrides()
+    # go through and parse all the potential merges to make sure they're ok
+    clustermerge.check_overrides(overrides)
+
     clear_mongo()
     args = sys.argv[1:]
     if len(args) == 0:
@@ -608,11 +616,6 @@ if __name__ == '__main__':
     logging.debug("processing [%i] summary files" % len(sfns))
     logging.debug("%s" % sfns)
 
-    # fetch overrides
-    overrides = clustermerge.get_overrides()
-    # go through and parse all the potential merges to make sure they're ok
-    clustermerge.check_overrides(overrides)
-
-    n_jobs = 1
+    n_jobs = -1
     Parallel(n_jobs=n_jobs)(delayed(process_summary)(s, overrides) \
             for s in sfns)

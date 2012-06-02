@@ -26,6 +26,6 @@ class CellSummary(physio.summary.Summary):
                 self.get_cluster_indices(ch)]
         self.cells = clustermerge.merge(cellids, merges)
 
-    def cells(self):
+    def get_cells(self):
         for cell in self.cells:
             yield [tuple([int(t) for t in cid.split('.')]) for cid in cell]

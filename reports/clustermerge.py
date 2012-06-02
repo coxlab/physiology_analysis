@@ -52,10 +52,8 @@ def get_overrides():
 
 
 def check_overrides(overrides):
-    for k in overrides.keys():
-        r, _ = check_merges(overrides[k]['mergeclusters'].text)
-        if 'Failed' in r:
-            raise ValueError("Parsing %s: %s" % (k, r))
+    for session in overrides.keys():
+        parse_merges(overrides[session]['mergeclusters'].text)
 
 
 def parse_merges(text):
@@ -63,6 +61,9 @@ def parse_merges(text):
     merge syntax:
         ch.cl=ch.cl
     """
+    # blank gdata text is sometimes None
+    if text is None:
+        return {}
     merges = collections.defaultdict(list)
     for tokens in text.split():
         a, b = tokens.split('=')
