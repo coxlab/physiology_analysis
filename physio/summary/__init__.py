@@ -103,6 +103,7 @@ class Summary(object):
             self.epoch = tokens[2]
         else:
             self.epoch = ''
+        self.session = '%s_%s' % (self.animal, self.date)
 
     def close(self):
         self._file.close()

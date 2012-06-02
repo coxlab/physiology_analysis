@@ -16,9 +16,11 @@ import scipy.stats
 
 from joblib import Parallel, delayed
 
+import brainatlas
 import physio
 
-import brainatlas
+import cellsummary
+import clustermerge
 
 
 #blacklist_animals = ['fake', 'H3', 'H4', 'H7', 'H8']
@@ -61,7 +63,13 @@ def find_shift(animal, date):
     return shift['*']
 
 
-def get_location(summary, ch):
+def get_location(summary, cell):
+    locs = numpy.array([get_channel_location(summary, ch) \
+            for (ch, cl) in cell])
+    return tuple(numpy.mean(locs, 0))
+
+
+def get_channel_location(summary, ch):
     """ ap, dv, ml """
     location = numpy.array(summary.get_location(ch).tolist())
     if shift_locations:
@@ -382,8 +390,8 @@ def get_area(location):
 
 
 # have this dump directly to mongo (remove plotting)
-def process_summary(summary_filename):
-    summary = physio.summary.Summary(summary_filename)
+def process_summary(summary_filename, overrides):
+    summary = cellsummary.CellSummary(summary_filename, overrides)
     logging.debug("Processing %s" % summary._filename)
 
     animal = summary.animal
@@ -412,166 +420,174 @@ def process_summary(summary_filename):
         logging.debug("N Trials after gaze culling: %i" % len(trials))
     n_culled_trials = nt - len(trials)
 
-    for ch in xrange(1, 33):
+    for cid in summary.cells():
+        # cid is a list of ch/cl tuples
+        # hack for ch, cl
+        ch, cl = cid[0]
+        scid = ' '.join(['%i.%i' % t for t in cid])
+        ctrials = trials.copy()
+        cell = {}
+        cell['err'] = ""
+        # things to fix for cluster merging
+        # channel : see below
+        # cluster : just call this cell_index
+        # get_spike_times : merge them in summary.get_spike_times
+        # get_spike_snrs : merge them in summary.get_spike_snrs
+        # get_location : average channel locations?
+        cell['ch'] = ch  # FIXME
+        cell['cl'] = cl  # FIXME
+        cell['cid'] = scid
+        cell['animal'] = animal
+        cell['date'] = date
+        cell['datetime'] = dt
+
+        logging.debug("ch: %i, cl: %i" % (ch, cl))
+        # rate
+        spike_times = numpy.array([])
+        for ch, cl in cell:
+            spike_times = numpy.hstack((spike_times, \
+                    summary.get_spike_times(ch, cl)))
+            #spike_times = summary.get_spike_times(ch, cl)  # FIXME
+
+        trange = (spike_times.min(), spike_times.max())
+        cell['raw_trange'] = trange
+
+        # trange = summary.get_epoch_range()
+        # find start of isolation
+        isolation_start = physio.spikes.times.\
+                find_isolation_start_by_isi(spike_times)
+
+        spike_times = spike_times[spike_times >= isolation_start]
+
+        nspikes = len(spike_times)
+        cell['nspikes'] = nspikes
+
+        trange = (spike_times.min(), spike_times.max())
+        rate = nspikes / (trange[1] - trange[0])
+        cell['rate'] = rate
+        cell['trange'] = trange
+
+        # snr
         try:
-            cis = summary.get_cluster_indices(ch)
+            snrs = numpy.array([])
+            for ch, cl in cell:
+                snrs = numpy.hstack((snrs, \
+                        summary.get_spike_snrs(ch, cl, timeRange=trange)))
+            #snrs = summary.get_spike_snrs(ch, cl, timeRange=trange)  # FIXME
+            cell['snr_mean'] = numpy.mean(snrs)
+            cell['snr_std'] = numpy.std(snrs)
         except Exception as E:
-            logging.warning("Getting cluster_indices failed: %s" % E)
-            continue
-        for cl in cis:
-            ctrials = trials.copy()
-            cell = {}
-            cell['err'] = ""
-            # things to fix for cluster merging
-            # channel : see below
-            # cluster : just call this cell_index
-            # get_spike_times : merge them in summary.get_spike_times
-            # get_spike_snrs : merge them in summary.get_spike_snrs
-            # get_location : average channel locations?
-            cell['ch'] = ch  # FIXME
-            cell['cl'] = cl  # FIXME
-            cell['animal'] = animal
-            cell['date'] = date
-            cell['datetime'] = dt
+            logging.warning("Snr measure failed: %s" % str(E))
+            cell['err'] += 'Snr measure failed: %s\n' % E
 
-            logging.debug("ch: %i, cl: %i" % (ch, cl))
-            # rate
-            spike_times = summary.get_spike_times(ch, cl)  # FIXME
-
-            trange = (spike_times.min(), spike_times.max())
-            cell['raw_trange'] = trange
-
-            # trange = summary.get_epoch_range()
-            # find start of isolation
-            isolation_start = physio.spikes.times.\
-                    find_isolation_start_by_isi(spike_times)
-
-            spike_times = spike_times[spike_times >= isolation_start]
-
-            nspikes = len(spike_times)
-            cell['nspikes'] = nspikes
-
-            trange = (spike_times.min(), spike_times.max())
-            rate = nspikes / (trange[1] - trange[0])
-            cell['rate'] = rate
-            cell['trange'] = trange
-
-            # snr
+        # location
+        try:
+            location = get_location(summary, cell)
+            #location = get_location(summary, ch)  # FIXME
+            #location = summary.get_location(ch)
+        except Exception as E:
+            location = (0, 0, 0)
+            logging.warning("Attempt to get location failed: %s" % str(E))
+            cell['err'] += 'Attempt to get location failed: %s\n' % E
+            #raise E
+        cell['ap'] = location[0]
+        cell['dv'] = location[1]
+        cell['ml'] = location[2]
+        cell['location'] = list(location)
+        if location != (0, 0, 0):
             try:
-                snrs = summary.get_spike_snrs(ch, cl, timeRange=trange)  # FIXME
-                cell['snr_mean'] = numpy.mean(snrs)
-                cell['snr_std'] = numpy.std(snrs)
+                area = get_area(location)
             except Exception as E:
-                logging.warning("Snr measure failed: %s" % str(E))
-                cell['err'] += 'Snr measure failed: %s\n' % E
-
-            # location
-            try:
-                location = get_location(summary, ch)  # FIXME
-                #location = summary.get_location(ch)
-            except Exception as E:
-                location = (0, 0, 0)
-                logging.warning("Attempt to get location failed: %s" % str(E))
-                cell['err'] += 'Attempt to get location failed: %s\n' % E
+                logging.warning("Failed to get area at (%s): %s" % \
+                        (location, E))
+                cell['err'] += "Failed to get area at (%s): %s\n" % \
+                        (location, E)
+                area = 'Fail'
                 #raise E
-            cell['ap'] = location[0]
-            cell['dv'] = location[1]
-            cell['ml'] = location[2]
-            cell['location'] = list(location)
-            if location != (0, 0, 0):
-                try:
-                    area = get_area(location)
-                except Exception as E:
-                    logging.warning("Failed to get area at (%s): %s" % \
-                            (location, E))
-                    cell['err'] += "Failed to get area at (%s): %s\n" % \
-                            (location, E)
-                    area = 'Fail'
-                    #raise E
-            else:
-                area = 'None'
-            cell['area'] = area
+        else:
+            area = 'None'
+        cell['area'] = area
 
-            if cell['rate'] < min_rate:
-                logging.warning("\t%i < min_rate[%i]" % \
-                        (cell['rate'], min_rate))
-            if cell['nspikes'] < min_spikes:
-                logging.warning("\t%i < min_spikes[%i]" % \
-                        (cell['nspikes'], min_spikes))
-                cell['err'] += "Nspikes < %i" % min_spikes
-                logging.error("skipping writing truncated cell")
-                #write_cell(cell)
-                continue
-
-            # ---------- responsivity ---------------
-            baseline, response, stat = get_responsivity(\
-                    spike_times, ctrials, bwin, rwin)
-            cell['baseline_mean'] = numpy.mean(baseline)
-            cell['baseline_std'] = numpy.std(baseline)
-
-            cell['driven_mean'] = numpy.mean(response)
-            cell['driven_std'] = numpy.std(response)
-
-            cell['ntrials'] = len(ctrials)
-            cell['culled_trials'] = n_culled_trials
-            cell['responsivity'] = stat
-
-            ctrials = pylab.rec_append_fields(ctrials, \
-                    ['baseline', 'response'], [baseline, response])
-
-            # find all distractor trials
-            dtrials = summary.filter_trials(ctrials, \
-                    {'name': {'value': 'BlueSquare', 'op': '!='}}, \
-                    timeRange=trange)
-            if len(dtrials) == 0:
-                logging.error("Zero trials for %i %i %s" % \
-                        (ch, cl, summary._filename))
-                cell['err'] += "Zero trials"
-                logging.error("skipping writing truncated cell")
-                #write_cell(cell)
-                continue
-            dstims = summary.get_stimuli({'name': \
-                    {'value': 'BlueSquare', 'op': '!='}})
-
-            # --------- selectivity --------------
-            cell['selectivity'] = {}
-            cell['separability'] = {}
-            for attr in attrs:
-                sorted_keys, means, stds, ns, stats = \
-                        get_selectivity(summary, dtrials, dstims, attr)
-                #max_key = sorted_keys[0]
-                cell['selectivity'][attr] = { \
-                        'means': means, 'stds': stds, 'ns': ns,
-                        'stats': stats, 'sorted': sorted_keys}
-
-            # --------- tolerance ------------
-            sorted_keys, means, stds, ns, stats, stimds = \
-                    get_tolerance(summary, dtrials, dstims)
-            cell['tolerance'] = dict(means=means, stds=stds, ns=ns, \
-                    stats=stats, sorted=sorted_keys)
-            cell['stimuli'] = stimds
-
-            try:
-                M, ids, trans, stats = get_friedman(summary, dtrials, dstims)
-                cell['friedman'] = dict(rmean=M[:, :, 0], rstd=M[:, :, 1], \
-                    n=M[:, :, 2], bmean=M[:, :, 3], bstd=M[:, :, 4], ids=ids, \
-                    trans=trans, stats=stats)
-            except Exception as E:
-                logging.warning("friedman failed: %s" % E)
-                cell['err'] += "friedman failed: %s\n" % E
-                cell['friedman'] = {}
-
-            try:
-                r = M[:, :, 0] - M[:, :, 3]
-                cell['separability'] = test_separability(r)
-            except Exception as E:
-                logging.warning("separability calculation failed: %s" % E)
-                cell['err'] += "separability calculation failed: %s\n" % E
-                cell['separability'] = {}
-
-            logging.debug("writing full cell")
-            write_cell(cell)
+        if cell['rate'] < min_rate:
+            logging.warning("\t%i < min_rate[%i]" % \
+                    (cell['rate'], min_rate))
+        if cell['nspikes'] < min_spikes:
+            logging.warning("\t%i < min_spikes[%i]" % \
+                    (cell['nspikes'], min_spikes))
+            cell['err'] += "Nspikes < %i" % min_spikes
+            logging.error("skipping writing truncated cell")
+            #write_cell(cell)
             continue
+
+        # ---------- responsivity ---------------
+        baseline, response, stat = get_responsivity(\
+                spike_times, ctrials, bwin, rwin)
+        cell['baseline_mean'] = numpy.mean(baseline)
+        cell['baseline_std'] = numpy.std(baseline)
+
+        cell['driven_mean'] = numpy.mean(response)
+        cell['driven_std'] = numpy.std(response)
+
+        cell['ntrials'] = len(ctrials)
+        cell['culled_trials'] = n_culled_trials
+        cell['responsivity'] = stat
+
+        ctrials = pylab.rec_append_fields(ctrials, \
+                ['baseline', 'response'], [baseline, response])
+
+        # find all distractor trials
+        dtrials = summary.filter_trials(ctrials, \
+                {'name': {'value': 'BlueSquare', 'op': '!='}}, \
+                timeRange=trange)
+        if len(dtrials) == 0:
+            logging.error("Zero trials for %i %i %s" % \
+                    (ch, cl, summary._filename))
+            cell['err'] += "Zero trials"
+            logging.error("skipping writing truncated cell")
+            #write_cell(cell)
+            continue
+        dstims = summary.get_stimuli({'name': \
+                {'value': 'BlueSquare', 'op': '!='}})
+
+        # --------- selectivity --------------
+        cell['selectivity'] = {}
+        cell['separability'] = {}
+        for attr in attrs:
+            sorted_keys, means, stds, ns, stats = \
+                    get_selectivity(summary, dtrials, dstims, attr)
+            #max_key = sorted_keys[0]
+            cell['selectivity'][attr] = { \
+                    'means': means, 'stds': stds, 'ns': ns,
+                    'stats': stats, 'sorted': sorted_keys}
+
+        # --------- tolerance ------------
+        sorted_keys, means, stds, ns, stats, stimds = \
+                get_tolerance(summary, dtrials, dstims)
+        cell['tolerance'] = dict(means=means, stds=stds, ns=ns, \
+                stats=stats, sorted=sorted_keys)
+        cell['stimuli'] = stimds
+
+        try:
+            M, ids, trans, stats = get_friedman(summary, dtrials, dstims)
+            cell['friedman'] = dict(rmean=M[:, :, 0], rstd=M[:, :, 1], \
+                n=M[:, :, 2], bmean=M[:, :, 3], bstd=M[:, :, 4], ids=ids, \
+                trans=trans, stats=stats)
+        except Exception as E:
+            logging.warning("friedman failed: %s" % E)
+            cell['err'] += "friedman failed: %s\n" % E
+            cell['friedman'] = {}
+
+        try:
+            r = M[:, :, 0] - M[:, :, 3]
+            cell['separability'] = test_separability(r)
+        except Exception as E:
+            logging.warning("separability calculation failed: %s" % E)
+            cell['err'] += "separability calculation failed: %s\n" % E
+            cell['separability'] = {}
+
+        logging.debug("writing full cell")
+        write_cell(cell)
+        continue
 
 
 if __name__ == '__main__':
@@ -592,5 +608,11 @@ if __name__ == '__main__':
     logging.debug("processing [%i] summary files" % len(sfns))
     logging.debug("%s" % sfns)
 
-    #Parallel(n_jobs=1)(delayed(process_summary)(s) for s in sfns)
-    Parallel(n_jobs=-1)(delayed(process_summary)(s) for s in sfns)
+    # fetch overrides
+    overrides = clustermerge.get_overrides()
+    # go through and parse all the potential merges to make sure they're ok
+    clustermerge.check_overrides(overrides)
+
+    n_jobs = 1
+    Parallel(n_jobs=n_jobs)(delayed(process_summary)(s, overrides) \
+            for s in sfns)
