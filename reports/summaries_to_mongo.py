@@ -36,8 +36,15 @@ min_rate = 0.0001  # hz
 #coll_name, rwin = ('cells_merge_off', (0.550, 0.650))  # off responses
 #coll_name, rwin = ('cells_merge_trans', (0.050, 0.150))  # on trans
 #coll_name, rwin = ('cells_merge_late', (0.150, 0.250))  # on trans (late)
-coll_name, rwin = ('cells_merge_sus', (0.250, 0.350))  # sus
+#coll_name, rwin = ('cells_merge_sus', (0.250, 0.350))  # sus
+coll_name = 'cells_merge'
 bwin = (-0.10, 0.0)
+windows = {
+        'off': (0.55, 0.65),
+        'on': (0.05, 0.15),
+        'late': (0.15, 0.25),
+        'sus': (0.25, 0.35),
+        }
 
 attrs = ['name', 'pos_x', 'pos_y', 'size_x', 'rotation']
 areas = 'V2L AuD Au1 AuV PRh V1B V1M TeA Ect'.split()
@@ -207,14 +214,14 @@ def test_responsivity(baseline, response):
     return {'t': t, 'p': p}
 
 
-def get_selectivity(summary, trials, stims, attr):
+def get_selectivity(summary, trials, stims, attr, key='response'):
     uniques = numpy.unique(stims[attr])
     conditions = {}
     for unique in uniques:
         ftrials = summary.filter_trials(trials, {attr: unique})
         if len(ftrials) == 0:
             continue
-        conditions[unique] = ftrials['response']
+        conditions[unique] = ftrials[key]
 
     stat = test_selectivity(conditions.values())
     mv = {}
@@ -314,7 +321,7 @@ def stim_to_dict(stim):
     return dict([(k, stim[k]) for k in dict(stim.dtype.fields).keys()])
 
 
-def get_tolerance(summary, trials, stims):
+def get_tolerance(summary, trials, stims, key='response'):
     conditions = {}
     stimds = {}
     for stim in stims:
@@ -327,7 +334,7 @@ def get_tolerance(summary, trials, stims):
         ftrials = summary.filter_trials_by_stim_index(trials, si)
         if len(ftrials) == 0:
             continue
-        conditions[si] = ftrials['response']
+        conditions[si] = ftrials[key]
         stimds[si] = sd
 
     stat = test_selectivity(conditions.values())
@@ -348,27 +355,37 @@ def get_tolerance(summary, trials, stims):
     return sorted_keys, means, stds, ns, stat, stimds
 
 
-def get_friedman(summary, trials, stims):
-    ids = numpy.unique(stims['name'])
-    trans = numpy.unique(stims[list(stims.dtype.names[1:])])
-    M = numpy.zeros((len(ids), len(trans), 5))
-    for (ni, n) in enumerate(ids):
-        for (ti, t) in enumerate(trans):
-            sd = dict(name=n)
-            sd.update(dict(zip(trans.dtype.names, t)))
-            ft = summary.filter_trials(trials, sd)
-            if len(ft) == 0:
-                raise ValueError("0 Trials with %s [%s]" % (n, t))
-            #br = numpy.mean(ft['baseline'])
-            M[ni, ti, 0] = numpy.mean(ft['response'])
-            M[ni, ti, 1] = numpy.std(ft['response'])
-            M[ni, ti, 2] = len(ft['response'])
-            M[ni, ti, 3] = numpy.mean(ft['baseline'])
-            M[ni, ti, 4] = numpy.std(ft['baseline'])
-    r = M[:, :, 0] - M[:, :, 3]  # use driven response for now
-    Q, p = scipy.stats.friedmanchisquare(*r)  # stat = Q, p
-    trans = [list(t) for t in trans]  # make mongo happy
-    return M, ids, trans, {'Q': Q, 'p': p}
+def get_friedman(summary, trials, stims, key='response'):
+    ids = []
+    trans = []
+    M = []
+    stats = {}
+    try:
+        ids = numpy.unique(stims['name'])
+        trans = numpy.unique(stims[list(stims.dtype.names[1:])])
+        M = numpy.zeros((len(ids), len(trans), 5))
+        for (ni, n) in enumerate(ids):
+            for (ti, t) in enumerate(trans):
+                sd = dict(name=n)
+                sd.update(dict(zip(trans.dtype.names, t)))
+                ft = summary.filter_trials(trials, sd)
+                if len(ft) == 0:
+                    raise ValueError("0 Trials with %s [%s]" % (n, t))
+                #br = numpy.mean(ft['baseline'])
+                M[ni, ti, 0] = numpy.mean(ft[key])
+                M[ni, ti, 1] = numpy.std(ft[key])
+                M[ni, ti, 2] = len(ft[key])
+                M[ni, ti, 3] = numpy.mean(ft['baseline'])
+                M[ni, ti, 4] = numpy.std(ft['baseline'])
+        #r = M[:, :, 0] - M[:, :, 3]  # use driven response for now
+        r = M[:, :, 0]
+        Q, p = scipy.stats.friedmanchisquare(*r)  # stat = Q, p
+        stats = dict(Q=Q, p=p)
+        trans = [list(t) for t in trans]  # make mongo happy
+        #return M, ids, trans, {'Q': Q, 'p': p}
+    except Exception as E:
+        logging.warning("get_friedman failed with %s" % E)
+    return M, ids, trans, stats
 
 
 global sections
@@ -408,7 +425,6 @@ def get_closest_area(location, area_points):
 
     dv *= -1
     return brainatlas.section.get_closest_area(ml, ap, dv, area_points)
-
 
 
 # have this dump directly to mongo (remove plotting)
@@ -554,6 +570,14 @@ def process_summary(summary_filename, overrides, area_points):
             continue
 
         # ---------- responsivity ---------------
+        cell['resps'] = {}
+        for (wname, win) in windows.iteritems():
+            b, r, s = get_responsivity(spike_times, ctrials, bwin, win)
+            cell['resps'][wname] = dict(\
+                    b_mean=numpy.mean(b), b_std=numpy.std(b), \
+                    mean=numpy.mean(r), std=numpy.std(r))
+            pylab.rec_append_field(ctrials, [wname], [r])
+
         baseline, response, stat = get_responsivity(\
                 spike_times, ctrials, bwin, rwin)
         cell['baseline_mean'] = numpy.mean(baseline)
@@ -593,31 +617,51 @@ def process_summary(summary_filename, overrides, area_points):
             cell['selectivity'][attr] = { \
                     'means': means, 'stds': stds, 'ns': ns,
                     'stats': stats, 'sorted': sorted_keys}
+            for wname in windows.keys():
+                sorted_keys, means, std, ns, stats = \
+                        get_selectivity(summary, dtrials, dstims, attr, wname)
+                cell['selectivity'][attr][wname] = { \
+                        'means': means, 'stds': stds, 'ns': ns,
+                        'stats': stats, 'sorted': sorted_keys}
 
         # --------- tolerance ------------
         sorted_keys, means, stds, ns, stats, stimds = \
                 get_tolerance(summary, dtrials, dstims)
         cell['tolerance'] = dict(means=means, stds=stds, ns=ns, \
                 stats=stats, sorted=sorted_keys)
+        for wname in windows.keys():
+            sorted_keys, means, stds, ns, stats, stimds = \
+                    get_tolerance(summary, dtrials, dstims, wname)
+            cell['tolerance'][wname] = dict(means=means, stds=stds, ns=ns, \
+                    stats=stats, sorted=sorted_keys)
+
         cell['stimuli'] = stimds
 
+        M, ids, trans, stats = get_friedman(summary, dtrials, dstims)
+        cell['friedman'] = dict(rmean=M[:, :, 0], rstd=M[:, :, 1], \
+            n=M[:, :, 2], bmean=M[:, :, 3], bstd=M[:, :, 4], ids=ids, \
+            trans=trans, stats=stats)
         try:
-            M, ids, trans, stats = get_friedman(summary, dtrials, dstims)
-            cell['friedman'] = dict(rmean=M[:, :, 0], rstd=M[:, :, 1], \
-                n=M[:, :, 2], bmean=M[:, :, 3], bstd=M[:, :, 4], ids=ids, \
-                trans=trans, stats=stats)
-        except Exception as E:
-            logging.warning("friedman failed: %s" % E)
-            cell['err'] += "friedman failed: %s\n" % E
-            cell['friedman'] = {}
-
-        try:
-            r = M[:, :, 0] - M[:, :, 3]
+            r = M[:, :, 0]
             cell['separability'] = test_separability(r)
         except Exception as E:
             logging.warning("separability calculation failed: %s" % E)
             cell['err'] += "separability calculation failed: %s\n" % E
             cell['separability'] = {}
+
+        for wname in windows.keys():
+            M, ids, trans, stats = get_friedman(\
+                    summary, dtrials, dstims, wname)
+            cell['friedman'][wname] = dict(rmean=M[:, :, 0], rstd=M[:, :, 1], \
+                n=M[:, :, 2], bmean=M[:, :, 3], bstd=M[:, :, 4], ids=ids, \
+                trans=trans, stats=stats)
+            try:
+                r = M[:, :, 0]
+                cell['separability'][wname] = test_separability(r)
+            except Exception as E:
+                logging.warning("separability calculation failed: %s" % E)
+                cell['err'] += "separability calculation failed: %s\n" % E
+                cell['separability'][wname] = {}
 
         logging.debug("writing full cell")
         write_cell(cell)
