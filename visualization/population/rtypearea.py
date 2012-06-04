@@ -98,7 +98,6 @@ for (spi, area) in enumerate(areas):
     axes[spi].set_title(area)
 
 if opts.save:
-    #pylab.savefig('%s_by_area.svg' % key)
-    pylab.savefig('%s_by_area.png' % key)
+    pylab.savefig('rtype_by_area.png')
 else:
     pylab.show()
