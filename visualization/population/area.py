@@ -7,7 +7,6 @@ logging.basicConfig(level=logging.DEBUG)
 
 import numpy
 import pylab
-import pymongo
 import scipy.stats
 
 import attribute

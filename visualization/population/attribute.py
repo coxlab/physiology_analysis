@@ -24,7 +24,43 @@ default_attributes = {
                 'getter': lambda c, k, d: str(try_get(c, d, k)),
                 'default': 'Na',
                 },
+        'rtype': { \
+                'getter': lambda c, k, d: get_rtype(c, k, d),
+                'default': -1,
+                },
+        #'maxresp': { \
+        #        'getter': lambda c, k, d: get_max_response(c, k, d),
+        #        'default': numpy.nan,
+        #        },
         }
+
+
+def get_responses(cell, key, default):
+    responses = {}
+    for (rtype, d) in cell['resps'].iteritems():
+        b = d['b_mean']
+        if b == 0:
+            b = 1
+        m = d['mean']
+        r = m / b
+        responses[rtype] = r
+    return responses
+
+
+def get_rtype(cell, key, default):
+    try:
+        resps = get_responses(cell, key, default)
+        return max(resps, key=lambda k: resps[k])
+    except:
+        return default
+
+
+def get_max_response(cell, key, default):
+    try:
+        resps = get_responses(cell, key, default)
+        return max(resps.values())
+    except:
+        return default
 
 
 def test_try_get():
