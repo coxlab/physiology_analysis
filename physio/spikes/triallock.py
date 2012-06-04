@@ -5,8 +5,52 @@ import numpy
 import latency
 
 
-def sliding_window_rate(spikes, trials, prew, duration, width, stride, timebase='middle'):
+def other_sliding_window_rate(spikes, trials, prew, duration, \
+        width, stride, timebase='middle', extra_windows=None):
+    if extra_windows is None:
+        extra_windows = []
+    bin_starts = numpy.arange(-prew, duration, stride)
+    bin_ends = bin_starts + width
+    # M = [windows x tts]
+    counts = window_response(spikes, trials, \
+            extra_windows + zip(bin_starts, bin_ends),
+            raw_counts=True)
 
+    times = {
+            'start': bin_starts,
+            'end': bin_ends,
+            'middle': (bin_starts + bin_ends) / 2.0,
+            }[timebase]
+    return counts, times
+
+
+def estimate_latency(spikes, trials, prew, duration, \
+        width, stride, sthresh):
+    counts, times = other_sliding_window_rate(spikes, trials, prew, \
+            duration, width, stride, timebase='middle')
+
+    bi = numpy.where(times < 0)[0]
+    if not len(bi):
+        raise ValueError("No baseline windows specified")
+    ri = numpy.where(times >= 0)[0]
+    if not len(ri):
+        raise ValueError("No response windows specified")
+
+    br = counts[bi]
+    bm = numpy.mean(br)
+    bs = numpy.mean(br)
+
+    r = counts[ri]
+    mr = numpy.mean(r, 1)
+
+    sti = numpy.where(numpy.abs(mr - bm) > (bs * sthresh))[0]
+    if len(sti) == 0:
+        return numpy.nan
+    return times[sti[0]]
+
+
+def sliding_window_rate(spikes, trials, prew, duration, \
+        width, stride, timebase='middle'):
     bin_starts = numpy.arange(-prew, duration, stride)
     bin_ends = bin_starts + width
 
@@ -42,11 +86,14 @@ def sliding_window_rate(spikes, trials, prew, duration, width, stride, timebase=
         raise Exception('Unknown timebase argument')
 
     return sum(trial_rates, 1) / (width * len(trials)), times
+    #return numpy.sum(trial_rates, 0) / (width * len(trials)), times
 
 
-def baseline_normalized_sliding_window_rate(spikes, trials, prew, duration, width, stride):
+def baseline_normalized_sliding_window_rate(spikes, trials, prew, \
+        duration, width, stride):
 
-    time_course, times = sliding_window_rate(spikes, trials, prew, duration, width, stride, timebase='end')
+    time_course, times = sliding_window_rate(spikes, trials, prew, \
+            duration, width, stride, timebase='end')
 
     mean_baseline = numpy.mean(time_course[times < 0.0])
     baseline_subtracted = time_course - mean_baseline
