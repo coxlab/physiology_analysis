@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import collections
-import copy
+import logging
 
 import gdata
 import gdata.spreadsheet.service
@@ -52,8 +52,11 @@ def get_overrides():
 
 
 def check_overrides(overrides):
+    logging.debug("Found overrides for %i sessions" % len(overrides.keys()))
     for session in overrides.keys():
-        parse_merges(overrides[session]['mergeclusters'].text)
+        merges = parse_merges(overrides[session]['mergeclusters'].text)
+        logging.debug("Found %i overrides for session %s" % \
+                (len(merges.keys()), session))
 
 
 def parse_merges(text):
@@ -65,7 +68,7 @@ def parse_merges(text):
     if text is None:
         return {}
     merges = collections.defaultdict(list)
-    for tokens in text.split():
+    for tokens in text.strip().split():
         a, b = tokens.split('=')
         merges[a].append(b)
         merges[b].append(a)
