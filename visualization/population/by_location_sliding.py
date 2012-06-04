@@ -11,7 +11,7 @@ import pymongo
 
 from physio.plotting.sliding_window import sliding_window_apply
 
-save = True
+save = False
 
 use_sliding_window = True
 fancy_color = False
@@ -25,11 +25,19 @@ vmax = None
 vmin = None
 
 plot_im = True
-to_plot = 'Fp'
+to_plot = 'tol_Xp'
 
 min_cells = 1
 
-if to_plot is 'F':
+if to_plot is 'tol_X':
+    key = 'tolerance.stats.X'
+    log_transform_stat = False
+    one_minus_and_log_transform_stat = False
+if to_plot is 'tol_Xp':
+    key = 'tolerance.stats.Xp'
+    log_transform_stat = True
+    one_minus_and_log_transform_stat = False
+elif to_plot is 'F':
     key = 'selectivity.name.stats.F'
     log_transform_stat = False
     one_minus_and_log_transform_stat = False
@@ -39,6 +47,24 @@ elif to_plot is 'Fp':
     one_minus_and_log_transform_stat = False
     #thresh = -numpy.log(0.1)
     #vmin = None
+elif to_plot is 'Xp':
+    key = 'selectivity.name.stats.Xp'
+    log_transform_stat = True
+    one_minus_and_log_transform_stat = False
+elif to_plot is 'Hp':
+    key = 'selectivity.name.stats.Hp'
+    log_transform_stat = True
+    one_minus_and_log_transform_stat = False
+
+elif to_plot is 'X':
+    key = 'selectivity.name.stats.X'
+    log_transform_stat = False
+    one_minus_and_log_transform_stat = False
+elif to_plot is 'sel':
+    key = 'selectivity.name.stats.sel'
+    log_transform_stat = False
+    one_minus_and_log_transform_stat = False
+    #thresh = -numpy.log(0.1)
 elif to_plot is 'sep':
     key = 'separability.name.pos_x.stats.spi'
     log_transform_stat = False
@@ -47,6 +73,11 @@ elif to_plot is 'samp':
     key = 'ap'
     no_scaling = True
     weak_cull = True
+elif to_plot is 'resp':
+    key = 'responsivity.p'
+    log_transform_stat = True
+    one_minus_and_log_transform_stat = False
+    weak_cull = False
 
     def at_least_length_one(x):
         if len(x) > 0:
@@ -93,15 +124,17 @@ if key not in attrs.keys():
     attrs[key] = {}
 
 if weak_cull:
-    query['nspikes'] = {'$gt': 1}
+    query['nspikes'] = {'$gt': 1000}
 else:
     query['nspikes'] = {'$gt': 1000}
     query['responsivity.p'] = {'$lt': 0.1}
 #query['animal'] = 'K4'
 
 server = {'host': 'coxlabanalysis1.rowland.org',
+        #'host': 'soma2.rowland.org',
         'db': 'physiology',
-        'coll': 'cells_sep'}
+        #'coll': 'cells_sep'}
+        'coll': 'cells_rerun'}
 
 cells = pymongo.Connection(server['host'])[server['db']][server['coll']]
 
@@ -251,6 +284,7 @@ if plot_im:
                                         data[key],
                                         window_size=0.5,
                                         n_points=30)
+        print d
 
         if thresh is not None:
             d[d < thresh] = numpy.nan
@@ -265,7 +299,7 @@ if plot_im:
                                             zip(data['ap'], data['dv']),
                                             data[key],
                                             window_size=0.5,
-                                            n_points=30)
+                                            n_points=50)
             count_norm = numpy.median(count.ravel())
             color_im[:, :, 3] = count / count_norm
             pylab.imshow(color_im, aspect='equal', origin='lower',
@@ -273,7 +307,7 @@ if plot_im:
 
         else:
 
-            pylab.imshow(d, interpolation='nearest',
+            pylab.imshow(numpy.flipud(d), interpolation='nearest',
                          aspect='equal',
                          origin='upper',
                          extent=im_extents,
