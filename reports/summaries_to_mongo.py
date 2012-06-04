@@ -3,6 +3,7 @@
 import datetime
 import logging
 import os
+import cPickle as pickle
 import re
 import sys
 
@@ -39,6 +40,7 @@ coll_name, rwin = ('cells_merge_trans', (0.050, 0.150))  # on trans
 bwin = (-0.10, 0.0)
 
 attrs = ['name', 'pos_x', 'pos_y', 'size_x', 'rotation']
+areas = 'V2L AuD Au1 AuV PRh V1B V1M TeA Ect'.split()
 
 
 shift_locations = True
@@ -385,7 +387,6 @@ def get_closest_section(ap):
     if index in sections:
         return sections[index]
     else:
-        areas = 'V2L AuD Au1 AuV PRh V1B V1M TeA Ect'.split()
         sections[index] = brainatlas.section.Section(index, areas=areas)
         return sections[index]
 
@@ -402,14 +403,16 @@ def get_area(location):
     return str(area[0])
 
 
-def get_closest_location(location, area_pts):
+def get_closest_area(location, area_points):
     ap, dv, ml = location
+
     dv *= -1
-    return brainatlas.section.get_closest_area(ml, dv, ap, area_pts)
+    return brainatlas.section.get_closest_area(ml, ap, dv, area_points)
+
 
 
 # have this dump directly to mongo (remove plotting)
-def process_summary(summary_filename, overrides):
+def process_summary(summary_filename, overrides, area_points):
     summary = cellsummary.CellSummary(summary_filename, overrides)
     logging.debug("Processing %s" % summary._filename)
 
@@ -515,15 +518,26 @@ def process_summary(summary_filename, overrides):
         cell['ml'] = location[2]
         cell['location'] = list(location)
         if location != (0, 0, 0):
+            area = 'Fail'
             try:
                 area = get_area(location)
             except Exception as E:
+                area = 'Fail'
                 logging.warning("Failed to get area at (%s): %s" % \
                         (location, E))
                 cell['err'] += "Failed to get area at (%s): %s\n" % \
                         (location, E)
-                area = 'Fail'
                 #raise E
+            if area == 'Fail':
+                try:
+                    area = get_closest_area(location, area_points)
+                except Exception as E:
+                    area = 'Fail'
+                    logging.warning("Failed to get area at (%s): %s" % \
+                            (location, E))
+                    cell['err'] += "Failed to get area at (%s): %s\n" % \
+                            (location, E)
+                    raise E
         else:
             area = 'None'
         cell['area'] = area
@@ -617,6 +631,16 @@ if __name__ == '__main__':
     # go through and parse all the potential merges to make sure they're ok
     clustermerge.check_overrides(overrides)
 
+    # get areas
+    if os.path.exists('areas.p'):
+        area_points = brainatlas.construct.load_points('areas.p')
+    else:
+        logging.warning('areas.p not found, constructing')
+        area_points = brainatlas.construct.get_points(areas)
+        logging.warning('pickling area.p for later use')
+        with open('areas.p', 'w') as F:
+            pickle.dump(area_points, F)
+
     clear_mongo()
     args = sys.argv[1:]
     if len(args) == 0:
@@ -639,5 +663,5 @@ if __name__ == '__main__':
     logging.debug("%s" % sfns)
 
     n_jobs = -1
-    Parallel(n_jobs=n_jobs)(delayed(process_summary)(s, overrides) \
-            for s in sfns)
+    Parallel(n_jobs=n_jobs)(delayed(process_summary)(s, \
+            overrides, area_points) for s in sfns)
