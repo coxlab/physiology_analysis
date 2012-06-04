@@ -93,16 +93,21 @@ class Summary(object):
     def __init__(self, h5filename):
         self._file = tables.openFile(h5filename, 'r')
         self._filename = h5filename
-        tokens = os.path.basename(self._filename).split('_')
-        self.animal = tokens[0]
-        if len(tokens) > 1:
-            self.date = tokens[1]
-        else:
-            self.date = ''
-        if len(tokens) > 2:
-            self.epoch = tokens[2]
-        else:
-            self.epoch = ''
+        self.parse_filename()
+
+    def parse_filename(self):
+        try:
+            tokens = os.path.splitext(\
+                    os.path.basename(\
+                    self._filename))[0].split('_')
+            if len(tokens) != 3:
+                raise ValueError("Filename must be of form "
+                "<animal>_<date>_<epoch>.h5")
+        except Exception as E:
+            self._file.close()
+            raise ValueError("Error parsing filename: %s" % E)
+
+        self.animal, self.date, self.epoch = tokens
         self.session = '%s_%s' % (self.animal, self.date)
 
     def close(self):
