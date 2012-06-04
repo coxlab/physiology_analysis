@@ -204,6 +204,36 @@ def get_driven_rate():
     pass
 
 
+def get_sliding_window_latency(spike_times, trials, bwin, duration,
+                               crest_factor=4.0,
+                               window_width=0.002,
+                               window_stride=0.001):
+
+    normalized, times = physio.spikes.triallock.baseline_normalized_sliding_window_rate(spike_times,
+                                                                                        trials, bwin,
+                                                                                        duration, window_width,
+                                                                                        window_stride)
+
+    normalized -= crest_factor
+    normalized[normalized < 0] = 0
+
+    nzs = numpy.nonzero(normalized)[0]
+
+    i = 0
+    index = nzs[i]
+    while index < len(times) and times[index] < 0:
+        i += 1
+        if i > len(nzs):
+            return None
+
+        index = nzs[i]
+
+    if index < len(times):
+        return times[index]
+    else:
+        return None
+
+
 def get_responsivity(spike_times, trials, bwin, rwin):
     baseline, response = physio.spikes.triallock.rate_per_trial( \
             spike_times, trials['time'], [bwin, rwin])

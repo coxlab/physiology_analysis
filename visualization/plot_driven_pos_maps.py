@@ -31,6 +31,12 @@ parser.add_option("-f", "--filter_gaze", dest="gaze_filter", action="store_true"
 parser.add_option("-n", "--normalized", dest="normalized", action="store_true",
                     help="Normalize by peak firing rate", default=False)
 
+parser.add_option('--per_trial_baseline', dest='per_trial_brate', action='store_true',
+                  help='Compute basline firing rate for each trial separately',
+                  default=False)
+parser.add_option('--interp', dest='interp', default='nearest')
+
+
 (options, args) = parser.parse_args()
 if len(args) != 4:
     parser.print_usage()
@@ -141,6 +147,11 @@ def get_rate(spikes, condition, rwin):
     if len(trials) == 0:
         raise ValueError("no trials for condition: %s" % str(condition))
     s = [len(ts) for ts in physio.spikes.stats.event_lock(trials, spikes, rwin[0], rwin[1])]
+
+    if options.per_trial_brate:
+        b = [len(bs) for bs in physio.spikes.stats.event_lock(trials, spikes, bwin[0], bwin[1])]
+        s = np.array(s) - np.array(b)
+
     ms = pl.mean(s) / (float(rwin[1] - rwin[0]))
     ss = pl.std(s) / (float(rwin[1] - rwin[0]) * pl.sqrt(len(s)))
     nt = len(s)
@@ -178,15 +189,16 @@ max_response = max(rateByPos.ravel())
 
 pl.subplot(1, 4, 2)
 pl.title('Worst stim')
-pl.imshow(rateByPos[0, :, :], vmax=max_response, interpolation='sinc')
+pl.imshow(rateByPos[0, :, :], vmax=max_response, interpolation=interp)
 
 pl.subplot(1, 4, 3)
 pl.title('Middle stim')
-pl.imshow(rateByPos[1, :, :], vmax=max_response, interpolation='sinc')
+pl.imshow(rateByPos[1, :, :], vmax=max_response, interpolation=interp)
 
 pl.subplot(1, 4, 4)
 pl.title('Best stim')
-pl.imshow(rateByPos[2, :, :], vmax=max_response, interpolation='sinc')
+pl.imshow(rateByPos[2, :, :], vmax=max_response, interpolation=interp,
+         filterrad=4)
 
 #pl.subplot(133)
 
@@ -222,6 +234,13 @@ pl.imshow(rateByPos[2, :, :], vmax=max_response, interpolation='sinc')
 
 # save plot
 extras = ''
+
+if options.per_trial_brate:
+    extras += '_ptbr'
+
+if options.interp is not None:
+    extras += '_%s' % options.interp
+
 if options.fixed_pos_x is not None:
     extras += '_pos_x_%d' % options.fixed_pos_x
 
