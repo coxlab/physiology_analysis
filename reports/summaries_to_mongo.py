@@ -34,11 +34,12 @@ blacklist_sessions = ['M2_120227', 'M2_120222', 'L2_111004', 'M2_120328'\
 min_spikes = 1000
 min_rate = 0.0001  # hz
 #coll_name, rwin = ('cells_merge_off', (0.550, 0.650))  # off responses
-coll_name, rwin = ('cells_merge_trans', (0.050, 0.150))  # on trans # was rerun
+#coll_name, rwin = ('cells_merge_trans', (0.050, 0.150))  # on trans
 #coll_name, rwin = ('cells_merge_late', (0.150, 0.250))  # on trans (late)
 #coll_name, rwin = ('cells_merge_sus', (0.250, 0.350))  # sus
 coll_name = 'cells_merge'
 bwin = (-0.10, 0.0)
+rwin = (0.05, 0.15)
 windows = {
         'off': (0.55, 0.65),
         'on': (0.05, 0.15),
@@ -385,7 +386,7 @@ def get_friedman(summary, trials, stims, key='response'):
         #return M, ids, trans, {'Q': Q, 'p': p}
     except Exception as E:
         logging.warning("get_friedman failed with %s" % E)
-    return M, ids, trans, stats
+    return M, ids, [list(t) for t in trans], stats  # make mongo happy
 
 
 global sections
@@ -576,7 +577,7 @@ def process_summary(summary_filename, overrides, area_points):
             cell['resps'][wname] = dict(\
                     b_mean=numpy.mean(b), b_std=numpy.std(b), \
                     mean=numpy.mean(r), std=numpy.std(r))
-            pylab.rec_append_field(ctrials, [wname], [r])
+            ctrials = pylab.rec_append_fields(ctrials, [wname], [r])
 
         baseline, response, stat = get_responsivity(\
                 spike_times, ctrials, bwin, rwin)
