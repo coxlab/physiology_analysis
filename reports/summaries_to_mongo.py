@@ -34,9 +34,9 @@ blacklist_sessions = ['M2_120227', 'M2_120222', 'L2_111004', 'M2_120328'\
 min_spikes = 1000
 min_rate = 0.0001  # hz
 #coll_name, rwin = ('cells_merge_off', (0.550, 0.650))  # off responses
-coll_name, rwin = ('cells_merge_trans', (0.050, 0.150))  # on trans
+#coll_name, rwin = ('cells_merge_trans', (0.050, 0.150))  # on trans
 #coll_name, rwin = ('cells_merge_late', (0.150, 0.250))  # on trans (late)
-#coll_name, rwin = ('cells_merge_sus', (0.250, 0.350))  # sus
+coll_name, rwin = ('cells_merge_sus', (0.250, 0.350))  # sus
 bwin = (-0.10, 0.0)
 
 attrs = ['name', 'pos_x', 'pos_y', 'size_x', 'rotation']
