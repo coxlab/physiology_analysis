@@ -74,8 +74,8 @@ if key not in attrs.keys():
 
 query['nspikes'] = {'$gt': 1000}
 query['responsivity.p'] = {'$lt': 0.1}
-query['snr_mean'] = {'$gt': 1}
 query['driven_mean'] = {'$gt': 2}
+query['snr_mean'] = {'$gt': 1}
 #query['animal'] = 'K4'
 
 server = {'host': 'coxlabanalysis1.rowland.org',

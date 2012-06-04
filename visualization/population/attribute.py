@@ -77,6 +77,27 @@ def setup_attributes(attrs):
         attrs[k]['values'] = []
 
 
+def make_attribute(key, default=None, getter=None, op=None):
+    if isinstance(key, dict):
+        # key already an attribute
+        assert len(key.keys()) == 1, \
+                "cannot make attribute with dictionary with >1 key: %s" \
+                % key.keys()
+        attrs = key
+        key = key.keys()[0]
+    else:
+        attrs = {}
+        attrs[key] = {}
+    if default is not None:
+        attrs[key]['default'] = default
+    if getter is not None:
+        attrs[key]['getter'] = getter
+    if op is not None:
+        attrs[key]['getter'] = lambda c, k, d: \
+                op(try_get(c, d, *tuple(k.split('.'))))
+    return key, attrs
+
+
 def parse_cell(cell, attrs):
     for k in attrs:
         attrs[k]['values'].append( \

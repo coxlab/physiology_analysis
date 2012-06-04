@@ -45,7 +45,7 @@ def setup_parser(parser=None, query=None):
     parser.add_option('-d', '--db', help='mongo db',
             default='physiology')
     parser.add_option('-c', '--coll', help='mongo collection',
-            default='cells_rerun')
+            default='cells_merge')
     return parser
 
 

@@ -129,6 +129,15 @@ class Summary(object):
         return numpy.unique(self._file.root.SpikeInfo.readWhere( \
                 'ch == %i' % channel, field='cl'))
 
+    def get_spikes(self, channel, cluster=None, timeRange=None):
+        m = '(ch == %i)' % channel
+        if cluster is not None:
+            m += ' & (cl == %i)' % cluster
+        if timeRange is not None:
+            m += ' & (time > %f) & (time < %f)' % \
+                    (timeRange[0], timeRange[1])
+        return self._file.root.Spikes.readWhere(m)
+
     def get_spike_times(self, channel, cluster, timeRange=None):
         match_string = '(ch == %i) & (cl == %i)' % (channel, cluster)
         if timeRange is not None:
