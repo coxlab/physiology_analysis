@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import logging
+import sys
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -30,23 +31,14 @@ op = None
 #            'default': numpy.nan,
 #            },
 #        }
-save = False
 
 query = {}  # try to use the commandline
 attrs = {}
 
-if isinstance(key, dict):
-    attrs.update(key)
-else:  # assume string
-    attrs[key] = {}
-
-if isinstance(key, dict):
-    key = key.keys()[0]
-
-# set op
-if ('getter' not in attrs[key]) and (op is not None):
-    attrs[key]['getter'] = lambda c, k, d: \
-            op(attribute.try_get(c, d, *tuple(k.split('.'))))
+if (len(sys.argv) > 1) and (sys.argv[1][0] != '-'):
+        key = sys.argv[1]
+key, kattrs = attribute.make_attribute(key, op=op)
+attrs.update(kattrs)
 
 data, cells, opts, args = utils.fetch(attrs=attrs, query=query, full=True)
 
