@@ -6,9 +6,9 @@ import os
 import re
 import sys
 
-#logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.DEBUG)
 #logging.basicConfig(level=logging.WARNING)
-logging.basicConfig(level=logging.ERROR)
+#logging.basicConfig(level=logging.ERROR)
 
 import pylab
 import numpy
@@ -25,12 +25,18 @@ import clustermerge
 
 
 #blacklist_animals = ['fake', 'H3', 'H4', 'H7', 'H8']
-blacklist_animals = []
+blacklist_animals = ['L1']
+blacklist_sessions = ['M2_120227', 'M2_120222', 'L2_111004', 'M2_120328'\
+        'M2_120329', 'M2_120419', 'M2_120426', 'M2_120515', 'M2_120529',\
+        'M4_120109']
 
-min_spikes = 100
+min_spikes = 1000
 min_rate = 0.0001  # hz
-rwin = (0.05, 0.2)
-bwin = (-0.15, 0.0)
+#coll_name, rwin = ('cells_merge_off', (0.550, 0.650))  # off responses
+coll_name, rwin = ('cells_merge_trans', (0.050, 0.150))  # on trans
+#coll_name, rwin = ('cells_merge_late', (0.150, 0.250))  # on trans (late)
+#coll_name, rwin = ('cells_merge_sus', (0.250, 0.350))  # sus
+bwin = (-0.10, 0.0)
 
 attrs = ['name', 'pos_x', 'pos_y', 'size_x', 'rotation']
 
@@ -42,14 +48,19 @@ shifts = {  # ap, dv, ml
     'K2': (.7, 0., -6.8),  # unverified
     'K4': (0., 0., 0.),
     'L1': (.5, -.6, -1.7),
-    'L2': (-.3, -1.0, -1.8),
+    'L2': {
+        '*': (-.3, -1.0, -1.8),
+        '110930': (0., -1.0, -1.8),  # to fix .3 anterior-ish move in session
+        '111004': (.2, -1.0, -1.8),  # to fix .5 anterior-ish move in session
+        },
     'M2': (0., 0., 0.),
     'M4': {
-        '120106': (-.8, 0., -1.),
-        '120109': (-.8, 0., -1.),
-        '120111': (-.8, 0., -1.),
-        '120113': (-.8, 0., -1.),
-        '120118': (-.8, 0., -1.),
+        #'120106': (-.8, 0., -1.),  # -.8 ap doesn't seem possible
+        '120106': (-.0, 0., -1.),  # -.8 ap doesn't seem possible
+        '120109': (-.0, 0., -1.),
+        '120111': (-.0, 0., -1.),
+        '120113': (-.0, 0., -1.),
+        '120118': (-.0, 0., -1.),
         '*': (0., 0., -.2),
         },
 }  # add this to the locations
@@ -83,7 +94,8 @@ def get_channel_location(summary, ch):
 
 mongo_server = 'coxlabanalysis1.rowland.org'
 mongo_db = 'physiology'
-mongo_collection = 'cells_merge'
+mongo_collection = coll_name
+#mongo_collection = 'cells_merge_late'
 
 
 def make_mongo_safe(d, pchar=','):
@@ -608,6 +620,10 @@ if __name__ == '__main__':
         blacklist = False
         for animal in blacklist_animals:
             if animal in sfn:
+                blacklist = True
+                break
+        for session in blacklist_sessions:
+            if session in sfn:
                 blacklist = True
                 break
         if not blacklist:
