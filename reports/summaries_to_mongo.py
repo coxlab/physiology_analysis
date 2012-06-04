@@ -402,6 +402,12 @@ def get_area(location):
     return str(area[0])
 
 
+def get_closest_location(location, area_pts):
+    ap, dv, ml = location
+    dv *= -1
+    return brainatlas.section.get_closest_area(ml, dv, ap, area_pts)
+
+
 # have this dump directly to mongo (remove plotting)
 def process_summary(summary_filename, overrides):
     summary = cellsummary.CellSummary(summary_filename, overrides)
