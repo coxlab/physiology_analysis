@@ -93,6 +93,17 @@ class Summary(object):
     def __init__(self, h5filename):
         self._file = tables.openFile(h5filename, 'r')
         self._filename = h5filename
+        tokens = os.path.basename(self._filename).split('_')
+        self.animal = tokens[0]
+        if len(tokens) > 1:
+            self.date = tokens[1]
+        else:
+            self.date = ''
+        if len(tokens) > 2:
+            self.epoch = tokens[2]
+        else:
+            self.epoch = ''
+        self.session = '%s_%s' % (self.animal, self.date)
 
     def close(self):
         self._file.close()
@@ -193,6 +204,13 @@ class Summary(object):
         if timeRange is None:
             return self._file.root.Gaze.read()
         return self._file.root.Gaze.readWhere(\
+                '(time > %f) & (time < %f)' %\
+                (timeRange[0], timeRange[1]))
+
+    def get_events(self, timeRange=None):
+        if timeRange is None:
+            return self._file.root.Events.read()
+        return self._file.root.Events.readWhere(\
                 '(time > %f) & (time < %f)' %\
                 (timeRange[0], timeRange[1]))
 
@@ -326,16 +344,27 @@ class Summary(object):
             return 0
         return total / (len(trials) * prew)
 
-    def filter_trials(self, trials, match=None, timeRange=None):
-        sis = self.get_stimulus_indices(match)
-        if len(sis) == 0:
-            return numpy.array([])
-        ftrials = trials[numpy.in1d(trials['stim_index'], sis)]
+    def filter_trials_by_stim_index(self, trials, index, timeRange=None):
+        ftrials = trials[numpy.in1d(trials['stim_index'], index)]
         if timeRange is not None:
             ftrials = ftrials[numpy.logical_and( \
                     ftrials['time'] > timeRange[0], \
                     ftrials['time'] < timeRange[1])]
         return ftrials
+
+    def filter_trials(self, trials, match=None, timeRange=None):
+        sis = self.get_stimulus_indices(match)
+        if len(sis) == 0:
+            return numpy.array([])
+        return self.filter_trials_by_stim_index(trials, sis, timeRange)
+
+    def filter_trials_by_stim(self, trials, stim, timeRange=None):
+        if hasattr(stim, 'dtype'):  # stim
+            keys = dict(stim.dtype.fields).keys()
+            match = dict([(k, stim[k]) for k in keys])
+            return self.filter_trials(trials, match, timeRange)
+        else:
+            raise TypeError("stim[%s] does not have a dtype attribute" % stim)
 
     def fill_trials(self, trials):
         """ fill in stimulus characteristics for an array of trials """

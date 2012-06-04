@@ -37,7 +37,8 @@ def isi(spikes, nbins):
     pl.xlim([min(0, pl.xlim()[0]), pl.xlim()[1]])
 
 for epochNumber in epochs:
-    session = physio.session.load(args[0], epochNumber)
+    summary = physio.summary.load_summary(args[0], epochNumber)
+    #session = physio.session.load(args[0], epochNumber)
     if True or options.outdir.strip() == '':
         #config = physio.cfg.load(args[0])
         outdir = physio.session.get_epoch_dir(config, epochNumber)
@@ -50,7 +51,8 @@ for epochNumber in epochs:
     #logging.debug("N Trials: %i" % nTrials)
 
     channels = range(1, 33)
-    nclusters = [session.get_n_clusters(ch) for ch in channels]
+    #nclusters = [session.get_n_clusters(ch) for ch in channels]
+    nclusters = [summary.get_n_clusters(ch) for ch in channels]
     nclusters = min(10, max(nclusters))
     clusters = range(0, nclusters)
 
@@ -67,7 +69,8 @@ for epochNumber in epochs:
     for (x, channel) in enumerate(channels):
         for (y, cluster) in enumerate(clusters):
             logging.debug("\tPlotting[%i, %i]: ch %s : cl %s" % (x, y, channel, cluster))
-            spikes = session.get_spike_times(channel, cluster)
+            #spikes = session.get_spike_times(channel, cluster)
+            spikes = summary.get_spike_times(channel, cluster)
             if len(spikes) < 2: continue
             pl.subplot(subplotsHeight, subplotsWidth, subplotsWidth * y + x + 1)
             #physio.plotting.isi.plot(spikes, options.nbins)
@@ -98,7 +101,8 @@ for epochNumber in epochs:
             yl = [str(i) for i in yp]
             pl.yticks(yp, yl, size='x-small')
 
-    session.close()
+    #session.close()
+    summary.close()
 
     if not os.path.exists(options.outdir): os.makedirs(options.outdir) # TODO move this down
     pl.savefig("%s/isi.png" % (options.outdir))

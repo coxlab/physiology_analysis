@@ -1,21 +1,27 @@
 #!/usr/bin/env python
 
 import logging
-import sys
+#import sys
 
 logging.basicConfig(level=logging.DEBUG)
 
 import numpy
 import pylab
 import pymongo
+import scipy.stats
 
 save = False
 key = 'selectivity.name.stats.F'
+#key = 'selectivity.name.stats.Fp'
+#key = 'selectivity.name.stats.sel'
+#key = 'selectivity.pos_x.stats.sel'
+#key = 'selectivity.pos_y.stats.sel'
+#key = 'selectivity.size_x.stats.sel'
 #key = 'vrate'
 
 # This can also be called like: by_location.py <key>
-if len(sys.argv) > 1:
-    key = sys.argv[1]
+#if len(sys.argv) > 1:
+#    key = sys.argv[1]
 
 query = {}
 
@@ -32,7 +38,28 @@ attrs = { \
                 'getter': lambda c, k, d: try_get(c, [d] * 3, 'location')[2],
                 'default': numpy.nan,
                 },
+        'area': { \
+                'getter': lambda c, k, d: str(try_get(c, d, k)),
+                'default': 'Na',
+                },
         'selectivity.name.stats.F': { \
+                'default': numpy.nan,
+                },
+        'selectivity.name.stats.Fp': {
+                'getter': lambda c, k, d: -numpy.log(try_get(c, d, \
+                        *k.split('.'))),
+                'default': 1.0,
+                },
+        'selectivity.name.stats.sel': {
+                'default': numpy.nan,
+                },
+        'selectivity.pos_x.stats.sel': {
+                'default': numpy.nan,
+                },
+        'selectivity.pos_y.stats.sel': {
+                'default': numpy.nan,
+                },
+        'selectivity.size_x.stats.sel': {
                 'default': numpy.nan,
                 },
         'vrate': { \
@@ -50,7 +77,7 @@ query['responsivity.p'] = {'$lt': 0.1}
 
 server = {'host': 'coxlabanalysis1.rowland.org',
         'db': 'physiology',
-        'coll': 'cells_tol2'}
+        'coll': 'cells_shift'}
 
 cells = pymongo.Connection(server['host'])[server['db']][server['coll']]
 
@@ -82,7 +109,7 @@ def try_get(d, dval, key, *others):
             #print "d[key]: %s" % key
             return d[key]
     except KeyError:
-        #print "dval: %s" % dval
+        print "KeyError: key: %s" % key
         return dval
 
 
@@ -131,7 +158,10 @@ def parse_data(attrs):
             raise ValueError("Unequal lengths: %i, %i" % \
                     (len(attrs[k]['values']), N))
         N = len(attrs[k]['values'])
-        dtype.append((k, type(attrs[k]['values'][0])))
+        t = type(attrs[k]['values'][0])
+        if t == str:
+            t = 'S16'
+        dtype.append((k, t))
     data = pylab.recarray(N, dtype=dtype)
 
     for k in keys:
@@ -147,61 +177,57 @@ if len(data) == 0:
     raise Exception("No data found")
 
 print "Prior to position culling: %i" % len(data)
-data = data[data['dv'] < 0]
-data = data[data['ap'] < -3]
+#data = data[data['dv'] < 0]
+#data = data[data['ap'] < -3]
 print "After to position culling: %i" % len(data)
 
+signal = data[key]
+areas = data['area']
+uareas = list(numpy.unique(areas))
+if 'Na' in uareas:
+    i = uareas.index('Na')
+    uareas.pop(i)
+    uareas.insert(0, 'Na')
+if 'Fail' in uareas:
+    i = uareas.index('Fail')
+    uareas.pop(i)
+    uareas.insert(0, 'Fail')
+
+ddata = {}
+means = []
+stds = []
+ns = []
+for ua in uareas:
+    d = data[data['area'] == ua][key]
+    d = d[numpy.logical_not(numpy.isnan(d))]
+    ddata[ua] = d
+    means.append(numpy.mean(d))
+    stds.append(numpy.std(d))
+    ns.append(len(d))
+
+# anova
+d = [ddata[k] for k in uareas if k not in ['Fail', 'Na']]
+Test, p = scipy.stats.f_oneway(*d)
+Test, p = scipy.stats.kruskal(*d)
+print "Test: T: %s, p: %s" % (Test, p)
 
 pylab.figure()
-pylab.subplot(131)
-tex = [-7, -8.5]
-tey1 = [-3.8, -2.2]
-tey2 = [-5.6, -4.4]
-pylab.fill_between(tex, tey1, tey2, alpha=0.1, color='k')
-pylab.scatter(data['ap'], data['dv'], s=data[key] * 25, \
-#        c=(data['Fp'] < 0.05).astype(int), \
-        edgecolors='none', alpha=0.3)
-#pylab.title("Red = selective(alpha=0.05)")
-pylab.xlabel('AP (mm)')
-pylab.ylabel('DV (mm)')
-xt, _ = pylab.xticks()
-pylab.xticks(xt, rotation=90)
-
-pylab.subplot(132)
-d, x, y = numpy.histogram2d(data['ap'], data['dv'], \
-        bins=[10, 10], weights=data[key])
-w, _, _ = numpy.histogram2d(data['ap'], data['dv'], \
-        bins=[10, 10])
-d *= 1. / w
-pylab.imshow(d.T, interpolation='nearest', \
-        aspect='equal', \
-        origin='lower', \
-        extent=[x[0], x[-1], y[0], y[-1]])
-pylab.colorbar()
-pylab.xlabel('AP')
-xt, _ = pylab.xticks()
-pylab.xticks(xt, rotation=90)
-pylab.ylabel('DV')
-
-pylab.subplot(233)
-d, x = numpy.histogram(data['dv'], weights=data[key])
-w, _ = numpy.histogram(data['dv'])
-d *= 1. / w
-cx = (x[1:] - x[:-1]) / 2. + x[:-1]
-pylab.plot(cx, d)
-pylab.xlabel('DV')
+x = range(len(uareas))
+for (xi, ua) in zip(x, uareas):
+    d = ddata[ua]
+    n = len(d)
+    sx = numpy.ones(n) * xi
+    pylab.scatter(sx, d, alpha=0.5)
+pylab.errorbar(x, means, stds / numpy.sqrt(ns), color='r', capsize=10)
+labels = ["%s[%i]" % (a, n) for (a, n) in zip(uareas, ns)]
+pylab.xticks(x, labels)
+pylab.xlim(-1, len(uareas))
 pylab.ylabel(key)
+pylab.xlabel('Area')
 
-pylab.subplot(236)
-d, x = numpy.histogram(data['ap'], weights=data[key])
-w, _ = numpy.histogram(data['ap'])
-d *= 1. / w
-cx = (x[1:] - x[:-1]) / 2. + x[:-1]
-pylab.plot(cx, d)
-pylab.xlabel('AP')
-pylab.ylabel(key)
+pylab.suptitle("Test: %s, p: %s" % (Test, p))
 
 if save:
-    pylab.savefig('%s_by_location.svg' % key)
+    pylab.savefig('%s_by_area.svg' % key)
 else:
     pylab.show()

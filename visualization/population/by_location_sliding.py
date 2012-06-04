@@ -25,7 +25,8 @@ vmax = None
 vmin = None
 
 plot_im = True
-to_plot = 'tol_Xp'
+to_plot = 'responsivity'
+#to_plot = 'tol_Xp'
 
 min_cells = 1
 
@@ -72,6 +73,11 @@ elif to_plot is 'sep':
 elif to_plot is 'samp':
     key = 'ap'
     no_scaling = True
+    weak_cull = True
+elif to_plot is 'responsivity':
+    key = 'responsivity.p'
+    log_transform_stat = True
+    one_minus_and_log_transform_stat = False
     weak_cull = True
 elif to_plot is 'resp':
     key = 'responsivity.p'
@@ -135,6 +141,7 @@ server = {'host': 'coxlabanalysis1.rowland.org',
         'db': 'physiology',
         #'coll': 'cells_sep'}
         'coll': 'cells_rerun'}
+
 
 cells = pymongo.Connection(server['host'])[server['db']][server['coll']]
 

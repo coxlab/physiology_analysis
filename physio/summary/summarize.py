@@ -146,25 +146,6 @@ def summarize_session_object(session, output_filename):
             SpikeDescription)
 
     #nclusters = {} # TODO save this later
-
-    for ch in xrange(1, 33):  # tdt numbering
-        #nclusters[ch] = session.get_n_clusters(ch)
-        #for cl in xrange(nclusters[ch]):
-        for cl in xrange(session.get_n_clusters(ch)):
-            spike_times = session.get_spike_times(ch, cl)
-            if len(spike_times):
-                snrs = spikes.stats.waveforms_snr_ptp( \
-                        session.get_spike_waveforms(ch, cl))
-            else:
-                snrs = []
-            for (snr, spike_time) in zip(snrs, spike_times):
-                spike_table.row['ch'] = ch
-                spike_table.row['cl'] = cl
-                spike_table.row['time'] = spike_time
-                spike_table.row['snr'] = snr
-                spike_table.row.append()
-    summary_file.flush()
-
     # find waveform length
     wfs = session._file.root.Channels.ch1.coldtypes['wave'].shape
     # tables for spike ch info (nclusters, signal to noise, etc)
@@ -179,22 +160,37 @@ def summarize_session_object(session, output_filename):
     spike_info_table = summary_file.createTable('/', 'SpikeInfo', \
             SpikeInfoDescription)
 
-    # TODO combine these for loops with the previous
     for ch in xrange(1, 33):  # tdt numbering
+        #nclusters[ch] = session.get_n_clusters(ch)
+        #for cl in xrange(nclusters[ch]):
         for cl in xrange(session.get_n_clusters(ch)):
-            waves = numpy.array(session.get_spike_waveforms(ch, cl))
+            cell_events = session.get_cell_events(ch, cl)
+            spike_times = cell_events['time']
+            waves = cell_events['wave']
+            #spike_times = session.get_spike_times(ch, cl)
+            #waves = session.get_spike_waveforms(ch, cl)
+            if len(spike_times):
+                snrs = spikes.stats.waveforms_snr_ptp(waves)
+            else:
+                snrs = []
+            for (snr, spike_time) in zip(snrs, spike_times):
+                spike_table.row['ch'] = ch
+                spike_table.row['cl'] = cl
+                spike_table.row['time'] = spike_time
+                spike_table.row['snr'] = snr
+                spike_table.row.append()
             if len(waves) == 0:
                 continue
-            snrs = spikes.stats.waveforms_snr_ptp(waves)
-            wave_mean = numpy.mean(waves, 0)
-            wave_std = numpy.std(waves, 0)
-            spike_info_table.row['ch'] = ch
-            spike_info_table.row['cl'] = cl
-            spike_info_table.row['wave_mean'] = wave_mean
-            spike_info_table.row['wave_std'] = wave_std
-            spike_info_table.row['snr_mean'] = numpy.mean(snr)
-            spike_info_table.row['snr_std'] = numpy.std(snr)
-            spike_info_table.row.append()
+            else:
+                wave_mean = numpy.mean(waves, 0)
+                wave_std = numpy.std(waves, 0)
+                spike_info_table.row['ch'] = ch
+                spike_info_table.row['cl'] = cl
+                spike_info_table.row['wave_mean'] = wave_mean
+                spike_info_table.row['wave_std'] = wave_std
+                spike_info_table.row['snr_mean'] = numpy.mean(snrs)
+                spike_info_table.row['snr_std'] = numpy.std(snrs)
+                spike_info_table.row.append()
     summary_file.flush()
 
     # 4) gaze
@@ -217,6 +213,28 @@ def summarize_session_object(session, output_filename):
         gaze_table.row['v'] = vv[i]
         gaze_table.row['pupil_radius'] = pv[i]
         gaze_table.row.append()
+
+    # licking, moving
+    class EventDescription(tables.IsDescription):
+        time = tables.Float64Col()
+        code = tables.UInt8Col()
+        value = tables.Float64Col()
+
+    event_table = summary_file.createTable('/', 'Events', \
+            EventDescription)
+    for (en, code) in [('LickInput', 0), ('MotionInput1', 1), \
+            ('MotionInput2', 2)]:
+        try:
+            for t, v in zip(*session.get_events(en)):
+                event_table.row['time'] = t
+                event_table.row['value'] = v
+                event_table.row['code'] = code
+                event_table.row.append()
+        except Exception as E:
+            logging.error("Failed to store events for %s: %s" % \
+                    (en, E))
+
+    summary_file.flush()
 
     #gaze_group = summary_file.createGroup('/', 'Gaze', 'Gaze')
     #summary_file.createArray(gaze_group, 'times', tt)

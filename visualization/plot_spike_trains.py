@@ -31,17 +31,21 @@ else:
 #session_name = args.session
 
 for epochNumber in epochs:
-    session = physio.session.load(session_name, epochNumber)
+    #session = physio.session.load(session_name, epochNumber)
+    summary = physio.summary.load_summary(session_name, epochNumber)
     outdir = physio.session.get_epoch_dir(config, epochNumber) + '/plots'
 
     #trialTimes, stims = session.get_stimuli(stimType = 'image')
     #nTrials = len(trialTimes)
-    time_range = session.get_epoch_time_range('au')
+    #time_range = session.get_epoch_time_range('au')
+    time_range = summary.get_epoch_range()
     pl.figure(1, figsize=(8, 16))
     pl.axvline(time_range[0], color='k')
     pl.axvline(time_range[1], color='k')
 
-    max_n_clusters = max([session.get_n_clusters(ch) for\
+    #max_n_clusters = max([session.get_n_clusters(ch) for\
+    #        ch in range(1, 33)])
+    max_n_clusters = max([summary.get_n_clusters(ch) for\
             ch in range(1, 33)])
     max_n_clusters = min(max_n_clusters, 10)
 
@@ -49,12 +53,14 @@ for epochNumber in epochs:
 
     dy = 1 / float(max_n_clusters - 1)
     for ch in xrange(1, 33):
-        n_clusters = session.get_n_clusters(ch)
+        #n_clusters = session.get_n_clusters(ch)
+        n_clusters = summary.get_n_clusters(ch)
         if ch % 2:  # highlight every other channel
             pl.bar(time_range[0], 1, time_range[1] - time_range[0], ch,\
                     color='k', alpha=0.2, linewidth=0)
         for cl in xrange(n_clusters):
-            spikes = session.get_spike_times(ch, cl)
+            #spikes = session.get_spike_times(ch, cl)
+            spikes = summary.get_spike_times(ch, cl)
             if len(spikes) == 0:
                 continue
 
@@ -69,7 +75,8 @@ for epochNumber in epochs:
     pl.xlabel("Time (Seconds, audio)")
     pl.yticks([])
     pl.ylim([1, 33])
-    session.close()
+    #session.close()
+    summary.close()
 
     if not os.path.exists(outdir):
         os.makedirs(outdir)

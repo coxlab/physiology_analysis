@@ -3,7 +3,7 @@
 import logging, optparse, os, sys
 logging.basicConfig(level = logging.DEBUG)
 
-import numpy as np
+import numpy
 import pylab as pl
 
 import physio
@@ -36,7 +36,8 @@ else:
     epochs = range(physio.session.get_n_epochs(args[0]))#config))
 
 for epochNumber in epochs:
-    session = physio.session.load(args[0], epochNumber)
+    summary = physio.summary.load_summary(args[0], epochNumber)
+    #session = physio.session.load(args[0], epochNumber)
     if True or options.outdir.strip() == '':
         config = physio.cfg.load(args[0])
         outdir = physio.session.get_epoch_dir(config, epochNumber)
@@ -44,14 +45,18 @@ for epochNumber in epochs:
         outdir += '/plots'
         options.outdir = outdir
 
-    trialTimes, stimuli, _, _ = session.get_trials()
+    #trialTimes, stimuli, _, _ = session.get_trials()
+    match = {'name': {'value': 'BlueSquare', 'op': '!='}}
+    trials = summary.get_trials(match)
+    trialTimes = numpy.array(trials['time'])
+    stimuli = summary.get_stimuli(match)
     nTrials = len(trialTimes)
     logging.debug("N Trials: %i" % nTrials)
 
-    stimCounts = physio.events.stimuli.count(stimuli)
+    #stimCounts = physio.events.stimuli.count(stimuli)
     uniqueStimuli = physio.events.stimuli.unique(stimuli)
-    for s in stimCounts.keys():
-        logging.debug("\t%i presentations of %s" % (stimCounts[s],s))
+    #for s in stimCounts.keys():
+    #    logging.debug("\t%i presentations of %s" % (stimCounts[s],s))
 
 # get unique positions & sizes
     values = {}
@@ -82,7 +87,8 @@ for epochNumber in epochs:
 #     conditions.append({'name' : n})
 # conditions = uniqueStimuli
 # data = [(ch,cl) for ch in depthOrdered for cl in range(1,6)]
-    nclusters = session.get_n_clusters(options.channel)
+    #nclusters = session.get_n_clusters(options.channel)
+    nclusters = summary.get_n_clusters(options.channel)
     nclusters = min(10, nclusters)
     clusters = range(0, nclusters)
     data = [(options.channel, cl) for cl in clusters]
@@ -90,7 +96,7 @@ for epochNumber in epochs:
     subplotsWidth = len(conditions)
     subplotsHeight = min(10, len(data))
     pl.figure(figsize=(subplotsWidth * 2, subplotsHeight * 2))
-# pl.gcf().suptitle('%s %d' % (groupBy, group))
+    # pl.gcf().suptitle('%s %d' % (groupBy, group))
     pl.subplot(subplotsHeight, subplotsWidth, 1)
     logging.debug("Plotting %i by %i plots(%i)" % \
             (subplotsWidth, subplotsHeight, subplotsWidth * subplotsHeight))
@@ -99,8 +105,10 @@ for epochNumber in epochs:
     for (y, datum) in enumerate(data):
         for (x, condition) in enumerate(conditions):
             logging.debug("\tPlotting[%i, %i]: ch/cl %s : s %s" % (x, y, datum, condition))
-            trials, _, _, _ = session.get_trials(condition)
-            spikes = session.get_spike_times(*datum)
+            #trials, _, _, _ = session.get_trials(condition)
+            trials = numpy.array(summary.get_trials(condition)['time'])
+            #spikes = session.get_spike_times(*datum)
+            spikes = summary.get_spike_times(*datum)
             pl.subplot(subplotsHeight, subplotsWidth, subplotsWidth * y + x + 1)
             # physio.plotting.psth.plot(trials, spikes, options.before, options.after, options.nbins)
             physio.plotting.raster.plot(trials, spikes, options.before, options.after)
@@ -119,12 +127,8 @@ for epochNumber in epochs:
                 pl.xlabel("Seconds")
             # ymaxs[y] = max(ymaxs[y], pl.ylim()[1])
 
-    session.close()
-
-# for y in xrange(subplotsHeight):
-#     for x in xrange(subplotsWidth):
-#         pl.subplot(subplotsHeight, subplotsWidth, subplotsWidth * y + x + 1)
-#         pl.ylim(0,ymaxs[y])
+    #session.close()
+    summary.close()
 
     if not os.path.exists(options.outdir): os.makedirs(options.outdir) # TODO move this down
     

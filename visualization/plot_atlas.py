@@ -70,7 +70,8 @@ else:
 
 
 for epochNumber in epochs:
-    session = physio.session.load(args[0], epochNumber)
+    #session = physio.session.load(args[0], epochNumber)
+    summary = physio.summary.load_summary(args[0], epochNumber)
     if True or options.outdir.strip() == '':
         #config = physio.cfg.load(args[0])
         outdir = physio.session.get_epoch_dir(config, epochNumber)
@@ -81,7 +82,9 @@ for epochNumber in epochs:
     if not os.path.exists(options.outdir):
         os.makedirs(options.outdir)
 
-    locations = session.get_channel_locations()
+    #locations = session.get_channel_locations()
+    locations = summary.get_channel_locations()
+    summary.close()
     logging.debug("Locations: %s" % str(locations))
 
     def skull_to_pixel(ml, dv, sliceIndex, imShape):
@@ -97,7 +100,10 @@ for epochNumber in epochs:
         # generate plot of position on atlas slice
         pl.clf()
         # ml - ap - dv
-        ml, ap, dv = location
+        #ml, ap, dv = location
+        ml = location['ml']
+        ap = location['ap']
+        dv = location['dv']
         sliceIndex = 0
         for (k, v) in sliceBounds.iteritems():
             if ap > v:

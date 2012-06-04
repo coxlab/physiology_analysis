@@ -192,40 +192,31 @@ class Session(object):
         ch, cl = self.get_cell(i)
         return self.get_spike_waveforms(ch, cl, timeRange)
 
-    def get_spike_waveforms(self, channel, cluster, timeRange=None):
-        #n = self._file.getNode('/Channels/ch%i' % channel)
+    def get_cell_events(self, channel, cluster, timeRange=None):
         if timeRange is None:
-            waves = [i['wave'] for i in \
-                    self._file.getNode('/Channels/ch%i' % channel).\
-                    where('clu == %i' % cluster)]
+            q = 'clu == %i' % cluster
         else:
-            assert len(timeRange) == 2, "timeRange must be length 2: %s" % \
+            assert len(timeRange) == 2, "timeRange must be len 2: %s" % \
                     len(timeRange)
-            samplerange = (int(timeRange[0] * self._samplingrate),
-                            int(timeRange[1] * self._samplingrate))
-            waves = [i['wave'] for i in \
-                    self._file.getNode('/Channels/ch%i' % channel).\
-                    where('(clu == %i) & (time > %i) & (time < %i)' % \
-                    (cluster, samplerange[0], samplerange[1]))]
-        return np.array(waves)
+            sr = (int(timeRange[0] * self._samplingrate),
+                    int(timeRange[1] * self._samplingrate))
+            q = '(clu == %i) & (time > %i) & (time < %i)' % \
+                    (cluster, sr[0], sr[1])
 
-    @utils.memoize
+        r = self._file.getNode('/Channels/ch%i' % channel).\
+                readWhere(q).astype(np.dtype(\
+                [('clu', '|u1'), ('time', '<f8'), ('wave', '<f8', (128,))]))
+        r['time'] = r['time'] / float(self._samplingrate)
+        return r
+        #return self._file.getNode('/Channels/ch%i' % channel).\
+        #        readWhere(q)
+
+    def get_spike_waveforms(self, channel, cluster, timeRange=None):
+        return self.get_cell_events(channel, cluster, timeRange)['wave']
+
+    #@utils.memoize
     def get_spike_times(self, channel, cluster, timeRange=None):
-        #n = self._file.getNode('/Channels/ch%i' % channel)
-        if timeRange is None:
-            times = [i['time'] for i in \
-                    self._file.getNode('/Channels/ch%i' % channel). \
-                    where('clu == %i' % cluster)]
-        else:
-            assert len(timeRange) == 2, "timeRange must be length 2: %s" % \
-                    len(timeRange)
-            samplerange = (int(timeRange[0] * self._samplingrate),
-                            int(timeRange[1] * self._samplingrate))
-            times = [i['time'] for i in \
-                    self._file.getNode('/Channels/ch%i' % channel).\
-                    where('(clu == %i) & (time > %i) & (time < %i)' %\
-                    (cluster, samplerange[0], samplerange[1]))]
-        return np.array(times) / float(self._samplingrate)
+        return self.get_cell_events(channel, cluster, timeRange)['time']
 
     def get_events(self, name, timeRange=None):
         if timeRange is None:
@@ -313,12 +304,22 @@ class Session(object):
         return goodTimes, goodStims, badTimes, badStims
 
     def get_channel_locations(self):
-        cncDict = events.cnc.get_cnc_events(self._file)
+        """
+        ml, ap, dv
+        """
+        override = events.cnc.get_location_override(self._file)
+        if override is None:
+            cncDict = events.cnc.get_cnc_events(self._file)
+            tr = self.get_epoch_time_range('mworks')
+            time = (tr[1] - tr[0]) / 2. + tr[0]  # middle of epoch
+        else:
+            logging.debug("Using channel locations override: %s" % \
+                    override)
+            cncDict = {}
+            time = None
         offset = events.cnc.get_tip_offset(self._file)
-        #time, _ = self.get_epoch_time_range('mworks')
-        tr = self.get_epoch_time_range('mworks')
-        time = (tr[1] - tr[0]) / 2. + tr[0]  # middle of epoch
-        return events.cnc.get_channel_locations(cncDict, offset, time)
+        return events.cnc.get_channel_locations(cncDict, offset, time, \
+                override)
 
     @utils.memoize
     def get_gaze(self, timeRange=None):
