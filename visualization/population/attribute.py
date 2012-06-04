@@ -64,7 +64,7 @@ def try_get(dictionary, default_value, key, *others):
             #print "d[key]: %s" % key
             return dictionary[key]
     except KeyError as E:
-        logging.debug("KeyError: key: %s[%s]" % (key, E))
+        #logging.debug("KeyError: key: %s[%s]" % (key, E))
         return default_value
 
 

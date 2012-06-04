@@ -59,6 +59,8 @@ def parse(parser=None, query=None, include_defaults=True):
 
 
 def connect(options):
+    logging.debug("Connecting to %s[%s][%s]" % \
+            (options.host, options.db, options.coll))
     return pymongo.Connection(options.host)[options.db][options.coll]
 
 
