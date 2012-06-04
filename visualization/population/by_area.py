@@ -10,8 +10,9 @@ import pylab
 import pymongo
 import scipy.stats
 
-save = False
-key = 'selectivity.name.stats.F'
+save = True
+#key = 'selectivity.name.stats.F'
+key = 'friedman.stats.Q'
 #key = 'selectivity.name.stats.Fp'
 #key = 'selectivity.name.stats.sel'
 #key = 'selectivity.pos_x.stats.sel'
@@ -62,10 +63,10 @@ attrs = { \
         'selectivity.size_x.stats.sel': {
                 'default': numpy.nan,
                 },
-        'vrate': { \
-                'getter': lambda c, k, d: try_get(c, numpy.nan, 'driven_mean')\
-                / try_get(c, numpy.nan, 'baseline_mean'),
-                }
+        #'vrate': { \
+        #        'getter': lambda c, k, d: try_get(c, numpy.nan, 'driven_mean')\
+        #        / try_get(c, numpy.nan, 'baseline_mean'),
+        #        }
         }
 
 if key not in attrs.keys():
@@ -73,11 +74,13 @@ if key not in attrs.keys():
 
 query['nspikes'] = {'$gt': 1000}
 query['responsivity.p'] = {'$lt': 0.1}
+query['snr_mean'] = {'$gt': 1}
+query['driven_mean'] = {'$gt': 2}
 #query['animal'] = 'K4'
 
 server = {'host': 'coxlabanalysis1.rowland.org',
         'db': 'physiology',
-        'coll': 'cells_shift'}
+        'coll': 'cells_merge'}
 
 cells = pymongo.Connection(server['host'])[server['db']][server['coll']]
 
@@ -228,6 +231,7 @@ pylab.xlabel('Area')
 pylab.suptitle("Test: %s, p: %s" % (Test, p))
 
 if save:
-    pylab.savefig('%s_by_area.svg' % key)
+    #pylab.savefig('%s_by_area.svg' % key)
+    pylab.savefig('%s_by_area.png' % key)
 else:
     pylab.show()

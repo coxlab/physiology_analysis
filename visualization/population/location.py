@@ -12,9 +12,15 @@ import attribute
 import utils
 
 key = 'selectivity.name.stats.F'
+#key = 'friedman.stats.Q'
 #key = 'friedman.stats.p'
-#op = None
-op = lambda v: -numpy.log(v)
+#op = lambda v: -numpy.log(v)
+op = None
+#key = {
+#        'one': {
+#            'default': 1,
+#            },
+#        }
 #key = {
 #        'friedman.stats.Q': {
 #            'getter': lambda c, k, d: \
@@ -34,6 +40,9 @@ if isinstance(key, dict):
 else:  # assume string
     attrs[key] = {}
 
+if isinstance(key, dict):
+    key = key.keys()[0]
+
 # set op
 if ('getter' not in attrs[key]) and (op is not None):
     attrs[key]['getter'] = lambda c, k, d: \
@@ -41,9 +50,6 @@ if ('getter' not in attrs[key]) and (op is not None):
 
 data, cells, opts, args = utils.fetch(attrs=attrs, query=query, full=True)
 
-
-if isinstance(key, dict):
-    key = key.keys()[0]
 
 if len(data) == 0:
     print "No data found"
