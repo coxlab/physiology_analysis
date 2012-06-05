@@ -1,22 +1,17 @@
 #!/usr/bin/env python
 
 import logging
-import sys
 
 logging.basicConfig(level=logging.DEBUG)
 
 import numpy
 import pylab
-#import pymongo
 
-import attribute
 import utils
 
 key = 'selectivity.name.stats.F'
 #key = 'friedman.stats.Q'
 #key = 'friedman.stats.p'
-#op = lambda v: -numpy.log(v)
-op = None
 #key = {
 #        'one': {
 #            'default': 1,
@@ -35,13 +30,10 @@ op = None
 query = {}  # try to use the commandline
 attrs = {}
 
-if (len(sys.argv) > 1) and (sys.argv[1][0] != '-'):
-        key = sys.argv[1]
-key, kattrs = attribute.make_attribute(key, op=op)
-attrs.update(kattrs)
+data, cells, opts, args = utils.fetch(attrs=attrs, query=query, full=True,
+        default_key=key)
 
-data, cells, opts, args = utils.fetch(attrs=attrs, query=query, full=True)
-
+key_label = opts.operation.replace('x', opts.key)
 
 if len(data) == 0:
     print "No data found"
@@ -94,7 +86,7 @@ d *= 1. / w
 cx = (x[1:] - x[:-1]) / 2. + x[:-1]
 pylab.plot(cx, d)
 pylab.xlabel('DV')
-pylab.ylabel(key)
+pylab.ylabel(key_label)
 
 pylab.subplot(236)
 d, x = numpy.histogram(data['ap'], weights=data[key])
@@ -103,11 +95,11 @@ d *= 1. / w
 cx = (x[1:] - x[:-1]) / 2. + x[:-1]
 pylab.plot(cx, d)
 pylab.xlabel('AP')
-pylab.ylabel(key)
+pylab.ylabel(key_label)
 
 if opts.save:
     #pylab.savefig(opts.filename)
     #pylab.savefig('%s_by_location.svg' % key)
-    pylab.savefig('%s_by_location.png' % key)
+    pylab.savefig('%s_by_location.png' % key_label)
 else:
     pylab.show()

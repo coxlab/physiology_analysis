@@ -9,8 +9,8 @@ import pymongo
 
 default_query = {
     'nspikes': {'$gt': 1000},
-    'responsivity.p': {'$lt': 0.1},
-    'driven_mean': {'$gt': 2},
+#    'responsivity.p': {'$lt': 0.1},
+#    'driven_mean': {'$gt': 2},
     'snr_mean': {'$gt': 1},
     }
 

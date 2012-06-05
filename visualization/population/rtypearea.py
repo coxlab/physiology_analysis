@@ -11,11 +11,12 @@ import pylab
 #violin = True
 violin = False
 try:
-    from violinplot import violinplot
+    from utils.violinplot import violinplot
 except ImportError:
     violin = False
 
 import utils
+import utils.rtype
 
 daxis = 'ap'
 #daxis = 'dv'
@@ -64,7 +65,7 @@ area_divisions = {
 key = 'rtype'
 rtypes = ['on', 'off', 'sus', 'late']
 query = {}
-attrs = {}
+attrs = utils.rtype.rtype_attributes
 
 parser = optparse.OptionParser()
 parser.add_option('-n', '--ndiv', type='int', default=ndiv)

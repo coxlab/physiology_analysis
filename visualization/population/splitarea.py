@@ -73,24 +73,17 @@ key = 'friedman.stats.Q'
 #key = 'selectivity.size_x.stats.sel'
 #key = 'vrate'
 
-
-#op = lambda x: -numpy.log(x)
-op = None
-
 query = {}
 attrs = {}
-
-if (len(sys.argv) > 1) and (sys.argv[1][0] != '-'):
-        key = sys.argv[1]
-key, kattrs = attribute.make_attribute(key, op=op)
-attrs.update(kattrs)
 
 parser = optparse.OptionParser()
 parser.add_option('-n', '--ndiv', type='int', default=ndiv)
 parser.add_option('-a', '--axis', default=daxis)
 
 data, cells, opts, args = utils.fetch(parser=parser, attrs=attrs, \
-        query=query, full=True)
+        query=query, full=True, default_key=key)
+key_label = opts.operation.replace('x', opts.key)
+
 ndiv = opts.ndiv
 daxis = opts.axis
 
@@ -152,13 +145,13 @@ for (spi, area) in enumerate(areas):
     pylab.xlabel('%s divisions' % daxis.upper())
     pylab.title('%s' % area)
 pylab.sca(axes[0])
-pylab.ylabel('%s' % key)
+pylab.ylabel('%s' % key_label)
 pylab.suptitle(opts.coll)
 pylab.subplots_adjust(bottom=.24)
 #pylab.gcf().tight_layout()
 
 if opts.save:
     #pylab.savefig('%s_by_area.svg' % key)
-    pylab.savefig('%s_by_area.png' % key)
+    pylab.savefig('%s_by_area.png' % key_label)
 else:
     pylab.show()
