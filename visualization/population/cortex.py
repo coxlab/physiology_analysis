@@ -81,9 +81,9 @@ for area in opts.areas.split():
             opts.cylinderx, opts.cylindery, \
             label=area, alpha=0.1)
 pylab.scatter(data['ap'], data['ct'], label=key_label, \
-        s=data[key] * opts.sizescale)
+        s=data[opts.key] * opts.sizescale)
 pylab.legend()
 if opts.save:
-    pylab.savefig("%s_by_cortex.png" % key)
+    pylab.savefig("%s_by_cortex.png" % key_label)
 else:
     pylab.show()

@@ -44,7 +44,7 @@ data = data[data['dv'] < 0]
 data = data[data['ap'] < -3]
 print "After to position culling: %i" % len(data)
 
-data = data[numpy.logical_not(numpy.isnan(data[key]))]
+data = data[numpy.logical_not(numpy.isnan(data[opts.key]))]
 print "After nan culling: %i" % len(data)
 
 
@@ -54,7 +54,7 @@ tex = [-7, -8.5]
 tey1 = [-3.8, -2.2]
 tey2 = [-5.6, -4.4]
 pylab.fill_between(tex, tey1, tey2, alpha=0.1, color='k')
-pylab.scatter(data['ap'], data['dv'], s=data[key] * 25, \
+pylab.scatter(data['ap'], data['dv'], s=data[opts.key] * 25, \
 #        c=(data['Fp'] < 0.05).astype(int), \
         edgecolors='none', alpha=0.3)
 #pylab.title("Red = selective(alpha=0.05)")
@@ -65,7 +65,7 @@ pylab.xticks(xt, rotation=90)
 
 pylab.subplot(132)
 d, x, y = numpy.histogram2d(data['ap'], data['dv'], \
-        bins=[10, 10], weights=data[key])
+        bins=[10, 10], weights=data[opts.key])
 w, _, _ = numpy.histogram2d(data['ap'], data['dv'], \
         bins=[10, 10])
 d *= 1. / w
@@ -80,7 +80,7 @@ pylab.xticks(xt, rotation=90)
 pylab.ylabel('DV')
 
 pylab.subplot(233)
-d, x = numpy.histogram(data['dv'], weights=data[key])
+d, x = numpy.histogram(data['dv'], weights=data[opts.key])
 w, _ = numpy.histogram(data['dv'])
 d *= 1. / w
 cx = (x[1:] - x[:-1]) / 2. + x[:-1]
@@ -89,7 +89,7 @@ pylab.xlabel('DV')
 pylab.ylabel(key_label)
 
 pylab.subplot(236)
-d, x = numpy.histogram(data['ap'], weights=data[key])
+d, x = numpy.histogram(data['ap'], weights=data[opts.key])
 w, _ = numpy.histogram(data['ap'])
 d *= 1. / w
 cx = (x[1:] - x[:-1]) / 2. + x[:-1]

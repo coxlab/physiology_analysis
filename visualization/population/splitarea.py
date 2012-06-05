@@ -2,13 +2,11 @@
 
 import logging
 import optparse
-import sys
 
 logging.basicConfig(level=logging.DEBUG)
 
 import numpy
 import pylab
-import scipy.stats
 
 #violin = True
 violin = False
@@ -17,7 +15,6 @@ try:
 except ImportError:
     violin = False
 
-import attribute
 import utils
 
 daxis = 'ap'
@@ -96,10 +93,10 @@ print "Prior to position culling: %i" % len(data)
 #data = data[data['ap'] < -3]
 print "After to position culling: %i" % len(data)
 
-data = data[numpy.logical_not(numpy.isnan(data[key]))]
+data = data[numpy.logical_not(numpy.isnan(data[opts.key]))]
 print "After nan culling: %i" % len(data)
 
-signal = data[key]
+signal = data[opts.key]
 areas = area_divisions.keys()
 
 subdivs = {}
