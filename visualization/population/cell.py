@@ -109,7 +109,7 @@ pylab.subplots_adjust(left=0.01, right=0.99, top=0.99, bottom=0.01)
 
 title = '%s_%s:%s [%s]' % (cell['animal'], cell['date'], \
         cell['cid'], cell['area'])
-pylab.suptitle(title)
+pylab.suptitle(title, color=textcolor)
 if opts.save:
     fn = '%s.png' % title
     pylab.savefig(fn)
