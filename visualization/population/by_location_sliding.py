@@ -25,8 +25,9 @@ vmax = None
 vmin = None
 
 plot_im = True
-to_plot = 'responsivity'
-#to_plot = 'tol_Xp'
+#to_plot = 'responsivity'
+to_plot = 'tol_Xp'
+#to_plot = 'resp'
 
 min_cells = 1
 
@@ -140,7 +141,9 @@ server = {'host': 'coxlabanalysis1.rowland.org',
         #'host': 'soma2.rowland.org',
         'db': 'physiology',
         #'coll': 'cells_sep'}
-        'coll': 'cells_rerun'}
+        #'coll': 'cells_rerun'
+        'coll': 'cells_latency'
+        }
 
 
 cells = pymongo.Connection(server['host'])[server['db']][server['coll']]
