@@ -22,6 +22,7 @@ parser = optparse.OptionParser()
 parser.add_option('-s', '--session', default='M4_120202')
 parser.add_option('-S', '--save', default=False, action='store_true')
 parser.add_option('-i', '--cid', default='27.1')
+parser.add_option('-r', '--rtype', default='on')
 opts, args = utils.cmdmongo.parse(parser, query={}, include_defaults=False)
 
 opts.query['animal'], opts.query['date'] = opts.session.split('_')
@@ -29,6 +30,7 @@ opts.query['ch'], opts.query['cl'] = \
         [int(i) for i in opts.cid.strip().split('.')]
 
 conn = utils.cmdmongo.connect(opts)
+logging.debug("Running query: %s" % opts.query)
 cells = [c for c in conn.find(opts.query)]
 
 if len(cells) != 1:
@@ -46,10 +48,15 @@ def load_images(indices):
         images.append(im)
     return images
 
-r = numpy.array(cell['friedman']['rmean'])
-b = numpy.array(cell['friedman']['bmean'])
-trans = numpy.array(cell['friedman']['trans'])
-ids = numpy.array(cell['friedman']['ids'])
+resp = cell['friedman'][opts.rtype]
+r = numpy.array(resp['rmean'])
+b = numpy.array(resp['bmean'])
+trans = numpy.array(resp['trans'])
+ids = numpy.array(resp['ids'])
+#r = numpy.array(cell['friedman']['rmean'])
+#b = numpy.array(cell['friedman']['bmean'])
+#trans = numpy.array(cell['friedman']['trans'])
+#ids = numpy.array(cell['friedman']['ids'])
 id_imgs = numpy.array(load_images(ids))
 
 d = r - b
