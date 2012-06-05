@@ -29,7 +29,7 @@ import clustermerge
 blacklist_animals = ['L1']
 blacklist_sessions = ['M2_120227', 'M2_120222', 'L2_111004', 'M2_120328'\
         'M2_120329', 'M2_120419', 'M2_120426', 'M2_120515', 'M2_120529',\
-        'M4_120109']
+        'M4_120109', 'L2_111014']
 
 min_spikes = 1000
 min_rate = 0.0001  # hz
@@ -37,7 +37,7 @@ min_rate = 0.0001  # hz
 #coll_name, rwin = ('cells_merge_trans', (0.050, 0.150))  # on trans
 #coll_name, rwin = ('cells_merge_late', (0.150, 0.250))  # on trans (late)
 #coll_name, rwin = ('cells_merge_sus', (0.250, 0.350))  # sus
-coll_name = 'cells_merge'
+coll_name = 'cells_latency'
 bwin = (-0.10, 0.0)
 rwin = (0.05, 0.15)
 windows = {
@@ -204,15 +204,21 @@ def get_driven_rate():
     pass
 
 
+def get_latency(spike_times, trial_times):
+    return physio.spikes.triallock.estimate_latency(spike_times, trial_times, \
+            0.1, .750, 0.05, 0.025, 2.0)
+
+
 def get_sliding_window_latency(spike_times, trials, bwin, duration,
                                crest_factor=4.0,
                                window_width=0.002,
                                window_stride=0.001):
 
-    normalized, times = physio.spikes.triallock.baseline_normalized_sliding_window_rate(spike_times,
-                                                                                        trials, bwin,
-                                                                                        duration, window_width,
-                                                                                        window_stride)
+    normalized, times = physio.spikes.triallock.\
+            baseline_normalized_sliding_window_rate(spike_times,
+                                                    trials, bwin,
+                                                    duration, window_width,
+                                                    window_stride)
 
     normalized -= crest_factor
     normalized[normalized < 0] = 0
@@ -395,19 +401,28 @@ def get_friedman(summary, trials, stims, key='response'):
         ids = numpy.unique(stims['name'])
         trans = numpy.unique(stims[list(stims.dtype.names[1:])])
         M = numpy.zeros((len(ids), len(trans), 5))
+        missing_trans = []
         for (ni, n) in enumerate(ids):
             for (ti, t) in enumerate(trans):
                 sd = dict(name=n)
                 sd.update(dict(zip(trans.dtype.names, t)))
                 ft = summary.filter_trials(trials, sd)
                 if len(ft) == 0:
-                    raise ValueError("0 Trials with %s [%s]" % (n, t))
+                    missing_trans.append(ti)
+                    continue
+                    #raise ValueError("0 Trials with %s [%s]" % (n, t))
                 #br = numpy.mean(ft['baseline'])
                 M[ni, ti, 0] = numpy.mean(ft[key])
                 M[ni, ti, 1] = numpy.std(ft[key])
                 M[ni, ti, 2] = len(ft[key])
                 M[ni, ti, 3] = numpy.mean(ft['baseline'])
                 M[ni, ti, 4] = numpy.std(ft['baseline'])
+        if len(missing_trans):
+            logging.debug("%i missing transformations" % len(missing_trans))
+            mask = numpy.ones(len(trans), dtype=bool)
+            mask[missing_trans] = False
+            M = M[:, mask, :]
+            trans = trans[mask]
         #r = M[:, :, 0] - M[:, :, 3]  # use driven response for now
         r = M[:, :, 0]
         Q, p = scipy.stats.friedmanchisquare(*r)  # stat = Q, p
@@ -535,6 +550,16 @@ def process_summary(summary_filename, overrides, area_points):
         rate = nspikes / (trange[1] - trange[0])
         cell['rate'] = rate
         cell['trange'] = trange
+        tt = ctrials['time']
+        tt = tt[(tt > trange[0]) & (tt < trange[1])]
+        try:
+            latency = get_latency(spike_times, tt)
+        except Exception as E:
+            latency = numpy.nan
+            logging.warning('get_latency failed: %s' % E)
+            cell['err'] += 'get_latency failed: %s\n' % E
+            raise E
+        cell['latency'] = latency
 
         # snr
         try:

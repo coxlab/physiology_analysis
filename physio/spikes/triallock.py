@@ -38,7 +38,7 @@ def estimate_latency(spikes, trials, prew, duration, \
 
     br = counts[bi]
     bm = numpy.mean(br)
-    bs = numpy.mean(br)
+    bs = numpy.std(br)
 
     r = counts[ri]
     mr = numpy.mean(r, 1)
