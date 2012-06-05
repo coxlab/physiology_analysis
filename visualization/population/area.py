@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 import logging
-import sys
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -9,7 +8,6 @@ import numpy
 import pylab
 import scipy.stats
 
-import attribute
 import utils
 
 
@@ -23,17 +21,12 @@ key = 'friedman.stats.Q'
 #key = 'vrate'
 
 
-op = None
-
 query = {}
 attrs = {}
 
-if (len(sys.argv) > 1) and (sys.argv[1][0] != '-'):
-        key = sys.argv[1]
-key, kattrs = attribute.make_attribute(key, op=op)
-attrs.update(kattrs)
-
-data, cells, opts, args = utils.fetch(attrs=attrs, query=query, full=True)
+data, cells, opts, args = utils.fetch(attrs=attrs, query=query, full=True, \
+        default_key=key)
+key_label = opts.operation.replace('x', opts.key)
 
 if len(data) == 0:
     print "No data found"
@@ -88,13 +81,13 @@ pylab.errorbar(x, means, stds / numpy.sqrt(ns), color='r', capsize=10)
 labels = ["%s[%i]" % (a, n) for (a, n) in zip(uareas, ns)]
 pylab.xticks(x, labels)
 pylab.xlim(-1, len(uareas))
-pylab.ylabel(key)
+pylab.ylabel(key_label)
 pylab.xlabel('Area')
 
 pylab.suptitle("Test: %s, p: %s" % (Test, p))
 
 if opts.save:
     #pylab.savefig('%s_by_area.svg' % key)
-    pylab.savefig('%s_by_area.png' % key)
+    pylab.savefig('%s_by_area.png' % key_label)
 else:
     pylab.show()
